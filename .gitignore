@@ -14,7 +14,7 @@ dist/
 *.egg-info/
 
 # Virtual environment
-.venv/
+circuitron_venv/
 
 # VS Code settings
 .vscode/
