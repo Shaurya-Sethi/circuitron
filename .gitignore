@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Virtual environment
+.venv/
+
+# VS Code settings
+.vscode/
+
+# Env files
+.env
+
+# KiCad outputs
+*.kicad_pcb
+*.kicad_sch
+*.sch
+*.net
+*.pcb
+
+# Logs and temporary
+*.log
+*.tmp
+
+# Misc
+.DS_Store

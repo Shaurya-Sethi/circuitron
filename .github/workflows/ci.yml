@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - uses: Gr1N/setup-poetry@v8
+      - name: Install deps
+        run: |
+          poetry install --no-root
+      - name: Lint
+        run: |
+          poetry run black --check .
+          poetry run isort --check .
+          poetry run ruff .
+      - name: Test
+        run: |
+          poetry run pytest -q
+      - name: Build Docker image
+        run: |
+          docker build -t circuitron:latest .
