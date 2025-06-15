@@ -6,7 +6,7 @@
 ## 1. High-Level Context
 Circuitron converts natural-language design prompts into SKiDL code, KiCad schematics (`.sch`), netlists, and (optionally) auto-routed PCB layouts.  
 The workflow is **agentic**: an LLM plans, reasons, retrieves documentation (RAG), writes code, runs SKiDL, and hands artefacts to engineers for review.
-**Note: For a detailed overview of the project - always reference `overview.md`**
+**Note: For a detailed overview of the project - ALWAYS reference `overview.md`**
 
 > **Rule 0 – Never bypass expert review.**  
 > All outputs are drafts and must remain **transparent, editable, and traceable**.
