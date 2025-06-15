@@ -2,7 +2,7 @@
 name = "circuitron"
 version = "0.1.0"
 description = "Agentic PCB design accelerator"
-authors = ["Circuitron Team <info@example.com>"]
+authors = ["Shaurya Sethi"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -11,7 +11,7 @@ fastapi = "^0.110"
 uvicorn = {extras = ["standard"], version = "^0.29"}
 pydantic = "^2.7"
 langchain = "^0.1"
-skidl = "^0.1"
+skidl = "^2.0.1"
 structlog = "^24.1"
 streamlit = "^1.35"
 
