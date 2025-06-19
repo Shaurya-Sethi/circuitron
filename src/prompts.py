@@ -8,19 +8,20 @@ OUTPUT
  1. High-level schematic description (bullets)
  2. Design calculations / assumptions (bullets)
  3. Ordered action list (imperative, one per line)
- 4. Draft search keywords (one per line, no footprints, no library prefix)
+ 4. Draft search queries (one per line, no footprints, no library prefix)
 
 Do **NOT** output part numbers or code blocks.
 """
 
-# ---------- Stage B  Keyword cleaner ----------
+# ---------- Stage B  Query cleaner ----------
 PART_PROMPT = """You are **Circuitron-PartCleaner**.
 
-CLEAN the DRAFT keyword list:
+CLEAN the DRAFT search query list:
  • lowercase
  • strip units (e.g., '10uF' → 'uf')
  • remove duplicates
-Return ONE keyword per line, NOTHING else.
+ • keep spaces, quotes, and regex characters intact
+Return ONE search query per line, NOTHING else.
 """
 
 # ---------- Stage D  Code generation ----------
