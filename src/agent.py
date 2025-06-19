@@ -1,14 +1,52 @@
 import asyncio, json, os
-from .prompts import PLAN_PROMPT, CODEGEN_PROMPT, DOC_QA_PROMPT
+import openai
+from .prompts import PLAN_PROMPT, DOC_QA_PROMPT, SYSTEM_PROMPT, USER_TEMPLATE
 from .mcp_client import perform_rag_query, search_code_examples
 from .part_lookup import extract_queries, lookup_parts
 from .skidl_exec import run_skidl_script
-from .utils_llm import LLM_PLAN, LLM_CODE, call_llm
+from .utils_llm import LLM_PLAN, call_llm
+from .utils_text import trim_to_tokens, MAX_TOOL_CALLS
+
+client = openai.AsyncOpenAI(
+    api_key=os.getenv("DEVSTRAL_API_KEY"),
+    base_url=os.getenv("DEVSTRAL_API_BASE", "https://api.openai.com/v1"),
+)
+MODEL_CODE = os.getenv("MODEL_CODE")
+MODEL_TEMP = float(os.getenv("MODEL_TEMP", 0.15))
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "retrieve_docs",
+            "description": "Fetch SKiDL documentation or code examples via the MCP server",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural-language or keyword query"},
+                    "match_count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "default": 3,
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    }
+]
 
 async def _rag(plan: str, match=8):
     docs  = await perform_rag_query({"query": plan, "match_count": match})
     codes = await search_code_examples({"query": plan, "match_count": 5})
-    return "\n".join(c["content"] for c in docs + codes)[:8000]
+    ctx   = "\n".join(c["content"] for c in docs + codes)
+    return trim_to_tokens(ctx)
+
+async def _retrieve_docs(query: str, match_count=3):
+    docs  = await perform_rag_query({"query": query, "match_count": match_count})
+    codes = await search_code_examples({"query": query, "match_count": match_count})
+    return trim_to_tokens("\n".join(c["content"] for c in docs + codes))
 
 async def pipeline(user_req: str):
     # A ▸ PLAN
@@ -34,15 +72,55 @@ async def pipeline(user_req: str):
     # C ▸ RAG
     rag_ctx  = await _rag(plan)
     if extra_ctx:
-        rag_ctx = (rag_ctx + "\n" + extra_ctx)[:8000]
+        rag_ctx = trim_to_tokens(rag_ctx + "\n" + extra_ctx)
 
-    # D ▸ CODEGEN
-    prompt = (CODEGEN_PROMPT
-              .replace("<<<REQ>>>", user_req)
-              .replace("<<<PLAN>>>", plan)
-              .replace("<<<SELECTED_PARTS>>>", json.dumps(parts, indent=2))
-              .replace("<<<RAG_CONTEXT>>>", rag_ctx))
-    skidl_code = await call_llm(LLM_CODE, prompt)
+    # D ▸ CODEGEN with tool-calling
+    user_msg = (USER_TEMPLATE
+                .replace("<<<REQ>>>", user_req)
+                .replace("<<<PLAN>>>", plan)
+                .replace("<<<SELECTED_PARTS>>>", json.dumps(parts, indent=2))
+                .replace("<<<RAG_CONTEXT>>>", rag_ctx))
+
+    msgs = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_msg},
+    ]
+
+    tool_calls = 0
+    skidl_code = ""
+    while True:
+        stream = await client.chat.completions.create(
+            model=MODEL_CODE,
+            messages=msgs,
+            tools=TOOLS,
+            tool_choice="auto",
+            temperature=MODEL_TEMP,
+            stream=True,
+        )
+        content, call, buf = "", None, ""
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                content += delta.content
+            if delta.tool_calls:
+                part = delta.tool_calls[0]
+                if not call:
+                    call = {"id": part.id, "name": part.function.name}
+                if part.function.arguments:
+                    buf += part.function.arguments
+
+        if call:
+            if tool_calls >= MAX_TOOL_CALLS:
+                raise RuntimeError("Max tool calls exceeded")
+            tool_calls += 1
+            args = json.loads(buf or "{}")
+            docs = await _retrieve_docs(args.get("query", ""), args.get("match_count", 3))
+            msgs.append({"role": "assistant", "tool_calls": [call]})
+            msgs.append({"role": "tool", "tool_call_id": call["id"], "content": docs})
+            continue
+        skidl_code = content
+        break
+
     print("\n--- GENERATED CODE ---\n", skidl_code)
 
     # E ▸ EXECUTE
