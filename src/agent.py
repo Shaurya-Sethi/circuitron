@@ -5,7 +5,7 @@ from .mcp_client import perform_rag_query, search_code_examples
 from .part_lookup import extract_queries, lookup_parts
 from .skidl_exec import run_skidl_script
 from .utils_llm import LLM_PLAN, call_llm
-from .utils_text import trim_to_tokens, MAX_TOOL_CALLS
+from .utils_text import trim_to_tokens
 
 client = openai.AsyncOpenAI(
     api_key=os.getenv("DEVSTRAL_API_KEY"),
@@ -13,6 +13,10 @@ client = openai.AsyncOpenAI(
 )
 MODEL_CODE = os.getenv("MODEL_CODE")
 MODEL_TEMP = float(os.getenv("MODEL_TEMP", 0.15))
+
+# Maximum number of tool calls allowed per completion cycle to
+# prevent runaway loops when the model keeps requesting tools.
+MAX_TOOL_CALLS = int(os.getenv("MAX_TOOL_CALLS", 5))
 
 TOOLS = [
     {
