@@ -6,3 +6,30 @@ Part selection now leverages SKiDL's full search syntax: queries may contain mul
 
 
 See [overview.md](overview.md) for detailed project goals and structure.
+
+## Setup
+
+Install dependencies with `pip install -r requirements.txt` then copy
+`.env.example` to `.env` and fill in the required values:
+
+```
+MISTRAL_API_KEY=<your API key>
+MISTRAL_API_BASE=https://api.mistral.ai/v1  # or your custom endpoint
+MODEL_PLAN=magistral-small-latest
+MODEL_PART=mistral-small-latest
+MODEL_CODE=devstral-small-latest
+MODEL_TEMP=0.15
+MCP_URL=http://localhost:8051/sse
+
+# Optional tuning variables
+MAX_TOOL_CALLS=5
+TOKEN_MODEL=devstral-128k  # falls back to cl100k_base if unknown
+MAX_CTX_TOK=40000
+SAFETY_MARGIN=2000
+```
+
+When `TOKEN_MODEL` is set to `devstral-128k`, the Tekken tokenizer shipped with
+`mistral-common` will be used automatically. Otherwise tiktoken's `cl100k_base`
+is used as a fallback.
+
+`MISTRAL_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
