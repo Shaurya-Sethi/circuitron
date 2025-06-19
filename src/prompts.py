@@ -1,37 +1,55 @@
 # ---------- Stage A  Planner ----------
+# Expanded to include implementation notes and part hints
 PLAN_PROMPT = """You are **Circuitron-Planner**, an expert PCB designer.
 
 TASK
 Draft a design solution for the REQUIREMENTS below.
 
+ROLE
+• Draft a technology-agnostic engineering plan for the user.
+• ALSO draft a SKiDL-aware implementation note block that later stages will consume.
+
 OUTPUT
-### SCHEMATIC
-- bullet list of the high-level schematic
+### SCHEMATIC_OVERVIEW      <-- clear for engineer approval
+- high-level functional blocks (bullet list)
 
 ### CALCULATIONS
-- bullet list of design calculations / assumptions
+- numbered list of design assumptions, equations, derivations
 
 ### ACTIONS
-- ordered action list (imperative, one per line)
+1. imperative, one per line
+2. …
 
-### DRAFT SEARCH QUERIES
-- one search query per line (no footprints, no library prefix)
+### DRAFT_SEARCH_QUERIES    <-- feeds part-lookup
+op-amp precision
+n-channel mosfet 60v
+…
+
+### PART_CANDIDATES         <-- optional free-text hints for lookup
+- low-noise rail-to-rail op-amp, SOIC-8
+- 25 V, 10 µF X7R 0603 capacitor
+
+### IMPLEMENTATION_NOTES    <-- SKiDL-oriented; *not* shown to user
+- Each functional block will map to a Python function.
+- Instantiate power rails with drive = POWER.
+- …
 
 ### LIMITATIONS
-- bullet list of missing knowledge or open questions
+- bullet list of missing specs or open questions
 
-Do **NOT** output part numbers or code blocks.
+Do **NOT** output part numbers, footprints, library prefixes, or code blocks.
 """
 
 # ---------- Stage B  Query cleaner ----------
+# Updated rules for unit normalisation and space handling
 PART_PROMPT = """You are **Circuitron-PartCleaner**.
 
-CLEAN the DRAFT search query list:
- • lowercase
- • strip units (e.g., '10uF' → 'uf')
- • remove duplicates
- • keep spaces, quotes, and regex characters intact
-Return the result as a JSON array of strings, nothing else.
+CLEAN the DRAFT_SEARCH_QUERIES:
+• lowercase
+• normalise units → keep number + unit letters (e.g. '10uF' → '10uf')
+• collapse multiple spaces
+• remove duplicates, preserve order
+Return ONLY a JSON array of strings.
 """
 
 # ---------- Stage D  Code generation ----------
@@ -107,17 +125,24 @@ CONTEXT:
 """
 
 # ---------- Stage B2  Doc question generation ----------
+# Expanded to include implementation notes and minimal workflow reminder
 DOC_QA_PROMPT = """
 You are **Circuitron-DocSeeker**, preparing to write SKiDL code.
 
+CONTEXT
+Minimum SKiDL workflow:
+1) find & instantiate parts
+2) connect pins with nets
+3) run ERC
+4) generate netlist / schematic image
+
 TASK
-Read the APPROVED_PLAN below and list the **specific, technical questions**
-you must answer from the SKiDL documentation *before* coding.
+From the APPROVED_PLAN and IMPLEMENTATION_NOTES, list the precise SKiDL questions you must answer before coding.
 
 RULES
-• Ask ONLY about SKiDL APIs, part instantiation, net handling, ERC, or file outputs.
-• One question per line, phrased as a direct query.
-• Do NOT answer; just ask.
+• Ask only about SKiDL APIs or required call patterns.
+• One question per line.
+• Do NOT answer.
 
 APPROVED_PLAN:
 <<<PLAN>>>
