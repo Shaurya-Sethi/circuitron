@@ -1,6 +1,6 @@
 """Utilities for performing advanced SKiDL part searches."""
 
-import re
+import re, json
 from skidl import search
 from .prompts import PART_PROMPT
 from .utils_llm import call_llm, LLM_PART
@@ -49,7 +49,11 @@ async def extract_queries(plan: str):
     draft_txt = "\n".join(draft)
 
     cleaned = await call_llm(LLM_PART, PART_PROMPT + "\n" + draft_txt)
-    return [q.strip() for q in cleaned.splitlines() if q.strip() and QUERY_RE.match(q)]
+    try:
+        queries = json.loads(cleaned)
+    except Exception:
+        queries = [q.strip() for q in cleaned.splitlines()]
+    return [q for q in queries if isinstance(q, str) and q.strip() and QUERY_RE.match(q)]
 
 def lookup_parts(queries, max_choices=3):
     """Return matching parts for each search query."""
