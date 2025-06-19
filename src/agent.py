@@ -7,11 +7,18 @@ from .skidl_exec import run_skidl_script
 from .utils_llm import LLM_PLAN, call_llm
 from .utils_text import trim_to_tokens
 
+API_KEY = os.getenv("MISTRAL_API_KEY")
+if not API_KEY:
+    raise RuntimeError("MISTRAL_API_KEY environment variable not set")
+
 client = openai.AsyncOpenAI(
-    api_key=os.getenv("DEVSTRAL_API_KEY"),
-    base_url=os.getenv("DEVSTRAL_API_BASE", "https://api.openai.com/v1"),
+    api_key=API_KEY,
+    base_url=os.getenv("MISTRAL_API_BASE", "https://api.mistral.ai/v1"),
 )
+
 MODEL_CODE = os.getenv("MODEL_CODE")
+if not MODEL_CODE:
+    raise RuntimeError("MODEL_CODE environment variable not set")
 MODEL_TEMP = float(os.getenv("MODEL_TEMP", 0.15))
 
 # Maximum number of tool calls allowed per completion cycle to
