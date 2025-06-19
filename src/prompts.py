@@ -74,6 +74,38 @@ RAG_CONTEXT:
 NOW WRITE THE COMPLETE SKIDL SCRIPT BELOW:
 """
 
+# ---------- Tool-calling prompts ----------
+SYSTEM_PROMPT = """
+You are Devstral-CodeGen, an expert in SKiDL.
+
+You have access to a function:
+• retrieve_docs(query: str, match_count: int = 3) → str
+
+If the information already supplied in CONTEXT is insufficient,
+call retrieve_docs with a focused query. You may call it multiple times.
+Stop calling the tool once you are confident you can finish the code.
+
+When finished, output ONLY:
+```python
+<full skidl script>
+```
+
+then a YAML block named SELF_CHECK.
+"""
+
+USER_TEMPLATE = """USER_REQUEST:
+<<<REQ>>>
+
+APPROVED_PLAN:
+<<<PLAN>>>
+
+SELECTED_PARTS:
+<<<SELECTED_PARTS>>>
+
+CONTEXT:
+<<<RAG_CONTEXT>>>
+"""
+
 # ---------- Stage B2  Doc question generation ----------
 DOC_QA_PROMPT = """
 You are **Circuitron-DocSeeker**, preparing to write SKiDL code.
