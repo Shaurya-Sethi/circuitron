@@ -1,5 +1,9 @@
 import os
-from pathlib import Path
+
+try:
+    from huggingface_hub import hf_hub_download
+except Exception:
+    hf_hub_download = None
 
 try:
     from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
@@ -9,13 +13,18 @@ except Exception:
     mistral_common = None
 import tiktoken
 
-_token_model = os.getenv("TOKEN_MODEL", "devstral-128k")
-if _token_model == "devstral-128k" and MistralTokenizer and mistral_common:
-    try:
-        tekken_path = Path(os.path.dirname(mistral_common.__file__)) / "data" / "tekken_240911.json"
-        ENC = MistralTokenizer.from_file(str(tekken_path))
-    except Exception:
-        ENC = tiktoken.get_encoding("cl100k_base")
+_token_model = os.getenv("TOKEN_MODEL", "devstral-small-2505")
+if _token_model == "devstral-small-2505":
+    if not (MistralTokenizer and mistral_common and hf_hub_download):
+        raise RuntimeError(
+            "mistral-common and huggingface_hub are required for devstral-small-2505"
+        )
+    tekken_file = hf_hub_download(
+        repo_id="mistralai/Devstral-Small-2505",
+        filename="tekken.json",
+    )
+    # Load the Tekken tokenizer per https://docs.mistral.ai/guides/tokenization/
+    ENC = MistralTokenizer.from_file(tekken_file)
 else:
     try:
         ENC = tiktoken.encoding_for_model(_token_model)

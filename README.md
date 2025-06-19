@@ -23,13 +23,13 @@ MCP_URL=http://localhost:8051/sse
 
 # Optional tuning variables
 MAX_TOOL_CALLS=5
-TOKEN_MODEL=devstral-128k  # falls back to cl100k_base if unknown
+TOKEN_MODEL=devstral-small-2505  # uses the Tekken tokenizer from mistral-common
 MAX_CTX_TOK=40000
 SAFETY_MARGIN=2000
 ```
 
-When `TOKEN_MODEL` is set to `devstral-128k`, the Tekken tokenizer shipped with
-`mistral-common` will be used automatically. Otherwise tiktoken's `cl100k_base`
-is used as a fallback.
+When `TOKEN_MODEL` is set to `devstral-small-2505`, the Tekken tokenizer from
+`mistral-common` is required. No fallback tokenizer is supported for this model
+as noted in the [official Devstral tokenization guide](https://docs.mistral.ai/guides/tokenization/).
 
 `MISTRAL_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
