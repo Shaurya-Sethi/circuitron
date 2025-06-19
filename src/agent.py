@@ -1,7 +1,7 @@
 import asyncio, json, os
 from .prompts import PLAN_PROMPT, CODEGEN_PROMPT
 from .mcp_client import perform_rag_query, search_code_examples
-from .part_lookup import extract_keywords, lookup_parts
+from .part_lookup import extract_queries, lookup_parts
 from .skidl_exec import run_skidl_script
 from .utils_llm import LLM_PLAN, LLM_CODE, call_llm
 
@@ -17,9 +17,9 @@ async def pipeline(user_req: str):
     if input("\nApprove plan? [y/N] ").lower() != "y":
         print("Aborted."); return
 
-    # B ▸ KEYWORDS → PARTS
-    keywords = await extract_keywords(plan)
-    parts    = lookup_parts(keywords)
+    # B ▸ QUERIES → PARTS
+    queries = await extract_queries(plan)
+    parts   = lookup_parts(queries)
 
     # C ▸ RAG
     rag_ctx  = await _rag(plan)
