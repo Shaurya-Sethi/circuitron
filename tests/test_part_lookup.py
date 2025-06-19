@@ -27,7 +27,7 @@ class DummyPart:
         self.description = desc
 
 def test_extract_queries(monkeypatch):
-    plan = """header\nDraft search queries\nopamp low-noise dip-8\n^LM386$\n"""
+    plan = """header\n### DRAFT_SEARCH_QUERIES\nopamp low-noise dip-8\n^LM386$\n### PART_CANDIDATES"""
 
     async def fake_call_llm(model, text):
         cleaned = text.split("\n", 1)[1]
@@ -47,7 +47,7 @@ def test_lookup_parts_preserves_query(monkeypatch):
         return [DummyPart("lib", "part", "desc")]
 
     monkeypatch.setattr(pl, "search", fake_search)
-    results = pl.lookup_parts(["opamp (low-noise|dip-8)"])
+    results = pl.lookup_parts("opamp (low-noise|dip-8)")
     assert captured == ["opamp (low-noise|dip-8)"]
     assert results["opamp (low-noise|dip-8)"][0]["part"] == "lib:part"
 
