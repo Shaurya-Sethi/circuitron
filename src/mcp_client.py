@@ -1,8 +1,10 @@
-import os, json, httpx, sseclient, asyncio
+import os, json, httpx
 from dotenv import load_dotenv
 
 load_dotenv()
 MCP_URL = os.getenv("MCP_URL")
+if not MCP_URL:
+    raise RuntimeError("MCP_URL environment variable not set")
 
 async def _stream(tool: str, params: dict):
     async with httpx.AsyncClient(timeout=None) as client:

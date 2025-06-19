@@ -1,9 +1,9 @@
 import asyncio, json, os
-from prompts import PLAN_PROMPT, CODEGEN_PROMPT
-from mcp_client import perform_rag_query, search_code_examples
-from part_lookup import extract_keywords, lookup_parts
-from skidl_exec import run_skidl_script
-from utils_llm import LLM_PLAN, LLM_CODE, call_llm
+from .prompts import PLAN_PROMPT, CODEGEN_PROMPT
+from .mcp_client import perform_rag_query, search_code_examples
+from .part_lookup import extract_keywords, lookup_parts
+from .skidl_exec import run_skidl_script
+from .utils_llm import LLM_PLAN, LLM_CODE, call_llm
 
 async def _rag(plan: str, match=8):
     docs  = await perform_rag_query({"query": plan, "match_count": match})

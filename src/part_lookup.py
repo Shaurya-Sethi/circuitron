@@ -1,7 +1,7 @@
-import re, asyncio
+import re
 from skidl import search
-from prompts import PART_PROMPT
-from utils_llm import call_llm, LLM_PART
+from .prompts import PART_PROMPT
+from .utils_llm import call_llm, LLM_PART
 
 KEYWORD_RE   = re.compile(r"^[A-Za-z0-9_\-+().]+$")
 VALID_PARTRE = re.compile(r"^[A-Za-z0-9_]+:[A-Za-z0-9_.+\-]+$")
