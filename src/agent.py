@@ -1,5 +1,5 @@
 import asyncio, json, os
-from .prompts import PLAN_PROMPT, CODEGEN_PROMPT
+from .prompts import PLAN_PROMPT, CODEGEN_PROMPT, DOC_QA_PROMPT
 from .mcp_client import perform_rag_query, search_code_examples
 from .part_lookup import extract_queries, lookup_parts
 from .skidl_exec import run_skidl_script
@@ -21,8 +21,20 @@ async def pipeline(user_req: str):
     queries = await extract_queries(plan)
     parts   = lookup_parts(queries)
 
+    # B2 ▸ DOC QUESTIONS
+    doc_qs  = await call_llm(LLM_PLAN, DOC_QA_PROMPT.replace("<<<PLAN>>>", plan))
+    answers = []
+    for q in doc_qs.splitlines():
+        q = q.strip()
+        if not q:
+            continue
+        answers += await perform_rag_query({"query": q, "match_count": 3})
+    extra_ctx = "\n".join(a["content"] for a in answers)
+
     # C ▸ RAG
     rag_ctx  = await _rag(plan)
+    if extra_ctx:
+        rag_ctx = (rag_ctx + "\n" + extra_ctx)[:8000]
 
     # D ▸ CODEGEN
     prompt = (CODEGEN_PROMPT
