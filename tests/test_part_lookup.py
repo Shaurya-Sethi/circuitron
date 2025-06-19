@@ -13,7 +13,7 @@ sys.modules["src.prompts"] = prompts_stub
 
 utils_stub = types.ModuleType("src.utils_llm")
 async def dummy_call_llm(model, text):
-    return text.split("\n", 1)[1]
+    return "[]"
 utils_stub.call_llm = dummy_call_llm
 utils_stub.LLM_PART = object()
 sys.modules["src.utils_llm"] = utils_stub
@@ -30,7 +30,10 @@ def test_extract_queries(monkeypatch):
     plan = """header\nDraft search queries\nopamp low-noise dip-8\n^LM386$\n"""
 
     async def fake_call_llm(model, text):
-        return text.split("\n", 1)[1]
+        cleaned = text.split("\n", 1)[1]
+        lines = [l for l in cleaned.splitlines() if l]
+        import json
+        return json.dumps(lines)
 
     monkeypatch.setattr(pl, "call_llm", fake_call_llm)
     queries = asyncio.run(pl.extract_queries(plan))
