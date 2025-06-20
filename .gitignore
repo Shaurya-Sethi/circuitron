@@ -1,3 +1,6 @@
 circuitron_venv/
 .env
 .python-version
+__pycache__/
+*.log
+*.erc
