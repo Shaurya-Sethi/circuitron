@@ -34,7 +34,10 @@ TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "Natural-language or keyword query"},
+                    "query": {
+                        "type": "string",
+                        "description": "Natural-language or keyword query",
+                    },
                     "match_count": {
                         "type": "integer",
                         "minimum": 1,
@@ -48,30 +51,34 @@ TOOLS = [
     }
 ]
 
+
 async def _rag(plan: str, match=8):
-    docs  = await perform_rag_query({"query": plan, "match_count": match})
+    docs = await perform_rag_query({"query": plan, "match_count": match})
     codes = await search_code_examples({"query": plan, "match_count": 5})
-    ctx   = "\n".join(c["content"] for c in docs + codes)
+    ctx = "\n".join(c["content"] for c in docs + codes)
     return trim_to_tokens(ctx)
 
+
 async def _retrieve_docs(query: str, match_count=3):
-    docs  = await perform_rag_query({"query": query, "match_count": match_count})
+    docs = await perform_rag_query({"query": query, "match_count": match_count})
     codes = await search_code_examples({"query": query, "match_count": match_count})
     return trim_to_tokens("\n".join(c["content"] for c in docs + codes))
+
 
 async def pipeline(user_req: str):
     # A ▸ PLAN
     plan = await call_llm(LLM_PLAN, PLAN_PROMPT.replace("REQUIREMENTS", user_req))
     print("\n--- PLAN ---\n", plan)
     if input("\nApprove plan? [y/N] ").lower() != "y":
-        print("Aborted."); return
+        print("Aborted.")
+        return
 
     # B ▸ QUERIES → PARTS
     queries = await extract_queries(plan)
-    parts   = lookup_parts(queries)
+    parts = lookup_parts(queries)
 
     # B2 ▸ DOC QUESTIONS
-    doc_qs  = await call_llm(LLM_PLAN, DOC_QA_PROMPT.replace("<<<PLAN>>>", plan))
+    doc_qs = await call_llm(LLM_PLAN, DOC_QA_PROMPT.replace("<<<PLAN>>>", plan))
     answers = []
     for q in doc_qs.splitlines():
         q = q.strip()
@@ -81,16 +88,17 @@ async def pipeline(user_req: str):
     extra_ctx = "\n".join(a["content"] for a in answers)
 
     # C ▸ RAG
-    rag_ctx  = await _rag(plan)
+    rag_ctx = await _rag(plan)
     if extra_ctx:
         rag_ctx = trim_to_tokens(rag_ctx + "\n" + extra_ctx)
 
     # D ▸ CODEGEN with tool-calling
-    user_msg = (USER_TEMPLATE
-                .replace("<<<REQ>>>", user_req)
-                .replace("<<<PLAN>>>", plan)
-                .replace("<<<SELECTED_PARTS>>>", json.dumps(parts, indent=2))
-                .replace("<<<RAG_CONTEXT>>>", rag_ctx))
+    user_msg = (
+        USER_TEMPLATE.replace("<<<REQ>>>", user_req)
+        .replace("<<<PLAN>>>", plan)
+        .replace("<<<SELECTED_PARTS>>>", json.dumps(parts, indent=2))
+        .replace("<<<RAG_CONTEXT>>>", rag_ctx)
+    )
 
     msgs = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -125,7 +133,9 @@ async def pipeline(user_req: str):
                 raise RuntimeError("Max tool calls exceeded")
             tool_calls += 1
             args = json.loads(buf or "{}")
-            docs = await _retrieve_docs(args.get("query", ""), args.get("match_count", 3))
+            docs = await _retrieve_docs(
+                args.get("query", ""), args.get("match_count", 3)
+            )
             msgs.append({"role": "assistant", "tool_calls": [call]})
             msgs.append({"role": "tool", "tool_call_id": call["id"], "content": docs})
             continue
@@ -142,9 +152,11 @@ async def pipeline(user_req: str):
     except Exception as e:
         print("Execution failed:", e)
 
+
 def cli():
     req = input("Enter design request: ")
     asyncio.run(pipeline(req))
+
 
 if __name__ == "__main__":
     cli()
