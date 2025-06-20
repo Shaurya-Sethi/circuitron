@@ -33,3 +33,15 @@ When `TOKEN_MODEL` is set to `devstral-small-2505`, the Tekken tokenizer from
 as noted in the [official Devstral tokenization guide](https://docs.mistral.ai/guides/tokenization/).
 
 `MISTRAL_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
+
+## Usage
+
+1. **Create your environment file** by copying `.env.example` to `.env` and
+   filling in the required values.
+2. **Install dependencies** with `pip install -r requirements.txt` and install
+   the SVG export tool with `npm install -g netlistsvg@1.0.2`.
+3. **Run the CLI** using:
+
+   ```bash
+   python -m src.main_cli
+   ```
