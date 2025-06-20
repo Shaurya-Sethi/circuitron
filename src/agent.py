@@ -136,8 +136,15 @@ async def pipeline(user_req: str):
             docs = await _retrieve_docs(
                 args.get("query", ""), args.get("match_count", 3)
             )
+            if content:
+                msgs.append({"role": "assistant", "content": content})
             msgs.append({"role": "assistant", "tool_calls": [call]})
-            msgs.append({"role": "tool", "tool_call_id": call["id"], "content": docs})
+            msgs.append({
+                "role": "tool",
+                "name": call["name"],
+                "tool_call_id": call["id"],
+                "content": docs,
+            })
             continue
         skidl_code = content
         break
