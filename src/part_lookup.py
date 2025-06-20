@@ -14,8 +14,9 @@ from .utils_llm import call_llm, LLM_PART
 
 # Allow a wide range of characters so the query string can include
 # SKiDL's advanced search syntax (regex, quoted strings, OR logic, etc.).
-QUERY_RE     = re.compile(r"^[A-Za-z0-9_ .+()\-|'\"^$*?\[\]]+$")
+QUERY_RE = re.compile(r"^[A-Za-z0-9_ .+()\-|'\"^$*?\[\]]+$")
 VALID_PARTRE = re.compile(r"^[A-Za-z0-9_]+:[A-Za-z0-9_.+\-]+$")
+
 
 def _run_search(query: str, max_choices: int = 3) -> list[dict]:
     """Return up to ``max_choices`` parts matching ``query``.
@@ -44,6 +45,7 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
             break
     return out
 
+
 async def extract_queries(plan: str):
     """Extract and clean search terms from ``plan`` using the LLM.
 
@@ -70,7 +72,10 @@ async def extract_queries(plan: str):
         queries = json.loads(cleaned)
     except Exception:
         queries = [q.strip() for q in cleaned.splitlines()]
-    return [q for q in queries if isinstance(q, str) and q.strip() and QUERY_RE.match(q)]
+    return [
+        q for q in queries if isinstance(q, str) and q.strip() and QUERY_RE.match(q)
+    ]
+
 
 def lookup_parts(queries, max_choices: int = 3):
     """Return matching parts for each search query.

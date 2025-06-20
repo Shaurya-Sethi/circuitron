@@ -1,13 +1,15 @@
 import os
+from typing import Callable, Optional
 
 try:
-    from huggingface_hub import hf_hub_download
+    from huggingface_hub import hf_hub_download as _hf_hub_download
 except Exception:
-    hf_hub_download = None
+    _hf_hub_download = None  # type: ignore[assignment]
+hf_hub_download: Optional[Callable[..., str]] = _hf_hub_download
 
 try:
-    from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
-    import mistral_common
+    from mistral_common.tokens.tokenizers.mistral import MistralTokenizer  # type: ignore
+    import mistral_common  # type: ignore
 except Exception:
     MistralTokenizer = None
     mistral_common = None
@@ -15,7 +17,7 @@ import tiktoken
 
 _token_model = os.getenv("TOKEN_MODEL", "devstral-small-2505")
 if _token_model == "devstral-small-2505":
-    if not (MistralTokenizer and mistral_common and hf_hub_download):
+    if MistralTokenizer is None or mistral_common is None or hf_hub_download is None:
         raise RuntimeError(
             "mistral-common and huggingface_hub are required for devstral-small-2505"
         )
