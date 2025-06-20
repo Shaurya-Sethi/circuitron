@@ -9,7 +9,7 @@ sseclient-py
 skidl>=2.0.1
 openai
 tiktoken
-mistral-common>=1.5.5
-huggingface_hub>=0.23.1
+mistral-common
+huggingface_hub
 
 # Node tool for SKiDL SVG export: npm install -g netlistsvg@1.0.2
