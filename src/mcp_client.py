@@ -156,10 +156,18 @@ _client = _SSEClient()
 
 
 async def _call_tool(tool: str, params: Dict | None) -> List[Dict]:
-    """Send an MCP JSON‑RPC request and return the streamed result."""
-
+    """
+    Send an MCP JSON-RPC request using the universal "tools/call" method
+    and return the streamed result.
+    """
+    # 1) Wrap your tool name + its params under the standard JSON-RPC envelope
+    rpc_params = {
+        "name":   tool,
+        "params": params or {}
+    }
     try:
-        return await _client.call(tool, params)
+        # 2) Always call via the JSON-RPC method "tools/call"
+        return await _client.call("tools/call", rpc_params)
     except Exception as exc:
         print(f"[mcp_client] {tool} failed: {exc}")
         return []

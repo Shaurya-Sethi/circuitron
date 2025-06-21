@@ -126,7 +126,9 @@ HTTP mode
 There is no separate HTTP JSON-RPC endpoint. All network access uses the SSE pair above.
 
 4. Tool Registration & RAG API
-Each tool is decorated with @mcp.tool() in src/crawl4ai_mcp.py. The function name is the JSON‑RPC method name.
+Each tool is decorated with @mcp.tool() in src/crawl4ai_mcp.py. Tools are invoked
+via the universal JSON‑RPC method ``"tools/call"`` by specifying the tool ``name``
+and its ``params``.
 
 JSON‑RPC method	Signature (summary)
 crawl_single_page	(ctx, url: str) -> str – Crawl one page.
@@ -157,8 +159,11 @@ async def main():
             req = {
                 "jsonrpc": "2.0",
                 "id": 1,
-                "method": "perform_rag_query",
-                "params": {"query": "capacitor 0.1µF decoupling", "match_count": 5}
+                "method": "tools/call",
+                "params": {
+                    "name": "perform_rag_query",
+                    "params": {"query": "capacitor 0.1µF decoupling", "match_count": 5}
+                }
             }
             await client.post(endpoint, json=req)
 
@@ -180,7 +185,7 @@ Post a JSON‑RPC request:
 
 curl -X POST \
      -H "Content-Type: application/json" \
-     -d '{"jsonrpc":"2.0","id":1,"method":"perform_rag_query","params":{"query":"capacitor 0.1µF decoupling","match_count":5}}' \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"perform_rag_query","params":{"query":"capacitor 0.1µF decoupling","match_count":5}}}' \
      "http://localhost:8051/messages/?session_id=<id>"
 Responses arrive as SSE message events.
 
@@ -223,4 +228,4 @@ The server listens on HOST/PORT; behind a reverse proxy (Nginx, Traefik, Kuberne
 
 Persist .env and the Supabase/Neo4j credentials securely (e.g., Kubernetes secrets).
 
-By following this guide, you can integrate Fast‑MCP’s crawling and RAG capabilities into your own agent, invoke tools such as perform_rag_query through SSE or stdio, and extend the server with additional functionality as needed.
+By following this guide, you can integrate Fast‑MCP’s crawling and RAG capabilities into your own agent, invoke tools such as ``perform_rag_query`` via the ``tools/call`` RPC method over SSE or stdio, and extend the server with additional functionality as needed.
