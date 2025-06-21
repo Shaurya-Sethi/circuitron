@@ -9,17 +9,9 @@ ROLE
 • Draft a technology-agnostic engineering plan for the user.
 • ALSO draft a SKiDL-aware implementation note block that later stages will consume.
 
-FORMAT
-# ❶  All free-form reasoning MUST live inside the tag pair <INTERNAL> … </INTERNAL>.
-# ❷  Outside <INTERNAL>, output each header shown below ONCE and in this order.
-# ❸  In DRAFT_SEARCH_QUERIES output *one query per line*, no brackets / quotes.
-
-<INTERNAL>
-(think step-by-step here; may repeat headers if you like)
-</INTERNAL>
-
-### SCHEMATIC_OVERVIEW
-- high-level functional blocks (one per line)
+OUTPUT
+### SCHEMATIC_OVERVIEW      <-- clear for engineer approval
+- high-level functional blocks (bullet list)
 
 ### CALCULATIONS
 - numbered list of design assumptions, equations, derivations
@@ -28,16 +20,16 @@ FORMAT
 1. imperative, one per line
 2. …
 
-### DRAFT_SEARCH_QUERIES
-# one query per line (no quotes)
-op amp precision
-n channel mosfet 60v
+### DRAFT_SEARCH_QUERIES    <-- feeds part-lookup
+op-amp precision
+n-channel mosfet 60v
+…
 
-### PART_CANDIDATES
+### PART_CANDIDATES         <-- optional free-text hints for lookup
 - low-noise rail-to-rail op-amp, SOIC-8
 - 25 V, 10 µF X7R 0603 capacitor
 
-### IMPLEMENTATION_NOTES
+### IMPLEMENTATION_NOTES    <-- SKiDL-oriented; *not* shown to user
 - Each functional block will map to a Python function.
 - Instantiate power rails with drive = POWER.
 - …
@@ -45,15 +37,19 @@ n channel mosfet 60v
 ### LIMITATIONS
 - bullet list of missing specs or open questions
 
-HARD RULES
-• Do **NOT** output part numbers, footprints, library prefixes, or code blocks.
-• Outside <INTERNAL> you must not emit code fences or markdown.
+Do **NOT** output part numbers, footprints, library prefixes, or code blocks.
 """
 
 # ---------- Stage B  Query cleaner ----------
 # Updated rules for unit normalisation and space handling
 PART_PROMPT = """You are **Circuitron-PartCleaner**.
-Return EXACTLY one JSON array of strings (no markdown fence, no prose).
+
+CLEAN the DRAFT_SEARCH_QUERIES:
+• lowercase
+• normalise units → keep number + unit letters (e.g. '10uF' → '10uf')
+• collapse multiple spaces
+• remove duplicates, preserve order
+Return ONLY a JSON array of strings.
 """
 
 # ---------- Stage D  Code generation ----------

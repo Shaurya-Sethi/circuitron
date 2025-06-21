@@ -2,9 +2,9 @@ import asyncio, json, os
 import openai
 from .prompts import PLAN_PROMPT, DOC_QA_PROMPT, SYSTEM_PROMPT, USER_TEMPLATE
 from .mcp_client import perform_rag_query, search_code_examples
-from .plan_parser import split_plan
-from .part_lookup import lookup_parts
-from .utils_llm import LLM_PLAN, call_llm, extract_queries
+from .part_lookup import extract_queries, lookup_parts
+from .skidl_exec import run_skidl_script
+from .utils_llm import LLM_PLAN, call_llm
 from .utils_text import trim_to_tokens
 
 API_KEY = os.getenv("MISTRAL_API_KEY")
@@ -68,10 +68,7 @@ async def _retrieve_docs(query: str, match_count=3):
 async def pipeline(user_req: str):
     # A ▸ PLAN
     plan = await call_llm(LLM_PLAN, PLAN_PROMPT.replace("REQUIREMENTS", user_req))
-    internal, public = split_plan(plan)
-    print("\n--- PLAN ---\n", public)
-    # uncomment next line to debug-show reasoning:
-    # print("\n--- INTERNAL THINKING ---\n", internal)
+    print("\n--- PLAN ---\n", plan)
     if input("\nApprove plan? [y/N] ").lower() != "y":
         print("Aborted.")
         return
