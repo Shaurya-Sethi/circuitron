@@ -2,6 +2,7 @@ import asyncio
 import sys
 import pathlib
 import types
+import os
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -17,6 +18,19 @@ async def dummy_call_llm(model, text):
 utils_stub.call_llm = dummy_call_llm
 utils_stub.LLM_PART = object()
 sys.modules["src.utils_llm"] = utils_stub
+
+# Stub tiktoken to avoid network downloads during tests
+tiktoken_stub = types.ModuleType("tiktoken")
+class DummyTok:
+    def encode(self, text):
+        return [1]
+    def decode(self, toks):
+        return ""
+tiktoken_stub.encoding_for_model = lambda m: DummyTok()
+tiktoken_stub.get_encoding = lambda n: DummyTok()
+sys.modules["tiktoken"] = tiktoken_stub
+
+os.environ["TOKEN_MODEL"] = "gpt-3.5"
 
 import src.part_lookup as pl
 
@@ -38,6 +52,18 @@ def test_extract_queries(monkeypatch):
     monkeypatch.setattr(pl, "call_llm", fake_call_llm)
     queries = asyncio.run(pl.extract_queries(plan))
     assert queries == ["opamp low-noise dip-8", "^LM386$"]
+
+
+def test_extract_queries_handles_string_json(monkeypatch):
+    plan = "### DRAFT_SEARCH_QUERIES\nopamp"
+
+    async def fake_call_llm(model, text):
+        import json
+        return json.dumps("opamp lm324")
+
+    monkeypatch.setattr(pl, "call_llm", fake_call_llm)
+    queries = asyncio.run(pl.extract_queries(plan))
+    assert queries == ["opamp lm324"]
 
 def test_lookup_parts_preserves_query(monkeypatch):
     captured = []
