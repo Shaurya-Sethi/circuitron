@@ -7,10 +7,8 @@ phrases, regular expressions and boolean logic as supported by
 environment variable so results mirror the user's KiCad setup.
 """
 
-import re, json
+import re
 from skidl import search
-from .prompts import PART_PROMPT
-from .utils_llm import call_llm, LLM_PART
 
 # Allow a wide range of characters so the query string can include
 # SKiDL's advanced search syntax (regex, quoted strings, OR logic, etc.).
@@ -37,9 +35,18 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
         print(f"[part_lookup] invalid query skipped: {query!r}")
         return []
 
+    if not query or len(query) <= 2 or query in {"[", "]"}:
+        print(f"[part_lookup] skipped junk query: {query!r}")
+        return []
+    if query[0] == query[-1] in {"'", '"'}:
+        query = query[1:-1]
+
     print(f"[part_lookup] running search: {query!r}")
     try:
         hits_iter = search(query)
+    except re.error as e:
+        print(f"[part_lookup] regex error for {query!r}: {e}")
+        return []
     except Exception as exc:
         print(f"[part_lookup] search failed for {query!r}: {exc}")
         return []
@@ -71,35 +78,6 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
     return out
 
 
-async def extract_queries(plan: str):
-    """Extract and clean search terms from ``plan`` using the LLM.
-
-    The lines following the ``DRAFT_SEARCH_QUERIES`` heading are collected until
-    the next ``###`` heading.  The text is then passed to the LLM for
-    normalisation according to :data:`PART_PROMPT`.
-    """
-
-    draft: list[str] = []
-    grab = False
-    for line in plan.splitlines():
-        tag = line.replace(" ", "_").upper()
-        if not grab and "DRAFT_SEARCH_QUERIES" in tag:
-            grab = True
-            continue
-        if grab and line.startswith("### "):
-            break
-        if grab and line.strip():
-            draft.append(line.strip())
-    draft_txt = "\n".join(draft)
-
-    cleaned = await call_llm(LLM_PART, PART_PROMPT + "\n" + draft_txt)
-    try:
-        queries = json.loads(cleaned)
-    except Exception:
-        queries = [q.strip() for q in cleaned.splitlines()]
-    return [
-        q for q in queries if isinstance(q, str) and q.strip() and QUERY_RE.match(q)
-    ]
 
 
 def lookup_parts(queries, max_choices: int = 3):
