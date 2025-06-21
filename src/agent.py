@@ -161,7 +161,7 @@ async def pipeline(user_req: str):
             temperature=MODEL_TEMP,
             stream=True,
         )
-        content, call, buf = "", None, ""
+        content, call = "", None
         async for chunk in stream:
             delta = chunk.choices[0].delta
             if delta.content:
@@ -169,15 +169,19 @@ async def pipeline(user_req: str):
             if delta.tool_calls:
                 part = delta.tool_calls[0]
                 if not call:
-                    call = {"id": part.id, "name": part.function.name}
+                    call = {
+                        "id": part.id,
+                        "type": "function",
+                        "function": {"name": part.function.name, "arguments": ""},
+                    }
                 if part.function.arguments:
-                    buf += part.function.arguments
+                    call["function"]["arguments"] += part.function.arguments
 
         if call:
             if tool_calls >= MAX_TOOL_CALLS:
                 raise RuntimeError("Max tool calls exceeded")
             tool_calls += 1
-            args = json.loads(buf or "{}")
+            args = json.loads(call["function"].get("arguments", "{}") or "{}")
             docs = await _retrieve_docs(
                 args.get("query", ""), args.get("match_count", 3)
             )
@@ -186,7 +190,7 @@ async def pipeline(user_req: str):
             msgs.append({"role": "assistant", "tool_calls": [call]})
             msgs.append({
                 "role": "tool",
-                "name": call["name"],
+                "name": call["function"]["name"],
                 "tool_call_id": call["id"],
                 "content": docs,
             })
