@@ -24,6 +24,7 @@ OUTPUT
 # DRAFT_SEARCH_QUERIES  (→ feeds SKiDL search())
 #   • One line per desired part.
 #   • Use SKiDL **keyword** style <generic> [spec] [package] […].
+#   • Do not include numeric values; only base part type or model plus optional package.
 #   • NO sentences, NO quotes, NO commas.
 #   • Examples:
 #       opamp lm324 quad
@@ -74,6 +75,18 @@ Rules
 • Normalise units: `10uF` → `10uf`, `0603` kept as is.
 • Separate tokens with a single space.
 • Remove duplicates, preserve original order.
+
+Additional rule for part query cleaning:
+• For passives (capacitor, resistor, inductor, diode) ALWAYS strip numeric values, units (uf, k, n, ohm, V, pF, mH, etc.) and package codes (0603, 0805, 1206). Search only by the base part type.
+• For ICs or semiconductors (opamps, transistors, MOSFETs, regulators) keep the full model name if present; otherwise search by category (opamp, mosfet, bjt, etc.).
+Examples:
+  capacitor 0.1uf      → capacitor
+  resistor 1k 0603     → resistor
+  inductor 10uH 0805   → inductor
+  diode 1N4148 SOD-123 → diode 1N4148
+  opamp lm324 quad     → opamp lm324
+  mosfet irf540n       → mosfet irf540n
+  mosfet 60v n-channel → mosfet n-channel
 
 Return **exactly** one JSON array of strings – no markdown fence, no extra text.
 
