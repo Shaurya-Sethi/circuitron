@@ -5,7 +5,7 @@ langchain_mistralai
 mistralai
 python-dotenv
 httpx
-sseclient-py
+httpx-sse
 skidl>=2.0.1
 openai
 tiktoken
