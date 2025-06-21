@@ -19,7 +19,7 @@ MODEL_PLAN=magistral-small-latest
 MODEL_PART=mistral-small-latest
 MODEL_CODE=devstral-small-latest
 MODEL_TEMP=0.15
-MCP_URL=http://localhost:8051/sse
+MCP_URL=http://localhost:8051
 
 
 # Optional tuning variables

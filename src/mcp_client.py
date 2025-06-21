@@ -4,52 +4,78 @@ from typing import Dict, List
 
 from dotenv import load_dotenv
 import httpx
+from httpx_sse import aconnect_sse
 
 load_dotenv()
-_mcp_url = os.getenv("MCP_URL")
-if not _mcp_url:
-    raise RuntimeError("MCP_URL environment variable not set")
-MCP_URL: str = _mcp_url
+
+_port = os.getenv("PORT", "8051")
+_base = os.getenv("MCP_URL")
+if _base is None:
+    _base = f"http://localhost:{_port}"
+_base = _base.rstrip("/")
+if _base.endswith("/sse"):
+    _base = _base[: -len("/sse")]
+
+MCP_BASE: str = _base
+SSE_URL: str = f"{MCP_BASE}/sse"
+
+TRANSPORT = os.getenv("TRANSPORT", "sse").lower()
 
 
 async def _call_tool(tool: str, params: Dict | None) -> List[Dict]:
-    """Call a tool on the MCP server via JSON-RPC."""
+    """Call a Fast-MCP tool using the SSE transport."""
+
+    if TRANSPORT != "sse":
+        raise RuntimeError("Only TRANSPORT=sse is supported in this client")
 
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
-        "method": "tools/call",
-        "params": {"name": tool, "arguments": params or {}},
-    }
-    headers = {
-        "Accept": "application/json, text/event-stream",
-        "Content-Type": "application/json",
+        "method": tool,
+        "params": params or {},
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(MCP_URL, headers=headers, json=payload)
-    except httpx.HTTPError as exc:
-        print(f"[mcp_client] HTTP request failed for {MCP_URL}: {exc}")
-        return []
+    async with httpx.AsyncClient(timeout=None) as client:
+        try:
+            async with aconnect_sse(client, "GET", SSE_URL) as es:
+                endpoint = None
+                async for event in es.aiter_sse():
+                    if event.event == "endpoint":
+                        endpoint = httpx.URL(MCP_BASE).join(event.data)
+                        break
 
-    if response.status_code != 200:
-        txt = response.text[:200]
-        print(f"[mcp_client] {response.status_code} from {MCP_URL}: {txt}")
-        return []
+                if endpoint is None:
+                    print("[mcp_client] no endpoint from MCP server")
+                    return []
 
-    try:
-        data = response.json()
-    except Exception as exc:
-        print(f"[mcp_client] invalid JSON from {MCP_URL}: {exc}")
-        return []
+                response = await client.post(str(endpoint), json=payload)
+                if response.status_code not in (200, 202):
+                    txt = response.text[:200]
+                    print(
+                        f"[mcp_client] {response.status_code} from {endpoint}: {txt}"
+                    )
+                    return []
 
-    result = data.get("result", data) if isinstance(data, dict) else {}
-    content = result.get("content") or result.get("results")
-    if isinstance(content, list):
-        return content
+                async for event in es.aiter_sse():
+                    if event.event == "message":
+                        try:
+                            data = json.loads(event.data)
+                        except Exception as exc:  # invalid JSON
+                            print(f"[mcp_client] invalid JSON from SSE: {exc}")
+                            return []
 
-    print(f"[mcp_client] unexpected payload from {MCP_URL}: {data!r}")
+                        result = data.get("result", data)
+                        content = result.get("content") or result.get("results")
+                        if isinstance(content, list):
+                            return content
+                        print(
+                            f"[mcp_client] unexpected payload from {endpoint}: {data!r}"
+                        )
+                        return []
+        except httpx.HTTPError as exc:
+            print(f"[mcp_client] HTTP request failed for {SSE_URL}: {exc}")
+            return []
+
     return []
 
 
