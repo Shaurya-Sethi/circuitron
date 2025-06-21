@@ -58,6 +58,14 @@ class _SSEClient:
         if self._message_url is None:
             raise RuntimeError("MCP server did not provide a session endpoint")
 
+        # ── automatic session initialization ──
+        # fire a tools/list RPC so the server marks the session "ready"
+        try:
+            await self.call("tools/list", {})
+        except Exception:
+            # if it fails, we’ll let your real calls bubble up later
+            pass
+
     # ------------------------------
     async def _listen(self) -> None:
         """Background task consuming SSE events from the server."""
