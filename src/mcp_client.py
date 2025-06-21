@@ -13,13 +13,13 @@ MCP_URL: str = _mcp_url
 
 
 async def _call_tool(tool: str, params: Dict | None) -> List[Dict]:
-    """Call a tool on the MCP server using the JSON-RPC REST endpoint."""
+    """Call a tool on the MCP server via JSON-RPC."""
 
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "tools/call",
-        "params": {"name": tool, "arguments": params},
+        "params": {"name": tool, "arguments": params or {}},
     }
     headers = {
         "Accept": "application/json, text/event-stream",
@@ -27,26 +27,29 @@ async def _call_tool(tool: str, params: Dict | None) -> List[Dict]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=None) as client:
-            response = await client.post(MCP_URL, json=payload, headers=headers)
-        response.raise_for_status()
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(MCP_URL, headers=headers, json=payload)
     except httpx.HTTPError as exc:
-        print(f"[mcp_client] HTTP error calling {tool}: {exc}")
+        print(f"[mcp_client] HTTP request failed for {MCP_URL}: {exc}")
+        return []
+
+    if response.status_code != 200:
+        txt = response.text[:200]
+        print(f"[mcp_client] {response.status_code} from {MCP_URL}: {txt}")
         return []
 
     try:
         data = response.json()
-    except Exception as exc:  # json.JSONDecodeError or ValueError
-        print(f"[mcp_client] invalid JSON response for {tool}: {exc}")
+    except Exception as exc:
+        print(f"[mcp_client] invalid JSON from {MCP_URL}: {exc}")
         return []
 
-    result = data.get("result")
-    if isinstance(result, dict):
-        content = result.get("content")
-        if isinstance(content, list):
-            return content
+    result = data.get("result", data) if isinstance(data, dict) else {}
+    content = result.get("content") or result.get("results")
+    if isinstance(content, list):
+        return content
 
-    print(f"[mcp_client] unexpected payload for {tool}: {data!r}")
+    print(f"[mcp_client] unexpected payload from {MCP_URL}: {data!r}")
     return []
 
 
