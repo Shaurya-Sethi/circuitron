@@ -1,10 +1,15 @@
 import os
+import json
+import re
 from typing import Optional, cast
 
 from dotenv import load_dotenv
 from langchain_mistralai import ChatMistralAI
 from langchain.schema import BaseMessage, HumanMessage, SystemMessage
 from pydantic.types import SecretStr
+
+from .prompts import PART_PROMPT
+from .plan_parser import split_plan, section, HDR_RE
 
 load_dotenv()
 
@@ -34,3 +39,38 @@ async def call_llm(model: ChatMistralAI, prompt: str) -> str:
     msgs = [SystemMessage(content=""), HumanMessage(content=prompt)]
     result: BaseMessage = await model.ainvoke(msgs)
     return cast(str, result.content)
+
+
+async def extract_queries(plan: str, llm=LLM_PART) -> list[str]:
+    """Return cleaned search queries from ``plan``."""
+
+    _internal, public = split_plan(plan)
+    raw_block = section(public, "DRAFT_SEARCH_QUERIES")
+
+    cleaned = []
+    for ln in raw_block.splitlines():
+        ln = ln.strip().lstrip("-•").strip()
+        if not ln or ln in {"[", "]"}:
+            continue
+        if len(ln) >= 2 and ln[0] == ln[-1] in {"'", '"'}:
+            ln = ln[1:-1]
+        cleaned.append(ln)
+
+    if not cleaned:
+        return []
+
+    norm = await call_llm(llm, PART_PROMPT + "\n" + "\n".join(cleaned))
+    try:
+        queries = json.loads(norm)
+    except Exception:
+        queries = [q.strip() for q in norm.splitlines()]
+
+    seen = set()
+    final: list[str] = []
+    for q in queries:
+        q = q.strip()
+        if q and q not in seen:
+            seen.add(q)
+            final.append(q)
+
+    return final
