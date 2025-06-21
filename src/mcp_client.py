@@ -1,6 +1,6 @@
 import json
 import os
-from typing import AsyncGenerator, Dict
+from typing import Dict, List
 
 from dotenv import load_dotenv
 import httpx
@@ -12,40 +12,47 @@ if not _mcp_url:
 MCP_URL: str = _mcp_url
 
 
-async def _stream(tool: str, params: Dict) -> AsyncGenerator[Dict, None]:
-    """Yield JSON dicts returned by the MCP server.
+async def _call_tool(tool: str, params: Dict | None) -> List[Dict]:
+    """Call a tool on the MCP server using the JSON-RPC REST endpoint."""
 
-    Any malformed JSON or network issues are logged and skipped so callers never
-    see exceptions from this helper.
-    """
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": tool, "arguments": params},
+    }
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+    }
+
     try:
         async with httpx.AsyncClient(timeout=None) as client:
-            async with client.stream(
-                "POST",
-                MCP_URL,
-                json={"tool": tool, "params": params},
-            ) as r:
-                async for line in r.aiter_lines():
-                    if not line.strip():
-                        continue
-                    try:
-                        payload = json.loads(line)
-                    except Exception as exc:
-                        print(f"[mcp_client] invalid JSON from server: {line!r} ({exc})")
-                        continue
-                    if isinstance(payload, dict):
-                        yield payload
-                    else:
-                        print(f"[mcp_client] non-dict payload skipped: {payload!r}")
+            response = await client.post(MCP_URL, json=payload, headers=headers)
+        response.raise_for_status()
     except httpx.HTTPError as exc:
         print(f"[mcp_client] HTTP error calling {tool}: {exc}")
-    except Exception as exc:
-        print(f"[mcp_client] unexpected error calling {tool}: {exc}")
+        return []
+
+    try:
+        data = response.json()
+    except Exception as exc:  # json.JSONDecodeError or ValueError
+        print(f"[mcp_client] invalid JSON response for {tool}: {exc}")
+        return []
+
+    result = data.get("result")
+    if isinstance(result, dict):
+        content = result.get("content")
+        if isinstance(content, list):
+            return content
+
+    print(f"[mcp_client] unexpected payload for {tool}: {data!r}")
+    return []
 
 
 async def perform_rag_query(params: Dict) -> list[Dict]:
     try:
-        return [c async for c in _stream("perform_rag_query", params)]
+        return await _call_tool("perform_rag_query", params)
     except Exception as exc:
         print(f"[mcp_client] perform_rag_query failed: {exc}")
         return []
@@ -53,7 +60,7 @@ async def perform_rag_query(params: Dict) -> list[Dict]:
 
 async def search_code_examples(params: Dict) -> list[Dict]:
     try:
-        return [c async for c in _stream("search_code_examples", params)]
+        return await _call_tool("search_code_examples", params)
     except Exception as exc:
         print(f"[mcp_client] search_code_examples failed: {exc}")
         return []
