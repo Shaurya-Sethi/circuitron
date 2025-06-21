@@ -131,7 +131,12 @@ class _SSEClient:
 
         # Wait for response via SSE
         result = await fut
-        content = result.get("content") or result.get("results")
+        if isinstance(result, str):
+            try:
+                result = json.loads(result)
+            except json.JSONDecodeError:
+                result = {}
+        content = result.get("results") or result.get("content")
         if isinstance(content, list):
             return content
         return []
