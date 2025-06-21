@@ -52,17 +52,54 @@ TOOLS = [
 ]
 
 
-async def _rag(plan: str, match=8):
-    docs = await perform_rag_query({"query": plan, "match_count": match})
-    codes = await search_code_examples({"query": plan, "match_count": 5})
-    ctx = "\n".join(c["content"] for c in docs + codes)
-    return trim_to_tokens(ctx)
+async def _rag(plan: str, match: int = 8) -> str:
+    """Return context string from RAG queries.
+
+    All errors are caught so callers never fail due to MCP issues.
+    """
+    try:
+        docs = await perform_rag_query({"query": plan, "match_count": match})
+    except Exception as exc:
+        print(f"[agent] RAG doc query failed: {exc}")
+        docs = []
+    try:
+        codes = await search_code_examples({"query": plan, "match_count": 5})
+    except Exception as exc:
+        print(f"[agent] code example query failed: {exc}")
+        codes = []
+
+    ctx_lines = []
+    for c in docs + codes:
+        if isinstance(c, dict) and "content" in c:
+            ctx_lines.append(c["content"])
+        else:
+            print(f"[agent] skipping invalid RAG result: {c!r}")
+    return trim_to_tokens("\n".join(ctx_lines))
 
 
-async def _retrieve_docs(query: str, match_count=3):
-    docs = await perform_rag_query({"query": query, "match_count": match_count})
-    codes = await search_code_examples({"query": query, "match_count": match_count})
-    return trim_to_tokens("\n".join(c["content"] for c in docs + codes))
+async def _retrieve_docs(query: str, match_count: int = 3) -> str:
+    """Helper for tool-calling path.
+
+    Handles any MCP failures gracefully and returns an empty string on error.
+    """
+    try:
+        docs = await perform_rag_query({"query": query, "match_count": match_count})
+    except Exception as exc:
+        print(f"[agent] retrieve_docs doc query failed: {exc}")
+        docs = []
+    try:
+        codes = await search_code_examples({"query": query, "match_count": match_count})
+    except Exception as exc:
+        print(f"[agent] retrieve_docs code query failed: {exc}")
+        codes = []
+
+    ctx_lines = []
+    for c in docs + codes:
+        if isinstance(c, dict) and "content" in c:
+            ctx_lines.append(c["content"])
+        else:
+            print(f"[agent] skipping invalid RAG result: {c!r}")
+    return trim_to_tokens("\n".join(ctx_lines))
 
 
 async def pipeline(user_req: str):
@@ -86,8 +123,14 @@ async def pipeline(user_req: str):
         q = q.strip()
         if not q:
             continue
-        answers += await perform_rag_query({"query": q, "match_count": 3})
-    extra_ctx = "\n".join(a["content"] for a in answers)
+        try:
+            resp = await perform_rag_query({"query": q, "match_count": 3})
+        except Exception as exc:
+            print(f"[agent] doc question query failed for {q!r}: {exc}")
+            resp = []
+        answers.extend(resp)
+
+    extra_ctx = "\n".join(a.get("content", "") for a in answers if isinstance(a, dict))
 
     # C ▸ RAG
     rag_ctx = await _rag(plan)
