@@ -57,6 +57,8 @@ class _SSEClient:
         await self._endpoint_ready.wait()
         if self._message_url is None:
             raise RuntimeError("MCP server did not provide a session endpoint")
+        # Avoid race: give the MCP server a moment to finish its lifespan init
+        await asyncio.sleep(0.5)
 
 
     # ------------------------------
