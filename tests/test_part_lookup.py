@@ -2,7 +2,6 @@ import asyncio
 import sys
 import pathlib
 import types
-import os
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -12,17 +11,12 @@ prompts_stub = types.ModuleType("src.prompts")
 prompts_stub.PART_PROMPT = ""
 sys.modules["src.prompts"] = prompts_stub
 
-os.environ.setdefault("MISTRAL_API_KEY", "test")
-os.environ.setdefault("MODEL_PLAN", "stub")
-os.environ.setdefault("MODEL_PART", "stub")
-os.environ.setdefault("MODEL_CODE", "stub")
-import src.utils_llm as ul
-
+utils_stub = types.ModuleType("src.utils_llm")
 async def dummy_call_llm(model, text):
     return "[]"
-
-ul.call_llm = dummy_call_llm
-ul.LLM_PART = object()
+utils_stub.call_llm = dummy_call_llm
+utils_stub.LLM_PART = object()
+sys.modules["src.utils_llm"] = utils_stub
 
 import src.part_lookup as pl
 
@@ -41,8 +35,8 @@ def test_extract_queries(monkeypatch):
         import json
         return json.dumps(lines)
 
-    monkeypatch.setattr(ul, "call_llm", fake_call_llm)
-    queries = asyncio.run(ul.extract_queries(plan))
+    monkeypatch.setattr(pl, "call_llm", fake_call_llm)
+    queries = asyncio.run(pl.extract_queries(plan))
     assert queries == ["opamp low-noise dip-8", "^LM386$"]
 
 def test_lookup_parts_preserves_query(monkeypatch):
