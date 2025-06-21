@@ -68,7 +68,9 @@ async def _retrieve_docs(query: str, match_count=3):
 async def pipeline(user_req: str):
     # A ▸ PLAN
     plan = await call_llm(LLM_PLAN, PLAN_PROMPT.replace("REQUIREMENTS", user_req))
-    print("\n--- PLAN ---\n", plan)
+    display = plan.split("</think>", 1)[-1] if "</think>" in plan else plan
+    print("\n--- PLAN ---\n", display)
+    reasoning = plan.split("</think>", 1)[0] if "</think>" in plan else ""
     if input("\nApprove plan? [y/N] ").lower() != "y":
         print("Aborted.")
         return

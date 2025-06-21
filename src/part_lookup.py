@@ -11,10 +11,10 @@ import re, json
 from skidl import search
 from .prompts import PART_PROMPT
 from .utils_llm import call_llm, LLM_PART
+from .utils_text import extract_block, QUERY_RE
 
 # Allow a wide range of characters so the query string can include
 # SKiDL's advanced search syntax (regex, quoted strings, OR logic, etc.).
-QUERY_RE = re.compile(r"^[A-Za-z0-9_ .+()\-|'\"^$*?\[\]]+$")
 VALID_PARTRE = re.compile(r"^[A-Za-z0-9_]+:[A-Za-z0-9_.+\-]+$")
 
 
@@ -31,6 +31,11 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
 
     if not isinstance(query, str) or not query.strip():
         print(f"[part_lookup] skipping empty query: {query!r}")
+        return []
+
+    # Hard guard: skip sentences or lone brackets
+    if query.count(" ") > 6 or query in {"[", "]"}:
+        print(f"[part_lookup] skipped junk: {query!r}")
         return []
 
     if not QUERY_RE.match(query):
@@ -72,34 +77,30 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
 
 
 async def extract_queries(plan: str):
-    """Extract and clean search terms from ``plan`` using the LLM.
+    """Extract and clean search terms from ``plan`` using the LLM."""
 
-    The lines following the ``DRAFT_SEARCH_QUERIES`` heading are collected until
-    the next ``###`` heading.  The text is then passed to the LLM for
-    normalisation according to :data:`PART_PROMPT`.
-    """
+    raw = extract_block(plan, "DRAFT_SEARCH_QUERIES")
+    lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
+    if not lines:
+        return []
 
-    draft: list[str] = []
-    grab = False
-    for line in plan.splitlines():
-        tag = line.replace(" ", "_").upper()
-        if not grab and "DRAFT_SEARCH_QUERIES" in tag:
-            grab = True
-            continue
-        if grab and line.startswith("### "):
-            break
-        if grab and line.strip():
-            draft.append(line.strip())
-    draft_txt = "\n".join(draft)
-
-    cleaned = await call_llm(LLM_PART, PART_PROMPT + "\n" + draft_txt)
+    draft_txt = "\n".join(lines)
+    resp = await call_llm(LLM_PART, PART_PROMPT + "\n" + draft_txt)
     try:
-        queries = json.loads(cleaned)
+        queries = json.loads(resp)
+        if isinstance(queries, str):
+            queries = [queries]
+        elif not isinstance(queries, list):
+            queries = [str(queries)]
     except Exception:
-        queries = [q.strip() for q in cleaned.splitlines()]
-    return [
-        q for q in queries if isinstance(q, str) and q.strip() and QUERY_RE.match(q)
-    ]
+        queries = [q.strip() for q in resp.splitlines()]
+
+    clean = []
+    for q in queries:
+        q = q.strip().strip("'\"")
+        if q and 2 < len(q) < 60 and QUERY_RE.match(q):
+            clean.append(q)
+    return clean
 
 
 def lookup_parts(queries, max_choices: int = 3):

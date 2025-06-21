@@ -20,10 +20,19 @@ OUTPUT
 1. imperative, one per line
 2. …
 
-### DRAFT_SEARCH_QUERIES    <-- feeds part-lookup
-op-amp precision
-n-channel mosfet 60v
-…
+# ----------------------------------------------------------------------
+# DRAFT_SEARCH_QUERIES  (→ feeds SKiDL search())
+#   • One line per desired part.
+#   • Use SKiDL **keyword** style <generic> [spec] [package] […].
+#   • NO sentences, NO quotes, NO commas.
+#   • Examples:
+#       opamp lm324 quad
+#       capacitor 0.1uf 0603 x7r
+#       nfet 60v >5a
+#       diode schottky 3a
+# ----------------------------------------------------------------------
+### DRAFT_SEARCH_QUERIES
+opamp lm324 quad
 
 ### PART_CANDIDATES         <-- optional free-text hints for lookup
 - low-noise rail-to-rail op-amp, SOIC-8
@@ -44,12 +53,42 @@ Do **NOT** output part numbers, footprints, library prefixes, or code blocks.
 # Updated rules for unit normalisation and space handling
 PART_PROMPT = """You are **Circuitron-PartCleaner**.
 
-CLEAN the DRAFT_SEARCH_QUERIES:
-• lowercase
-• normalise units → keep number + unit letters (e.g. '10uF' → '10uf')
-• collapse multiple spaces
-• remove duplicates, preserve order
-Return ONLY a JSON array of strings.
+Below is the *official* SKiDL documentation snippet for the `search()` helper. **Read it carefully – your output must comply.**
+
+--------------------------------------------------------------------
+SKiDL search() cheat-sheet
+    search('opamp')                 # single keyword ⇢ many op-amps
+    search('^lm386$')               # exact regex match
+    search('opamp low-noise dip-8') # all keywords must appear
+    search('opamp (low-noise|dip-8)')# at least one of choices
+    search('opamp "high performance"') # phrase match with spaces
+--------------------------------------------------------------------
+
+**TASK**
+
+Transform each line of DRAFT_SEARCH_QUERIES into a *single* SKiDL search string that will return useful library parts.
+
+Rules
+• ONLY keywords (family, specs, package, voltage, value). No verbs or sentences.
+• lowercase.
+• Normalise units: `10uF` → `10uf`, `0603` kept as is.
+• Separate tokens with a single space.
+• Remove duplicates, preserve original order.
+
+Return **exactly** one JSON array of strings – no markdown fence, no extra text.
+
+Example  
+Input line  : “non-inverting amplifier gain calculation”  
+Output JSON : ["opamp lm324"]
+
+Transform **each line** of DRAFT_SEARCH_QUERIES into a SKiDL search string:
+• keep only meaningful keywords (opamp, mosfet, capacitor, diode, numbers, packages)
+• drop verbs like "design", "calculate", "datasheet", "considerations"
+• lowercase → normalise units (`10uF` → `10uf`), collapse spaces
+• preserve order, dedupe
+Return **one JSON array** (no markdown).
+Example IN  :  op amp voltage follower
+Example OUT :  ["opamp lm324"]
 """
 
 # ---------- Stage D  Code generation ----------

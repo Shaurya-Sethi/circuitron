@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Callable, Optional
 
 try:
@@ -42,3 +43,22 @@ def trim_to_tokens(text: str, max_tokens: int = MAX_CTX_TOK) -> str:
     if len(toks) <= limit:
         return text
     return ENC.decode(toks[:limit])
+
+
+HDR = re.compile(r"^###\s+[A-Z_]+", re.M)
+
+
+def extract_block(plan: str, header: str) -> str:
+    """Return text under the *last* '### {header}' heading, ignoring <think>."""
+    if "</think>" in plan:
+        plan = plan.split("</think>", 1)[1]
+    anchor = f"### {header}"
+    start = plan.rfind(anchor)
+    if start == -1:
+        return ""
+    chunk = plan[start + len(anchor):]
+    nxt = HDR.search(chunk)
+    return chunk[:nxt.start() if nxt else None].strip()
+
+
+QUERY_RE = re.compile(r"^[A-Za-z0-9_ .+()\-|'\"^$*?\[\]]+$")
