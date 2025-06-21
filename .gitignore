@@ -4,3 +4,4 @@ circuitron_venv/
 __pycache__/
 *.log
 *.erc
+lib_pickle_dir
