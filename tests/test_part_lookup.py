@@ -51,3 +51,22 @@ def test_lookup_parts_preserves_query(monkeypatch):
     assert captured == ["opamp (low-noise|dip-8)"]
     assert results["opamp (low-noise|dip-8)"][0]["part"] == "lib:part"
 
+
+def test_lookup_parts_handles_invalid(monkeypatch):
+    def fake_search_none(q):
+        return None
+
+    monkeypatch.setattr(pl, "search", fake_search_none)
+    # A malformed query should be skipped and return an empty list
+    results = pl.lookup_parts("[")
+    assert results == {"[": []}
+
+
+def test_lookup_parts_handles_search_error(monkeypatch):
+    def fake_search_error(q):
+        raise RuntimeError("regex failure")
+
+    monkeypatch.setattr(pl, "search", fake_search_error)
+    results = pl.lookup_parts("bad")
+    assert results == {"bad": []}
+

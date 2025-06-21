@@ -21,22 +21,47 @@ VALID_PARTRE = re.compile(r"^[A-Za-z0-9_]+:[A-Za-z0-9_.+\-]+$")
 def _run_search(query: str, max_choices: int = 3) -> list[dict]:
     """Return up to ``max_choices`` parts matching ``query``.
 
-    The *query* string is passed verbatim to :func:`skidl.search` so callers may
-    use regular expressions, quoted phrases and boolean logic.  The search path
-    honours ``KICAD_SYMBOL_DIR`` if set.
+    This wrapper around :func:`skidl.search` is deliberately defensive.  Bad
+    search terms from the LLM can cause ``search`` to raise exceptions or return
+    ``None``.  Instead of propagating these failures, a warning is printed and an
+    empty result is returned so the rest of the batch continues.
 
     Each result is a ``{"part": "lib:name", "desc": "description"}`` dictionary.
     """
 
+    if not isinstance(query, str) or not query.strip():
+        print(f"[part_lookup] skipping empty query: {query!r}")
+        return []
+
+    if not QUERY_RE.match(query):
+        print(f"[part_lookup] invalid query skipped: {query!r}")
+        return []
+
+    print(f"[part_lookup] running search: {query!r}")
     try:
-        hits = list(search(query))
+        hits_iter = search(query)
     except Exception as exc:
-        # Propagate a clear error message rather than failing silently.
-        raise RuntimeError(f"search failed for '{query}': {exc}") from exc
+        print(f"[part_lookup] search failed for {query!r}: {exc}")
+        return []
+
+    if hits_iter is None:
+        print(f"[part_lookup] search returned None for {query!r}")
+        return []
+
+    try:
+        hits = list(hits_iter)
+    except Exception as exc:
+        print(f"[part_lookup] unable to iterate results for {query!r}: {exc}")
+        return []
+
     out: list[dict] = []
     seen = set()
     for p in hits:
-        ident = f"{p.lib}:{p.name}"
+        try:
+            ident = f"{p.lib}:{p.name}"
+        except Exception as exc:
+            print(f"[part_lookup] malformed part from {query!r}: {exc}")
+            continue
         if ident in seen or not VALID_PARTRE.match(ident):
             continue
         out.append({"part": ident, "desc": getattr(p, "description", "").strip()})
@@ -81,9 +106,19 @@ def lookup_parts(queries, max_choices: int = 3):
     """Return matching parts for each search query.
 
     ``queries`` may be a single string (with line breaks) or an iterable of
-    strings.  Each query is sent verbatim to :func:`skidl.search`.
+    strings.  Each query is sent verbatim to :func:`skidl.search`.  Any errors
+    raised by SKiDL are caught and logged so a single bad query won't abort the
+    batch lookup.
     """
 
     if isinstance(queries, str):
         queries = [q.strip() for q in queries.splitlines() if q.strip()]
-    return {q: _run_search(q, max_choices) for q in queries}
+
+    results: dict[str, list[dict]] = {}
+    for q in queries:
+        try:
+            results[q] = _run_search(q, max_choices)
+        except Exception as exc:
+            print(f"[part_lookup] lookup failed for {q!r}: {exc}")
+            results[q] = []
+    return results
