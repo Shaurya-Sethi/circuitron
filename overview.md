@@ -1,4 +1,8 @@
-# Circuitron – Agentic PCB Design Accelerator
+# Circuitron### **1. Agentic, Reasoning-Driven Workflow**
+- **Orchestration:** Uses OpenAI Agents SDK for chaining LLM, RAG retrieval, code execution, and user feedback/approval.
+- **LLM "Brain":** Runs on OpenAI's reasoning-capable models (GPT-4o, GPT-4o-mini).
+- **RAG (Retrieval-Augmented Generation):** Critical to accuracy—a robust retrieval system surfaces relevant SKiDL documentation and usage examples to the LLM for every generation step utilising a MCP Server that exposes tools like `perform_rag_query` and `search_code_examples`.
+- **Chain-of-Thought Reasoning:** All design decisions are presented as transparent, stepwise plans (including calculations), which the user can review, approve, or edit before design files are generated.entic PCB Design Accelerator
 
 ## Project Goal
 
@@ -43,7 +47,7 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ## Tech Stack
 
 - **Backend Orchestration:** OpenAI Agents SDK (Python)
-- **LLM:** OpenAI
+- **LLM:** OpenAI (GPT-4o, GPT-4o-mini)
 - **RAG:** Via MCP (Model Context Protocol) server, indexing SKiDL docs, example designs
 - **Schematic & Netlist Generation:** SKiDL (Python)
 - **PCB Layout Generation:** SKiDL

@@ -5,3 +5,4 @@ __pycache__/
 *.log
 *.erc
 lib_pickle_dir
+MIGRATION_SUMMARY.md

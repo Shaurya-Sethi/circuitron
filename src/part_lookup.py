@@ -8,9 +8,10 @@ environment variable so results mirror the user's KiCad setup.
 """
 
 import re, json
+from agents import Runner
 from skidl import search
 from .prompts import PART_PROMPT
-from .utils_llm import call_llm, LLM_PART
+from .utils_llm import AGENT_PART
 from .utils_text import extract_block, QUERY_RE
 
 # Allow a wide range of characters so the query string can include
@@ -77,23 +78,24 @@ def _run_search(query: str, max_choices: int = 3) -> list[dict]:
 
 
 async def extract_queries(plan: str):
-    """Extract and clean search terms from ``plan`` using the LLM."""
-
+    """Extract and clean search terms from ``plan`` using the OpenAI agent."""
+    
     raw = extract_block(plan, "DRAFT_SEARCH_QUERIES")
     lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
     if not lines:
         return []
 
     draft_txt = "\n".join(lines)
-    resp = await call_llm(LLM_PART, PART_PROMPT + "\n" + draft_txt)
+    result = await Runner.run(AGENT_PART, PART_PROMPT + "\n" + draft_txt)
+    
     try:
-        queries = json.loads(resp)
+        queries = json.loads(result.final_output)
         if isinstance(queries, str):
             queries = [queries]
         elif not isinstance(queries, list):
             queries = [str(queries)]
     except Exception:
-        queries = [q.strip() for q in resp.splitlines()]
+        queries = [q.strip() for q in result.final_output.splitlines()]
 
     clean = []
     for q in queries:

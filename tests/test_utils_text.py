@@ -5,7 +5,7 @@ import types
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-os.environ["TOKEN_MODEL"] = "gpt-3.5"
+os.environ["TOKEN_MODEL"] = "gpt-4o"
 
 # Stub tiktoken before importing utils_text
 tiktoken_stub = types.ModuleType("tiktoken")

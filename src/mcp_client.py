@@ -1,3 +1,16 @@
+"""
+DEPRECATED: This custom MCP client implementation is deprecated.
+
+The codebase has been migrated to use the official OpenAI Agents SDK MCP integration
+via MCPServerStreamableHttp. This file is kept for backward compatibility during
+the transition period.
+
+New code should use the official MCP integration pattern:
+- agents.mcp.MCPServerStreamableHttp
+- Agent(mcp_servers=[server])
+
+This file will be removed in a future version.
+"""
 import asyncio
 import contextlib
 import json

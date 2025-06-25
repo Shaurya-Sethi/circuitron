@@ -1,15 +1,10 @@
-langchain
-langchain-community
-langchain-core
-langchain_mistralai
-mistralai
+openai-agents
+openai>=1.84.0
 python-dotenv
 httpx
 httpx-sse
 skidl>=2.0.1
-openai
 tiktoken
-mistral-common
 huggingface_hub
 
 # Node tool for SKiDL SVG export: npm install -g netlistsvg@1.0.2

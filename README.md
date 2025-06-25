@@ -4,7 +4,6 @@ Circuitron is an agentic PCB design accelerator that transforms natural language
 
 Part selection now leverages SKiDL's full search syntax: queries may contain multiple terms, quoted phrases, regular expressions, and OR pipes for precise component lookup.
 
-
 See [overview.md](overview.md) for detailed project goals and structure.
 
 ## Setup
@@ -13,27 +12,20 @@ Install dependencies with `pip install -r requirements.txt` then copy
 `.env.example` to `.env` and fill in the required values:
 
 ```
-MISTRAL_API_KEY=<your API key>
-MISTRAL_API_BASE=https://api.mistral.ai/v1  # or your custom endpoint
-MODEL_PLAN=magistral-small-latest
-MODEL_PART=mistral-small-latest
-MODEL_CODE=devstral-small-latest
+OPENAI_API_KEY=<your OpenAI API key>
+MODEL_PLAN=gpt-4o-mini
+MODEL_PART=gpt-4o-mini
+MODEL_CODE=gpt-4o
 MODEL_TEMP=0.15
 MCP_URL=http://localhost:8051
 
-
 # Optional tuning variables
 MAX_TOOL_CALLS=5
-TOKEN_MODEL=devstral-small-2505  # uses the Tekken tokenizer from mistral-common
-MAX_CTX_TOK=40000
-SAFETY_MARGIN=2000
+MAX_CTX_TOK=128000
+SAFETY_MARGIN=4000
 ```
 
-When `TOKEN_MODEL` is set to `devstral-small-2505`, the Tekken tokenizer from
-`mistral-common` is required. No fallback tokenizer is supported for this model
-as noted in the [official Devstral tokenization guide](https://docs.mistral.ai/guides/tokenization/).
-
-`MISTRAL_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
+`OPENAI_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
 
 ## Usage
 
