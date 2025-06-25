@@ -3,7 +3,7 @@
 ## Project Goal
 
 Develop an agentic, AI-powered PCB design accelerator for professional power electronics engineers.  
-Circuitron will transform natural language requirements into design plans, output valid netlists, automatically generate and display KiCad schematics, and also generate (.kicad_pcb files) fully routed pcb layouts. The system will provide an interactive, session-aware workflow, supporting project histories and plan-approve-edit-act loops to ensure accurate and user-approved designs. 
+Circuitron will transform natural language requirements into design plans, output valid netlists, automatically generate and display KiCad schematics, and also generate (.kicad_pcb files) fully routed pcb layouts. The system will provide an interactive, session-aware workflow, supporting project histories and plan-approve-edit-act paradigm to ensure accurate and user-approved designs. 
 The tool acts as a productivity booster: it provides a high-quality, logically correct skeleton (with full design rationale) that engineers can review, edit, and finalize using industry-standard workflows.
 
 ---
@@ -11,9 +11,9 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ## Key Features & Workflow
 
 ### **1. Agentic, Reasoning-Driven Workflow**
-- **Orchestration:** Uses LangChain for chaining LLM, RAG retrieval, code execution, and user feedback/approval.
-- **LLM “Brain”:** Runs on a reasoning-capable LLM (API or local), with both options supported via a modular backend.
-- **RAG (Retrieval-Augmented Generation):** Critical to accuracy—a robust retrieval system surfaces relevant SKiDL documentation and usage examples to the LLM for every generation step.
+- **Orchestration:** Uses OpenAI Agents SDK for chaining LLM, RAG retrieval, code execution, and user feedback/approval.
+- **LLM “Brain”:** Runs on a reasoning-capable LLM (OpenAI API).
+- **RAG (Retrieval-Augmented Generation):** Critical to accuracy—a robust retrieval system surfaces relevant SKiDL documentation and usage examples to the LLM for every generation step utilising a MCP Server that exposes tools like `perform_rag_query` and `search_code_examples`.
 - **Chain-of-Thought Reasoning:** All design decisions are presented as transparent, stepwise plans (including calculations), which the user can review, approve, or edit before design files are generated.
 
 ### **2. SKiDL-Based Schematic and Netlist Generation**
@@ -26,7 +26,7 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 ### **3. PCB Layout & Autorouting**
 - **PCB Layout Generation:** Using SKiDL’s `generate_pcb()` or compatible tools, Circuitron outputs `.kicad_pcb` files for physical design.
-- **DeepPCB API Integration:** Circuitron can optionally submit PCB layouts to DeepPCB for AI-assisted auto-routing.  
+- **DeepPCB API Integration:** Circuitron can optionally submit PCB layouts to `DeepPCB` for AI-assisted auto-routing via their API.  
   - **Caveat:** All autorouted layouts are clearly labeled as drafts for human review and optimization, especially for power applications.
 - **Full Design Transparency:** All design artifacts (reasoning, schematic, PCB, logs) are provided for auditability and compliance.
 
@@ -42,11 +42,11 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 ## Tech Stack
 
-- **Backend Orchestration:** LangChain (Python)
-- **LLM:** DeepSeek-R1, OpenRouter, Mistral, OpenAI, etc
-- **RAG:** Custom-built, indexing SKiDL docs, example designs
+- **Backend Orchestration:** OpenAI Agents SDK (Python)
+- **LLM:** OpenAI
+- **RAG:** Via MCP (Model Context Protocol) server, indexing SKiDL docs, example designs
 - **Schematic & Netlist Generation:** SKiDL (Python)
-- **PCB Layout Generation:** SKiDL, KiCad Python APIs
+- **PCB Layout Generation:** SKiDL
 - **Autorouting:** DeepPCB API
 - **File Management:** Local or Dockerized KiCad install for part queries and file validation
 - **API Service:** FastAPI (Python)
@@ -113,10 +113,8 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 - [SKiDL Documentation](https://devbisme.github.io/skidl/)
 - [KiCad Official Site](https://kicad.org/)
 - [DeepPCB](https://deeppcb.com/)
-- [LangChain](https://langchain.com/)
+- [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
 - [KiCad Symbol Libraries](https://github.com/kicad/kicad-symbols)
 - [KiCad Footprint Libraries](https://github.com/kicad/kicad-footprints)
 
 ---
-
-**Last Updated:** 2025-06-15
