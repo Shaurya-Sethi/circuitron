@@ -1,8 +1,10 @@
 circuitron_venv/
 .env
-.python-version
 __pycache__/
 *.log
 *.erc
 lib_pickle_dir
-MIGRATION_SUMMARY.md
+openai_agents_sdk_docs.md
+src/
+.pytest_cache/
+*.egg-info/

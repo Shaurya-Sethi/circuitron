@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any, Dict
 
-from agents import Agent, Runner, RunResult, ModelSettings
+from agents import Agent, Runner, ModelSettings
 from agents.mcp import MCPServerStreamableHttp, MCPServerStreamableHttpParams
 from agents.exceptions import MaxTurnsExceeded, ModelBehaviorError, AgentsException
 from .prompts import PLAN_PROMPT, DOC_QA_PROMPT, SYSTEM_PROMPT, USER_TEMPLATE
@@ -71,35 +71,6 @@ async def get_code_agent():
 
 
 # ---------------------------------------------------------------------------
-# Legacy function support (for backward compatibility during transition)
-# ---------------------------------------------------------------------------
-
-async def retrieve_docs_legacy(query: str, match_count: int = 3) -> str:
-    """Legacy function that uses MCP client directly (for backward compatibility)."""
-    from .mcp_client import perform_rag_query, search_code_examples
-    
-    try:
-        docs = await perform_rag_query({"query": query, "match_count": match_count})
-    except Exception as exc:
-        print(f"[agent] retrieve_docs doc query failed: {exc}")
-        docs = []
-    
-    try:
-        codes = await search_code_examples({"query": query, "match_count": match_count})
-    except Exception as exc:
-        print(f"[agent] retrieve_docs code query failed: {exc}")
-        codes = []
-
-    ctx_lines = []
-    for c in docs + codes:
-        if isinstance(c, dict) and "content" in c:
-            ctx_lines.append(c["content"])
-        else:
-            print(f"[agent] skipping invalid RAG result: {c!r}")
-    return trim_to_tokens("\n".join(ctx_lines))
-
-
-# ---------------------------------------------------------------------------
 # Pipeline Functions
 # ---------------------------------------------------------------------------
 
@@ -131,24 +102,12 @@ async def pipeline(user_req: str):
             found = lookup_parts(q)
             parts_list.extend(found)
 
-    # Legacy support: use the custom MCP client for context gathering
-    context_for_code = ""
-    for q in queries.splitlines():
-        q = q.strip()
-        if q:
-            try:
-                # Use legacy function during transition
-                resp = await retrieve_docs_legacy(q, 3)
-                context_for_code += f"\n{resp}"
-            except Exception as exc:
-                print(f"[agent] skipping docs for '{q}': {exc}")
-
     # C ▸ CODE GENERATION
     user_prompt = USER_TEMPLATE.format(
         requirements=user_req,
         plan=plan,
         parts=json.dumps(parts_list, indent=2),
-        context=context_for_code.strip(),
+        context="",
     )
 
     print("\n--- GENERATING CODE ---")

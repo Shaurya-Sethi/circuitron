@@ -115,10 +115,5 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ## References & Links
 
 - [SKiDL Documentation](https://devbisme.github.io/skidl/)
-- [KiCad Official Site](https://kicad.org/)
-- [DeepPCB](https://deeppcb.com/)
 - [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
-- [KiCad Symbol Libraries](https://github.com/kicad/kicad-symbols)
-- [KiCad Footprint Libraries](https://github.com/kicad/kicad-footprints)
-
 ---

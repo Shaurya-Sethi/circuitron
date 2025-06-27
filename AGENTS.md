@@ -9,10 +9,10 @@ It defines **project-specific context, architecture, coding conventions, and pro
 
 ## 1. Project Overview & Structure
 
-> **For all context regarding project purpose, architecture, features, tech stack, workflow, and roadmap, always reference the full and latest `overview.txt` file located at the repository root.**
+> **For all context regarding project purpose, architecture, features, tech stack, workflow, and roadmap, always reference the full and latest `overview.md` file located at the repository root.**
 >
-> * **If you require project context, read and parse `overview.txt` directly.**
-> * **If in doubt about design intent, feature scope, or workflow, consult `overview.txt` before proceeding.**
+> * **If you require project context, read and parse `overview.md` directly.**
+> * **If in doubt about design intent, feature scope, or workflow, consult `overview.md` before proceeding.**
 
 ---
 
@@ -23,6 +23,7 @@ OpenAI Codex (and all AI agents) **must consult the following official docs befo
 * **OpenAI Agents SDK reference**
   URL: [https://openai.github.io/openai-agents-python/](https://openai.github.io/openai-agents-python/)
   GitHub: [`openai/openai-agents-python`](https://github.com/openai/openai-agents-python)
+  **Offline Fallback:** If unable to access the official documentation, consult the local file `openai_agents_sdk_docs_final_perfect.md` in the project root, which contains the complete, LLM-optimized OpenAI Agents SDK documentation.
 
 * **OpenAI Platform API reference**
   URL: [https://platform.openai.com/docs/guides/](https://platform.openai.com/docs/guides/)
@@ -32,7 +33,7 @@ OpenAI Codex (and all AI agents) **must consult the following official docs befo
 
 > **When generating code or reasoning, always cite relevant sections from these docs inline in comments where appropriate.**
 >
-> *If uncertain about any API, pattern, or tool behavior, re-query the official docs and/or ask the user for clarification—**never hallucinate code**!*
+> *If uncertain about any API, pattern, or tool behavior, re-query the official docs and/or ask the user for clarification—**never hallucinate code**! If official documentation is inaccessible, use the local offline documentation files provided in the project root.*
 
 ---
 
@@ -125,6 +126,7 @@ OpenAI Codex (and all AI agents) **must consult the following official docs befo
 
 * [SKiDL API reference](https://devbisme.github.io/skidl/)
 * [OpenAI Agents SDK docs](https://openai.github.io/openai-agents-python/)
+* **Local Documentation:** `openai_agents_sdk_docs_final_perfect.md` - Complete offline OpenAI Agents SDK documentation (use when internet access is unavailable)
 
 ---
 

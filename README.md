@@ -27,14 +27,23 @@ SAFETY_MARGIN=4000
 
 `OPENAI_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
 
+## Tech Stack
+
+- Python 3.10+
+- [OpenAI Agents SDK](https://github.com/openai/openai-agents)
+- [SKiDL](https://github.com/xesscorp/skidl)
+- [tiktoken](https://github.com/openai/tiktoken)
+- [httpx](https://www.python-httpx.org/)
+- [python-dotenv](https://github.com/theskumar/python-dotenv)
+
 ## Usage
 
-1. **Create your environment file** by copying `.env.example` to `.env` and
-   filling in the required values.
-2. **Install dependencies** with `pip install -r requirements.txt` and install
-   the SVG export tool with `npm install -g netlistsvg@1.0.2`.
-3. **Run the CLI** using:
+Run the CLI:
 
-   ```bash
-   python -m src.main_cli
-   ```
+```
+python -m src.main_cli
+```
+
+## License
+
+MIT
