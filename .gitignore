@@ -10,3 +10,4 @@ src/
 *.egg-info/
 prototype.ipynb
 legacy/
+.gemini/

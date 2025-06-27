@@ -8,6 +8,12 @@ Use this to test the new architecture while keeping prototype.py as backup.
 import asyncio
 import sys
 from circuitron.pipeline import main
+import logfire
+from dotenv import load_dotenv
+
+load_dotenv()
+logfire.configure()
+logfire.instrument_openai_agents()
 
 if __name__ == "__main__":
     # Provide the same CLI interface as prototype.py
