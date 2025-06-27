@@ -5,7 +5,7 @@ Contains formatting, printing, and other helper utilities.
 
 from typing import List
 from agents.items import ReasoningItem
-from .models import PlanOutput, UserFeedback, EditedPlanOutput, RegeneratedPlanPrompt
+from .models import PlanOutput, UserFeedback, PlanEditorOutput
 
 
 def extract_reasoning_summary(run_result):
@@ -128,7 +128,7 @@ def crawl_documentation(base_url: str, doc_urls: List[str], output_file: str) ->
             if crawl_results:
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 combined_content = [
-                    f"# Documentation",
+                    "# Documentation",
                     f"**Crawled from:** {base_url}",
                     f"**Generated on:** {current_time}",
                     f"**Total pages:** {len(crawl_results)}",
@@ -178,12 +178,12 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
         
         for i, question in enumerate(plan.design_limitations, 1):
             print(f"\n{i}. {question}")
-            answer = input(f"   Your answer: ").strip()
+            answer = input("   Your answer: ").strip()
             if answer:
                 feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
     
     # Collect general edits and modifications
-    print(f"\n" + "-" * 50)
+    print("\n" + "-" * 50)
     print("OPTIONAL EDITS & MODIFICATIONS")
     print("-" * 50)
     print("Do you have any specific changes, clarifications, or modifications to request?")
@@ -198,7 +198,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
         edit_counter += 1
     
     # Collect additional requirements
-    print(f"\n" + "-" * 50)
+    print("\n" + "-" * 50)
     print("ADDITIONAL REQUIREMENTS")
     print("-" * 50)
     print("Are there any new requirements or constraints not captured in the original design?")
@@ -324,7 +324,7 @@ def format_plan_edit_input(original_prompt: str, plan: PlanOutput, feedback: Use
     return "\n".join(input_parts)
 
 
-def pretty_print_edited_plan(edited_output: EditedPlanOutput):
+def pretty_print_edited_plan(edited_output: PlanEditorOutput):
     """Pretty print an edited plan output with change summary."""
     print("\n" + "="*60)
     print("PLAN SUCCESSFULLY UPDATED")
@@ -334,35 +334,36 @@ def pretty_print_edited_plan(edited_output: EditedPlanOutput):
     print(f"Reasoning: {edited_output.decision.reasoning}")
     
     if edited_output.changes_summary:
-        print(f"\n" + "="*40)
+        print("\n" + "=" * 40)
         print("SUMMARY OF CHANGES")
         print("="*40)
         for i, change in enumerate(edited_output.changes_summary, 1):
             print(f"{i}. {change}")
     
-    print(f"\n" + "="*40)
+    print("\n" + "=" * 40)
     print("UPDATED DESIGN PLAN")
     print("="*40)
-    pretty_print_plan(edited_output.updated_plan)
+    if edited_output.updated_plan:
+        pretty_print_plan(edited_output.updated_plan)
 
 
-def pretty_print_regeneration_prompt(regen_output: RegeneratedPlanPrompt):
+def pretty_print_regeneration_prompt(regen_output: PlanEditorOutput):
     """Pretty print a regeneration prompt output."""
     print("\n" + "="*60)
     print("PLAN REGENERATION REQUIRED")
-    print("="*60)
+    print("=" * 60)
     
     print(f"\nAction: {regen_output.decision.action}")
     print(f"Reasoning: {regen_output.decision.reasoning}")
     
     if regen_output.regeneration_guidance:
-        print(f"\n" + "="*40)
+        print("\n" + "=" * 40)
         print("REGENERATION GUIDANCE")
         print("="*40)
         for i, guidance in enumerate(regen_output.regeneration_guidance, 1):
             print(f"{i}. {guidance}")
     
-    print(f"\n" + "="*40)
+    print("\n" + "=" * 40)
     print("RECONSTRUCTED PROMPT")
     print("="*40)
     print(regen_output.reconstructed_prompt)

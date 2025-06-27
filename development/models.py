@@ -4,7 +4,7 @@ Defines all BaseModels required for getting structured outputs from agents.
 """
 
 from typing import List
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 class PlanOutput(BaseModel):
@@ -86,29 +86,37 @@ class PlanEditDecision(BaseModel):
     )
     
 
-class EditedPlanOutput(BaseModel):
-    """Output when applying direct edits to an existing plan."""
+class PlanEditorOutput(BaseModel):
+    """Unified output from the PlanEditor agent."""
+
     model_config = ConfigDict(extra="forbid")
-    
+
     decision: PlanEditDecision
-    updated_plan: PlanOutput = Field(
-        description="The updated design plan with user feedback incorporated, maintaining exact same structure as original PlanOutput."
+    updated_plan: PlanOutput | None = Field(
+        default=None,
+        description="The updated design plan with user feedback applied if action is 'edit_plan'.",
     )
     changes_summary: List[str] = Field(
         default_factory=list,
-        description="Summary of all changes made to the original plan, for user transparency."
+        description="Summary of modifications made to the original plan.",
     )
-
-
-class RegeneratedPlanPrompt(BaseModel):
-    """Output when triggering plan regeneration."""
-    model_config = ConfigDict(extra="forbid")
-    
-    decision: PlanEditDecision
-    reconstructed_prompt: str = Field(
-        description="Comprehensive new prompt for the Planner that combines original requirements with user feedback."
+    reconstructed_prompt: str | None = Field(
+        default=None,
+        description="New prompt for the Planner when action is 'regenerate_plan'.",
     )
     regeneration_guidance: List[str] = Field(
         default_factory=list,
-        description="Specific guidance for the Planner to avoid previous limitations and better meet user requirements."
+        description="Guidance for the Planner when regenerating a plan.",
     )
+
+    @model_validator(mode="after")  # type: ignore[misc,arg-type]
+    def validate_fields(cls, model: "PlanEditorOutput") -> "PlanEditorOutput":
+        action = model.decision.action
+        if action == "edit_plan" and model.updated_plan is None:
+            raise ValueError("updated_plan must be provided when action is 'edit_plan'")
+        if action == "regenerate_plan" and model.reconstructed_prompt is None:
+            raise ValueError(
+                "reconstructed_prompt must be provided when action is 'regenerate_plan'"
+            )
+        return model
+
