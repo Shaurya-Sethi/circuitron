@@ -5,7 +5,7 @@ Contains formatting, printing, and other helper utilities.
 
 from typing import List
 from agents.items import ReasoningItem
-from .models import PlanOutput
+from .models import PlanOutput, UserFeedback, EditedPlanOutput, RegeneratedPlanPrompt
 
 
 def extract_reasoning_summary(run_result):
@@ -158,3 +158,211 @@ def crawl_documentation(base_url: str, doc_urls: List[str], output_file: str) ->
     except Exception as e:
         print(f"Error crawling documentation: {e}")
         return False
+
+
+def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
+    """
+    Interactively collect user feedback on the design plan.
+    This function prompts the user to answer open questions and request edits.
+    """
+    print("\n" + "="*60)
+    print("PLAN REVIEW & FEEDBACK")
+    print("="*60)
+    
+    feedback = UserFeedback()
+    
+    # Handle open questions if they exist
+    if plan.design_limitations:
+        print(f"\nThe planner has identified {len(plan.design_limitations)} open questions that need your input:")
+        print("-" * 50)
+        
+        for i, question in enumerate(plan.design_limitations, 1):
+            print(f"\n{i}. {question}")
+            answer = input(f"   Your answer: ").strip()
+            if answer:
+                feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
+    
+    # Collect general edits and modifications
+    print(f"\n" + "-" * 50)
+    print("OPTIONAL EDITS & MODIFICATIONS")
+    print("-" * 50)
+    print("Do you have any specific changes, clarifications, or modifications to request?")
+    print("(Press Enter on empty line to finish)")
+    
+    edit_counter = 1
+    while True:
+        edit = input(f"Edit #{edit_counter}: ").strip()
+        if not edit:
+            break
+        feedback.requested_edits.append(edit)
+        edit_counter += 1
+    
+    # Collect additional requirements
+    print(f"\n" + "-" * 50)
+    print("ADDITIONAL REQUIREMENTS")
+    print("-" * 50)
+    print("Are there any new requirements or constraints not captured in the original design?")
+    print("(Press Enter on empty line to finish)")
+    
+    req_counter = 1
+    while True:
+        req = input(f"Additional requirement #{req_counter}: ").strip()
+        if not req:
+            break
+        feedback.additional_requirements.append(req)
+        req_counter += 1
+    
+    return feedback
+
+
+def format_plan_edit_input(original_prompt: str, plan: PlanOutput, feedback: UserFeedback) -> str:
+    """
+    Format the input for the PlanEdit Agent, combining all context.
+    """
+    input_parts = [
+        "PLAN EDITING REQUEST",
+        "=" * 50,
+        "",
+        "ORIGINAL USER PROMPT:",
+        f'"""{original_prompt}"""',
+        "",
+        "GENERATED DESIGN PLAN:",
+        "=" * 30,
+    ]
+    
+    # Add each section of the plan
+    if plan.design_rationale:
+        input_parts.extend([
+            "Design Rationale:",
+            *[f"• {item}" for item in plan.design_rationale],
+            ""
+        ])
+    
+    if plan.functional_blocks:
+        input_parts.extend([
+            "Functional Blocks:",
+            *[f"• {item}" for item in plan.functional_blocks],
+            ""
+        ])
+    
+    if plan.design_equations:
+        input_parts.extend([
+            "Design Equations:",
+            *[f"• {item}" for item in plan.design_equations],
+            ""
+        ])
+    
+    if plan.calculation_results:
+        input_parts.extend([
+            "Calculation Results:",
+            *[f"• {item}" for item in plan.calculation_results],
+            ""
+        ])
+    
+    if plan.implementation_actions:
+        input_parts.extend([
+            "Implementation Actions:",
+            *[f"{i+1}. {item}" for i, item in enumerate(plan.implementation_actions)],
+            ""
+        ])
+    
+    if plan.component_search_queries:
+        input_parts.extend([
+            "Component Search Queries:",
+            *[f"• {item}" for item in plan.component_search_queries],
+            ""
+        ])
+    
+    if plan.implementation_notes:
+        input_parts.extend([
+            "Implementation Notes:",
+            *[f"• {item}" for item in plan.implementation_notes],
+            ""
+        ])
+    
+    if plan.design_limitations:
+        input_parts.extend([
+            "Design Limitations / Open Questions:",
+            *[f"• {item}" for item in plan.design_limitations],
+            ""
+        ])
+    
+    # Add user feedback
+    input_parts.extend([
+        "USER FEEDBACK:",
+        "=" * 30,
+        ""
+    ])
+    
+    if feedback.open_question_answers:
+        input_parts.extend([
+            "Answers to Open Questions:",
+            *feedback.open_question_answers,
+            ""
+        ])
+    
+    if feedback.requested_edits:
+        input_parts.extend([
+            "Requested Edits:",
+            *[f"• {edit}" for edit in feedback.requested_edits],
+            ""
+        ])
+    
+    if feedback.additional_requirements:
+        input_parts.extend([
+            "Additional Requirements:",
+            *[f"• {req}" for req in feedback.additional_requirements],
+            ""
+        ])
+    
+    input_parts.extend([
+        "INSTRUCTIONS:",
+        "Analyze this feedback and determine whether to apply direct edits to the existing plan",
+        "or trigger plan regeneration. Follow your decision framework carefully."
+    ])
+    
+    return "\n".join(input_parts)
+
+
+def pretty_print_edited_plan(edited_output: EditedPlanOutput):
+    """Pretty print an edited plan output with change summary."""
+    print("\n" + "="*60)
+    print("PLAN SUCCESSFULLY UPDATED")
+    print("="*60)
+    
+    print(f"\nAction: {edited_output.decision.action}")
+    print(f"Reasoning: {edited_output.decision.reasoning}")
+    
+    if edited_output.changes_summary:
+        print(f"\n" + "="*40)
+        print("SUMMARY OF CHANGES")
+        print("="*40)
+        for i, change in enumerate(edited_output.changes_summary, 1):
+            print(f"{i}. {change}")
+    
+    print(f"\n" + "="*40)
+    print("UPDATED DESIGN PLAN")
+    print("="*40)
+    pretty_print_plan(edited_output.updated_plan)
+
+
+def pretty_print_regeneration_prompt(regen_output: RegeneratedPlanPrompt):
+    """Pretty print a regeneration prompt output."""
+    print("\n" + "="*60)
+    print("PLAN REGENERATION REQUIRED")
+    print("="*60)
+    
+    print(f"\nAction: {regen_output.decision.action}")
+    print(f"Reasoning: {regen_output.decision.reasoning}")
+    
+    if regen_output.regeneration_guidance:
+        print(f"\n" + "="*40)
+        print("REGENERATION GUIDANCE")
+        print("="*40)
+        for i, guidance in enumerate(regen_output.regeneration_guidance, 1):
+            print(f"{i}. {guidance}")
+    
+    print(f"\n" + "="*40)
+    print("RECONSTRUCTED PROMPT")
+    print("="*40)
+    print(regen_output.reconstructed_prompt)

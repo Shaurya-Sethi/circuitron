@@ -54,3 +54,61 @@ class CalcResult(BaseModel):
     success: bool
     stdout: str = ""
     stderr: str = ""
+
+
+class UserFeedback(BaseModel):
+    """User feedback structure for plan editing."""
+    model_config = ConfigDict(extra="forbid")
+    
+    open_question_answers: List[str] = Field(
+        default_factory=list,
+        description="User's answers to the open questions from design_limitations, in the same order as presented."
+    )
+    requested_edits: List[str] = Field(
+        default_factory=list,
+        description="Specific changes, clarifications, or modifications requested by the user."
+    )
+    additional_requirements: List[str] = Field(
+        default_factory=list,
+        description="New requirements or constraints not captured in the original prompt."
+    )
+
+
+class PlanEditDecision(BaseModel):
+    """Decision output from the PlanEdit Agent."""
+    model_config = ConfigDict(extra="forbid")
+    
+    action: str = Field(
+        description="Either 'edit_plan' or 'regenerate_plan' based on the scope of required changes."
+    )
+    reasoning: str = Field(
+        description="Clear explanation of why this action was chosen and what changes are needed."
+    )
+    
+
+class EditedPlanOutput(BaseModel):
+    """Output when applying direct edits to an existing plan."""
+    model_config = ConfigDict(extra="forbid")
+    
+    decision: PlanEditDecision
+    updated_plan: PlanOutput = Field(
+        description="The updated design plan with user feedback incorporated, maintaining exact same structure as original PlanOutput."
+    )
+    changes_summary: List[str] = Field(
+        default_factory=list,
+        description="Summary of all changes made to the original plan, for user transparency."
+    )
+
+
+class RegeneratedPlanPrompt(BaseModel):
+    """Output when triggering plan regeneration."""
+    model_config = ConfigDict(extra="forbid")
+    
+    decision: PlanEditDecision
+    reconstructed_prompt: str = Field(
+        description="Comprehensive new prompt for the Planner that combines original requirements with user feedback."
+    )
+    regeneration_guidance: List[str] = Field(
+        default_factory=list,
+        description="Specific guidance for the Planner to avoid previous limitations and better meet user requirements."
+    )

@@ -9,3 +9,4 @@ src/
 .pytest_cache/
 *.egg-info/
 prototype.ipynb
+legacy/
