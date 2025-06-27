@@ -8,3 +8,4 @@ openai_agents_sdk_docs.md
 src/
 .pytest_cache/
 *.egg-info/
+prototype.ipynb
