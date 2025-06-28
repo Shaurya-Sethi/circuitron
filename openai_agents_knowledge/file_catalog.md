@@ -1,0 +1,384 @@
+# OpenAI Agents Python - File Catalog
+
+**Generated on:** 2025-06-28 20:06:38
+
+This catalog provides a complete overview of all files in the repository.
+
+## Statistics
+
+- **Total Files:** 361
+- **Total Size:** 1.4 MB
+- **File Types:** 6
+
+## File Types Distribution
+
+- **Json:** 1 files
+- **Markdown:** 113 files
+- **Python:** 235 files
+- **Text:** 6 files
+- **Toml:** 1 files
+- **Yaml:** 5 files
+
+## Complete File List
+
+- `.github/ISSUE_TEMPLATE/bug_report.md` (markdown, 643.0 B) - Markdown documentation file
+- `.github/ISSUE_TEMPLATE/feature_request.md` (markdown, 453.0 B) - Markdown documentation file
+- `.github/ISSUE_TEMPLATE/model_provider.md` (markdown, 806.0 B) - Markdown documentation file
+- `.github/ISSUE_TEMPLATE/question.md` (markdown, 369.0 B) - Markdown documentation file
+- `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md` (markdown, 392.0 B) - Markdown documentation file
+- `.github/workflows/docs.yml` (yaml, 568.0 B) - Documentation file in yaml format
+- `.github/workflows/issues.yml` (yaml, 1.0 KB) - YAML configuration file
+- `.github/workflows/publish.yml` (yaml, 722.0 B) - YAML configuration file
+- `.github/workflows/tests.yml` (yaml, 1.9 KB) - Test file for yaml code
+- `.vscode/settings.json` (json, 147.0 B) - JSON data or configuration file
+- `AGENTS.md` (markdown, 2.1 KB) - Markdown documentation file
+- `CLAUDE.md` (markdown, 41.0 B) - Markdown documentation file
+- `LICENSE` (text, 1.0 KB) - Project license and legal information
+- `README.md` (markdown, 6.9 KB) - Main project documentation and setup instructions
+- `docs/agents.md` (markdown, 5.5 KB) - Documentation file in markdown format
+- `docs/config.md` (markdown, 3.2 KB) - Documentation file in markdown format
+- `docs/context.md` (markdown, 4.1 KB) - Documentation file in markdown format
+- `docs/examples.md` (markdown, 2.0 KB) - Example markdown code demonstrating usage
+- `docs/guardrails.md` (markdown, 6.4 KB) - Documentation file in markdown format
+- `docs/handoffs.md` (markdown, 4.7 KB) - Documentation file in markdown format
+- `docs/index.md` (markdown, 2.5 KB) - Documentation file in markdown format
+- `docs/ja/agents.md` (markdown, 4.1 KB) - Documentation file in markdown format
+- `docs/ja/config.md` (markdown, 2.5 KB) - Documentation file in markdown format
+- `docs/ja/context.md` (markdown, 2.7 KB) - Documentation file in markdown format
+- `docs/ja/examples.md` (markdown, 1.6 KB) - Example markdown code demonstrating usage
+- `docs/ja/guardrails.md` (markdown, 5.0 KB) - Documentation file in markdown format
+- `docs/ja/handoffs.md` (markdown, 3.5 KB) - Documentation file in markdown format
+- `docs/ja/index.md` (markdown, 1.5 KB) - Documentation file in markdown format
+- `docs/ja/mcp.md` (markdown, 2.6 KB) - Documentation file in markdown format
+- `docs/ja/models/index.md` (markdown, 6.4 KB) - Documentation file in markdown format
+- `docs/ja/models/litellm.md` (markdown, 2.1 KB) - Documentation file in markdown format
+- `docs/ja/multi_agent.md` (markdown, 1.7 KB) - Documentation file in markdown format
+- `docs/ja/quickstart.md` (markdown, 4.6 KB) - Documentation file in markdown format
+- `docs/ja/repl.md` (markdown, 460.0 B) - Documentation file in markdown format
+- `docs/ja/results.md` (markdown, 2.5 KB) - Documentation file in markdown format
+- `docs/ja/running_agents.md` (markdown, 4.6 KB) - Documentation file in markdown format
+- `docs/ja/streaming.md` (markdown, 3.0 KB) - Documentation file in markdown format
+- `docs/ja/tools.md` (markdown, 7.8 KB) - Documentation file in markdown format
+- `docs/ja/tracing.md` (markdown, 5.8 KB) - Documentation file in markdown format
+- `docs/ja/visualization.md` (markdown, 1.7 KB) - Documentation file in markdown format
+- `docs/ja/voice/pipeline.md` (markdown, 2.8 KB) - Documentation file in markdown format
+- `docs/ja/voice/quickstart.md` (markdown, 4.8 KB) - Documentation file in markdown format
+- `docs/ja/voice/tracing.md` (markdown, 1.1 KB) - Documentation file in markdown format
+- `docs/mcp.md` (markdown, 6.1 KB) - Documentation file in markdown format
+- `docs/models/index.md` (markdown, 8.3 KB) - Documentation file in markdown format
+- `docs/models/litellm.md` (markdown, 2.3 KB) - Documentation file in markdown format
+- `docs/multi_agent.md` (markdown, 3.1 KB) - Documentation file in markdown format
+- `docs/quickstart.md` (markdown, 5.2 KB) - Documentation file in markdown format
+- `docs/ref/agent.md` (markdown, 29.0 B) - Documentation file in markdown format
+- `docs/ref/agent_output.md` (markdown, 42.0 B) - Documentation file in markdown format
+- `docs/ref/exceptions.md` (markdown, 38.0 B) - Documentation file in markdown format
+- `docs/ref/extensions/handoff_filters.md` (markdown, 59.0 B) - Documentation file in markdown format
+- `docs/ref/extensions/handoff_prompt.md` (markdown, 175.0 B) - Documentation file in markdown format
+- `docs/ref/extensions/litellm.md` (markdown, 63.0 B) - Documentation file in markdown format
+- `docs/ref/function_schema.md` (markdown, 48.0 B) - Documentation file in markdown format
+- `docs/ref/guardrail.md` (markdown, 37.0 B) - Documentation file in markdown format
+- `docs/ref/handoffs.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/index.md` (markdown, 328.0 B) - Documentation file in markdown format
+- `docs/ref/items.md` (markdown, 28.0 B) - Documentation file in markdown format
+- `docs/ref/lifecycle.md` (markdown, 77.0 B) - Documentation file in markdown format
+- `docs/ref/mcp/server.md` (markdown, 39.0 B) - Documentation file in markdown format
+- `docs/ref/mcp/util.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/model_settings.md` (markdown, 46.0 B) - Documentation file in markdown format
+- `docs/ref/models/interface.md` (markdown, 49.0 B) - Documentation file in markdown format
+- `docs/ref/models/openai_chatcompletions.md` (markdown, 76.0 B) - Documentation file in markdown format
+- `docs/ref/models/openai_responses.md` (markdown, 63.0 B) - Documentation file in markdown format
+- `docs/ref/repl.md` (markdown, 84.0 B) - Documentation file in markdown format
+- `docs/ref/result.md` (markdown, 31.0 B) - Documentation file in markdown format
+- `docs/ref/run.md` (markdown, 103.0 B) - Documentation file in markdown format
+- `docs/ref/run_context.md` (markdown, 40.0 B) - Documentation file in markdown format
+- `docs/ref/stream_events.md` (markdown, 47.0 B) - Documentation file in markdown format
+- `docs/ref/tool.md` (markdown, 27.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/create.md` (markdown, 53.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/index.md` (markdown, 37.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/processor_interface.md` (markdown, 64.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/processors.md` (markdown, 46.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/scope.md` (markdown, 36.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/setup.md` (markdown, 36.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/span_data.md` (markdown, 44.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/spans.md` (markdown, 132.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/traces.md` (markdown, 38.0 B) - Documentation file in markdown format
+- `docs/ref/tracing/util.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/usage.md` (markdown, 28.0 B) - Documentation file in markdown format
+- `docs/ref/voice/events.md` (markdown, 36.0 B) - Documentation file in markdown format
+- `docs/ref/voice/exceptions.md` (markdown, 44.0 B) - Documentation file in markdown format
+- `docs/ref/voice/input.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/voice/model.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/voice/models/openai_provider.md` (markdown, 76.0 B) - Documentation file in markdown format
+- `docs/ref/voice/models/openai_stt.md` (markdown, 51.0 B) - Documentation file in markdown format
+- `docs/ref/voice/models/openai_tts.md` (markdown, 51.0 B) - Documentation file in markdown format
+- `docs/ref/voice/pipeline.md` (markdown, 40.0 B) - Documentation file in markdown format
+- `docs/ref/voice/pipeline_config.md` (markdown, 54.0 B) - Documentation file in markdown format
+- `docs/ref/voice/result.md` (markdown, 36.0 B) - Documentation file in markdown format
+- `docs/ref/voice/utils.md` (markdown, 34.0 B) - Documentation file in markdown format
+- `docs/ref/voice/workflow.md` (markdown, 40.0 B) - Documentation file in markdown format
+- `docs/release.md` (markdown, 938.0 B) - Documentation file in markdown format
+- `docs/repl.md` (markdown, 555.0 B) - Documentation file in markdown format
+- `docs/results.md` (markdown, 3.5 KB) - Documentation file in markdown format
+- `docs/running_agents.md` (markdown, 6.3 KB) - Documentation file in markdown format
+- `docs/scripts/translate_docs.py` (python, 11.5 KB) - Documentation file in python format
+- `docs/streaming.md` (markdown, 3.4 KB) - Documentation file in markdown format
+- `docs/tools.md` (markdown, 11.1 KB) - Documentation file in markdown format
+- `docs/tracing.md` (markdown, 8.3 KB) - Documentation file in markdown format
+- `docs/visualization.md` (markdown, 2.3 KB) - Documentation file in markdown format
+- `docs/voice/pipeline.md` (markdown, 4.0 KB) - Documentation file in markdown format
+- `docs/voice/quickstart.md` (markdown, 5.2 KB) - Documentation file in markdown format
+- `docs/voice/tracing.md` (markdown, 1.4 KB) - Documentation file in markdown format
+- `examples/__init__.py` (python, 259.0 B) - Python package initialization file
+- `examples/agent_patterns/README.md` (markdown, 3.7 KB) - Main project documentation and setup instructions
+- `examples/agent_patterns/agents_as_tools.py` (python, 2.5 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/deterministic.py` (python, 2.4 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/forcing_tool_use.py` (python, 3.2 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/input_guardrails.py` (python, 3.1 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/llm_as_a_judge.py` (python, 2.3 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/output_guardrails.py` (python, 2.3 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/parallelization.py` (python, 1.6 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/routing.py` (python, 2.2 KB) - Example python code demonstrating usage
+- `examples/agent_patterns/streaming_guardrails.py` (python, 3.2 KB) - Example python code demonstrating usage
+- `examples/basic/agent_lifecycle_example.py` (python, 3.4 KB) - Example python code demonstrating usage
+- `examples/basic/dynamic_system_prompt.py` (python, 1.7 KB) - Example python code demonstrating usage
+- `examples/basic/hello_world.py` (python, 424.0 B) - Example python code demonstrating usage
+- `examples/basic/lifecycle_example.py` (python, 4.1 KB) - Example python code demonstrating usage
+- `examples/basic/local_image.py` (python, 1.1 KB) - Example python code demonstrating usage
+- `examples/basic/non_strict_output_type.py` (python, 2.5 KB) - Example python code demonstrating usage
+- `examples/basic/previous_response_id.py` (python, 2.1 KB) - Example python code demonstrating usage
+- `examples/basic/prompt_template.py` (python, 2.1 KB) - Example python code demonstrating usage
+- `examples/basic/remote_image.py` (python, 690.0 B) - Example python code demonstrating usage
+- `examples/basic/stream_items.py` (python, 1.8 KB) - Example python code demonstrating usage
+- `examples/basic/stream_text.py` (python, 556.0 B) - Example python code demonstrating usage
+- `examples/basic/tools.py` (python, 699.0 B) - Example python code demonstrating usage
+- `examples/customer_service/main.py` (python, 5.9 KB) - Example python code demonstrating usage
+- `examples/financial_research_agent/README.md` (markdown, 1.9 KB) - Main project documentation and setup instructions
+- `examples/financial_research_agent/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/financial_research_agent/agents/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/financial_research_agent/agents/financials_agent.py` (python, 737.0 B) - Example python code demonstrating usage
+- `examples/financial_research_agent/agents/planner_agent.py` (python, 1.0 KB) - Example python code demonstrating usage
+- `examples/financial_research_agent/agents/risk_agent.py` (python, 653.0 B) - Example python code demonstrating usage
+- `examples/financial_research_agent/agents/search_agent.py` (python, 712.0 B) - Example python code demonstrating usage
+- `examples/financial_research_agent/agents/verifier_agent.py` (python, 811.0 B) - Example python code demonstrating usage
+- `examples/financial_research_agent/agents/writer_agent.py` (python, 1.3 KB) - Example python code demonstrating usage
+- `examples/financial_research_agent/main.py` (python, 485.0 B) - Example python code demonstrating usage
+- `examples/financial_research_agent/manager.py` (python, 5.9 KB) - Example python code demonstrating usage
+- `examples/financial_research_agent/printer.py` (python, 1.4 KB) - Example python code demonstrating usage
+- `examples/handoffs/message_filter.py` (python, 5.4 KB) - Example python code demonstrating usage
+- `examples/handoffs/message_filter_streaming.py` (python, 5.3 KB) - Example python code demonstrating usage
+- `examples/hosted_mcp/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/hosted_mcp/approvals.py` (python, 1.9 KB) - Example python code demonstrating usage
+- `examples/hosted_mcp/simple.py` (python, 1.6 KB) - Example python code demonstrating usage
+- `examples/mcp/filesystem_example/README.md` (markdown, 954.0 B) - Main project documentation and setup instructions
+- `examples/mcp/filesystem_example/main.py` (python, 1.9 KB) - Example python code demonstrating usage
+- `examples/mcp/filesystem_example/sample_files/favorite_books.txt` (text, 803.0 B) - Example text code demonstrating usage
+- `examples/mcp/filesystem_example/sample_files/favorite_cities.txt` (text, 142.0 B) - Example text code demonstrating usage
+- `examples/mcp/filesystem_example/sample_files/favorite_songs.txt` (text, 329.0 B) - Example text code demonstrating usage
+- `examples/mcp/git_example/README.md` (markdown, 952.0 B) - Main project documentation and setup instructions
+- `examples/mcp/git_example/main.py` (python, 1.4 KB) - Example python code demonstrating usage
+- `examples/mcp/sse_example/README.md` (markdown, 301.0 B) - Main project documentation and setup instructions
+- `examples/mcp/sse_example/main.py` (python, 2.6 KB) - Example python code demonstrating usage
+- `examples/mcp/sse_example/server.py` (python, 675.0 B) - Example python code demonstrating usage
+- `examples/mcp/streamablehttp_example/README.md` (markdown, 347.0 B) - Main project documentation and setup instructions
+- `examples/mcp/streamablehttp_example/main.py` (python, 2.7 KB) - Example python code demonstrating usage
+- `examples/mcp/streamablehttp_example/server.py` (python, 687.0 B) - Example python code demonstrating usage
+- `examples/model_providers/README.md` (markdown, 445.0 B) - Main project documentation and setup instructions
+- `examples/model_providers/custom_example_agent.py` (python, 1.8 KB) - Example python code demonstrating usage
+- `examples/model_providers/custom_example_global.py` (python, 1.7 KB) - Example python code demonstrating usage
+- `examples/model_providers/custom_example_provider.py` (python, 2.2 KB) - Example python code demonstrating usage
+- `examples/model_providers/litellm_auto.py` (python, 1.1 KB) - Example python code demonstrating usage
+- `examples/model_providers/litellm_provider.py` (python, 1.6 KB) - Example python code demonstrating usage
+- `examples/reasoning_content/__init__.py` (python, 81.0 B) - Python package initialization file
+- `examples/reasoning_content/main.py` (python, 4.4 KB) - Example python code demonstrating usage
+- `examples/reasoning_content/runner_example.py` (python, 3.0 KB) - Example python code demonstrating usage
+- `examples/research_bot/README.md` (markdown, 1.3 KB) - Main project documentation and setup instructions
+- `examples/research_bot/__init__.py` (python, 1.0 B) - Python package initialization file
+- `examples/research_bot/agents/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/research_bot/agents/planner_agent.py` (python, 702.0 B) - Example python code demonstrating usage
+- `examples/research_bot/agents/search_agent.py` (python, 789.0 B) - Example python code demonstrating usage
+- `examples/research_bot/agents/writer_agent.py` (python, 1.0 KB) - Example python code demonstrating usage
+- `examples/research_bot/main.py` (python, 228.0 B) - Example python code demonstrating usage
+- `examples/research_bot/manager.py` (python, 4.3 KB) - Example python code demonstrating usage
+- `examples/research_bot/printer.py` (python, 1.3 KB) - Example python code demonstrating usage
+- `examples/research_bot/sample_outputs/product_recs.md` (markdown, 14.3 KB) - Example markdown code demonstrating usage
+- `examples/research_bot/sample_outputs/product_recs.txt` (text, 16.0 KB) - Example text code demonstrating usage
+- `examples/research_bot/sample_outputs/vacation.md` (markdown, 13.8 KB) - Example markdown code demonstrating usage
+- `examples/research_bot/sample_outputs/vacation.txt` (text, 15.1 KB) - Example text code demonstrating usage
+- `examples/tools/code_interpreter.py` (python, 1.1 KB) - Example python code demonstrating usage
+- `examples/tools/computer_use.py` (python, 5.2 KB) - Example python code demonstrating usage
+- `examples/tools/file_search.py` (python, 1013.0 B) - Example python code demonstrating usage
+- `examples/tools/image_generator.py` (python, 1.6 KB) - Example python code demonstrating usage
+- `examples/tools/web_search.py` (python, 671.0 B) - Example python code demonstrating usage
+- `examples/voice/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/voice/static/README.md` (markdown, 1005.0 B) - Main project documentation and setup instructions
+- `examples/voice/static/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/voice/static/main.py` (python, 2.7 KB) - Example python code demonstrating usage
+- `examples/voice/static/util.py` (python, 2.0 KB) - Example python code demonstrating usage
+- `examples/voice/streamed/README.md` (markdown, 962.0 B) - Main project documentation and setup instructions
+- `examples/voice/streamed/__init__.py` (python, 0.0 B) - Python package initialization file
+- `examples/voice/streamed/main.py` (python, 6.6 KB) - Example python code demonstrating usage
+- `examples/voice/streamed/my_workflow.py` (python, 2.7 KB) - Example python code demonstrating usage
+- `mkdocs.yml` (yaml, 6.1 KB) - Documentation file in yaml format
+- `pyproject.toml` (toml, 3.4 KB) - Python project configuration and dependencies
+- `src/agents/__init__.py` (python, 7.5 KB) - Python package initialization file
+- `src/agents/_config.py` (python, 796.0 B) - Python module implementing core functionality
+- `src/agents/_debug.py` (python, 608.0 B) - Python module implementing core functionality
+- `src/agents/_run_impl.py` (python, 43.4 KB) - Python module implementing core functionality
+- `src/agents/agent.py` (python, 11.7 KB) - Python module implementing core functionality
+- `src/agents/agent_output.py` (python, 7.0 KB) - Python module implementing core functionality
+- `src/agents/computer.py` (python, 2.5 KB) - Python module implementing core functionality
+- `src/agents/exceptions.py` (python, 2.8 KB) - Python module implementing core functionality
+- `src/agents/extensions/__init__.py` (python, 0.0 B) - Python package initialization file
+- `src/agents/extensions/handoff_filters.py` (python, 1.9 KB) - Python module implementing core functionality
+- `src/agents/extensions/handoff_prompt.py` (python, 1006.0 B) - Python module implementing core functionality
+- `src/agents/extensions/models/__init__.py` (python, 0.0 B) - Python package initialization file
+- `src/agents/extensions/models/litellm_model.py` (python, 14.7 KB) - Python module defining data models and schemas
+- `src/agents/extensions/models/litellm_provider.py` (python, 928.0 B) - Python module implementing core functionality
+- `src/agents/extensions/visualization.py` (python, 4.6 KB) - Python module implementing core functionality
+- `src/agents/function_schema.py` (python, 12.8 KB) - Python module defining data models and schemas
+- `src/agents/guardrail.py` (python, 9.1 KB) - Python module implementing core functionality
+- `src/agents/handoffs.py` (python, 9.9 KB) - Python module implementing core functionality
+- `src/agents/items.py` (python, 9.5 KB) - Python module implementing core functionality
+- `src/agents/lifecycle.py` (python, 2.9 KB) - Python module implementing core functionality
+- `src/agents/logger.py` (python, 60.0 B) - Python module implementing core functionality
+- `src/agents/mcp/__init__.py` (python, 750.0 B) - Python package initialization file
+- `src/agents/mcp/server.py` (python, 19.6 KB) - Python module implementing core functionality
+- `src/agents/mcp/util.py` (python, 7.7 KB) - Python utility module with helper functions
+- `src/agents/model_settings.py` (python, 5.8 KB) - Python module defining data models and schemas
+- `src/agents/models/__init__.py` (python, 0.0 B) - Python package initialization file
+- `src/agents/models/_openai_shared.py` (python, 836.0 B) - Python module implementing core functionality
+- `src/agents/models/chatcmpl_converter.py` (python, 18.2 KB) - Python module implementing core functionality
+- `src/agents/models/chatcmpl_helpers.py` (python, 1.3 KB) - Python utility module with helper functions
+- `src/agents/models/chatcmpl_stream_handler.py` (python, 18.7 KB) - Python module implementing core functionality
+- `src/agents/models/fake_id.py` (python, 268.0 B) - Python module implementing core functionality
+- `src/agents/models/interface.py` (python, 3.7 KB) - Python module implementing core functionality
+- `src/agents/models/multi_provider.py` (python, 5.4 KB) - Python module implementing core functionality
+- `src/agents/models/openai_chatcompletions.py` (python, 11.9 KB) - Python module implementing core functionality
+- `src/agents/models/openai_provider.py` (python, 3.4 KB) - Python module implementing core functionality
+- `src/agents/models/openai_responses.py` (python, 15.9 KB) - Python module implementing core functionality
+- `src/agents/prompts.py` (python, 2.2 KB) - Python module implementing core functionality
+- `src/agents/repl.py` (python, 2.3 KB) - Python module implementing core functionality
+- `src/agents/result.py` (python, 10.5 KB) - Python module implementing core functionality
+- `src/agents/run.py` (python, 45.7 KB) - Python module implementing core functionality
+- `src/agents/run_context.py` (python, 851.0 B) - Python module implementing core functionality
+- `src/agents/stream_events.py` (python, 1.7 KB) - Python module implementing core functionality
+- `src/agents/strict_schema.py` (python, 5.6 KB) - Python module defining data models and schemas
+- `src/agents/tool.py` (python, 16.2 KB) - Python module implementing core functionality
+- `src/agents/tool_context.py` (python, 941.0 B) - Python module implementing core functionality
+- `src/agents/tracing/__init__.py` (python, 2.9 KB) - Python package initialization file
+- `src/agents/tracing/create.py` (python, 17.7 KB) - Python module implementing core functionality
+- `src/agents/tracing/logger.py` (python, 68.0 B) - Python module implementing core functionality
+- `src/agents/tracing/processor_interface.py` (python, 1.6 KB) - Python module implementing core functionality
+- `src/agents/tracing/processors.py` (python, 11.1 KB) - Python module implementing core functionality
+- `src/agents/tracing/provider.py` (python, 9.0 KB) - Python module implementing core functionality
+- `src/agents/tracing/scope.py` (python, 1.4 KB) - Python module implementing core functionality
+- `src/agents/tracing/setup.py` (python, 612.0 B) - Python package setup and installation script
+- `src/agents/tracing/span_data.py` (python, 8.8 KB) - Python module implementing core functionality
+- `src/agents/tracing/spans.py` (python, 6.5 KB) - Python module implementing core functionality
+- `src/agents/tracing/traces.py` (python, 4.7 KB) - Python module implementing core functionality
+- `src/agents/tracing/util.py` (python, 490.0 B) - Python utility module with helper functions
+- `src/agents/usage.py` (python, 1.6 KB) - Python module implementing core functionality
+- `src/agents/util/__init__.py` (python, 0.0 B) - Python package initialization file
+- `src/agents/util/_coro.py` (python, 45.0 B) - Python module implementing core functionality
+- `src/agents/util/_error_tracing.py` (python, 421.0 B) - Python module implementing core functionality
+- `src/agents/util/_json.py` (python, 972.0 B) - Python module implementing core functionality
+- `src/agents/util/_pretty_print.py` (python, 2.7 KB) - Python module implementing core functionality
+- `src/agents/util/_transforms.py` (python, 270.0 B) - Python module implementing core functionality
+- `src/agents/util/_types.py` (python, 160.0 B) - Python module implementing core functionality
+- `src/agents/version.py` (python, 230.0 B) - Python module implementing core functionality
+- `src/agents/voice/__init__.py` (python, 1.5 KB) - Python package initialization file
+- `src/agents/voice/events.py` (python, 1.2 KB) - Python module implementing core functionality
+- `src/agents/voice/exceptions.py` (python, 233.0 B) - Python module implementing core functionality
+- `src/agents/voice/imports.py` (python, 348.0 B) - Python module implementing core functionality
+- `src/agents/voice/input.py` (python, 2.8 KB) - Python module implementing core functionality
+- `src/agents/voice/model.py` (python, 5.8 KB) - Python module defining data models and schemas
+- `src/agents/voice/models/__init__.py` (python, 0.0 B) - Python package initialization file
+- `src/agents/voice/models/openai_model_provider.py` (python, 3.5 KB) - Python module defining data models and schemas
+- `src/agents/voice/models/openai_stt.py` (python, 16.5 KB) - Python module implementing core functionality
+- `src/agents/voice/models/openai_tts.py` (python, 1.4 KB) - Python module implementing core functionality
+- `src/agents/voice/pipeline.py` (python, 6.1 KB) - Python module implementing core functionality
+- `src/agents/voice/pipeline_config.py` (python, 1.7 KB) - Python module implementing core functionality
+- `src/agents/voice/result.py` (python, 10.8 KB) - Python module implementing core functionality
+- `src/agents/voice/utils.py` (python, 1.3 KB) - Python utility module with helper functions
+- `src/agents/voice/workflow.py` (python, 3.4 KB) - Python module implementing core functionality
+- `tests/README.md` (markdown, 526.0 B) - Main project documentation and setup instructions
+- `tests/__init__.py` (python, 0.0 B) - Python package initialization file
+- `tests/conftest.py` (python, 2.0 KB) - Test file for python code
+- `tests/fake_model.py` (python, 5.3 KB) - Test file for python code
+- `tests/fastapi/__init__.py` (python, 0.0 B) - Python package initialization file
+- `tests/fastapi/streaming_app.py` (python, 784.0 B) - Test file for python code
+- `tests/fastapi/test_streaming_context.py` (python, 1.1 KB) - Test file for python code
+- `tests/mcp/__init__.py` (python, 0.0 B) - Python package initialization file
+- `tests/mcp/conftest.py` (python, 269.0 B) - Test file for python code
+- `tests/mcp/helpers.py` (python, 3.0 KB) - Test file for python code
+- `tests/mcp/test_caching.py` (python, 2.2 KB) - Test file for python code
+- `tests/mcp/test_connect_disconnect.py` (python, 2.1 KB) - Test file for python code
+- `tests/mcp/test_mcp_tracing.py` (python, 7.8 KB) - Test file for python code
+- `tests/mcp/test_mcp_util.py` (python, 10.3 KB) - Test file for python code
+- `tests/mcp/test_runner_calls_mcp.py` (python, 5.8 KB) - Test file for python code
+- `tests/mcp/test_server_errors.py` (python, 1.2 KB) - Test file for python code
+- `tests/mcp/test_tool_filtering.py` (python, 8.5 KB) - Test file for python code
+- `tests/model_settings/test_serialization.py` (python, 5.3 KB) - Test file for python code
+- `tests/models/__init__.py` (python, 0.0 B) - Python package initialization file
+- `tests/models/conftest.py` (python, 271.0 B) - Test file for python code
+- `tests/models/test_kwargs_functionality.py` (python, 5.5 KB) - Test file for python code
+- `tests/models/test_litellm_chatcompletions_stream.py` (python, 11.8 KB) - Test file for python code
+- `tests/models/test_litellm_extra_body.py` (python, 1.4 KB) - Test file for python code
+- `tests/models/test_map.py` (python, 782.0 B) - Test file for python code
+- `tests/test_agent_config.py` (python, 4.6 KB) - Test file for python code
+- `tests/test_agent_hooks.py` (python, 14.0 KB) - Test file for python code
+- `tests/test_agent_prompt.py` (python, 2.6 KB) - Test file for python code
+- `tests/test_agent_runner.py` (python, 22.9 KB) - Test file for python code
+- `tests/test_agent_runner_streamed.py` (python, 21.1 KB) - Test file for python code
+- `tests/test_agent_tracing.py` (python, 14.2 KB) - Test file for python code
+- `tests/test_cancel_streaming.py` (python, 3.6 KB) - Test file for python code
+- `tests/test_computer_action.py` (python, 12.6 KB) - Test file for python code
+- `tests/test_config.py` (python, 2.3 KB) - Test file for python code
+- `tests/test_doc_parsing.py` (python, 2.7 KB) - Test file for python code
+- `tests/test_extension_filters.py` (python, 5.6 KB) - Test file for python code
+- `tests/test_extra_headers.py` (python, 3.4 KB) - Test file for python code
+- `tests/test_function_schema.py` (python, 15.0 KB) - Test file for python code
+- `tests/test_function_tool.py` (python, 9.1 KB) - Test file for python code
+- `tests/test_function_tool_decorator.py` (python, 6.7 KB) - Test file for python code
+- `tests/test_global_hooks.py` (python, 13.0 KB) - Test file for python code
+- `tests/test_guardrails.py` (python, 8.9 KB) - Test file for python code
+- `tests/test_handoff_tool.py` (python, 11.5 KB) - Test file for python code
+- `tests/test_items_helpers.py` (python, 12.0 KB) - Test file for python code
+- `tests/test_max_turns.py` (python, 3.7 KB) - Test file for python code
+- `tests/test_openai_chatcompletions.py` (python, 13.4 KB) - Test file for python code
+- `tests/test_openai_chatcompletions_converter.py` (python, 16.2 KB) - Test file for python code
+- `tests/test_openai_chatcompletions_stream.py` (python, 11.9 KB) - Test file for python code
+- `tests/test_openai_responses_converter.py` (python, 8.3 KB) - Test file for python code
+- `tests/test_output_tool.py` (python, 5.7 KB) - Test file for python code
+- `tests/test_pretty_print.py` (python, 5.2 KB) - Test file for python code
+- `tests/test_reasoning_content.py` (python, 10.1 KB) - Test file for python code
+- `tests/test_repl.py` (python, 869.0 B) - Test file for python code
+- `tests/test_responses.py` (python, 1.9 KB) - Test file for python code
+- `tests/test_responses_tracing.py` (python, 10.0 KB) - Test file for python code
+- `tests/test_result_cast.py` (python, 1.6 KB) - Test file for python code
+- `tests/test_run.py` (python, 681.0 B) - Test file for python code
+- `tests/test_run_config.py` (python, 3.8 KB) - Test file for python code
+- `tests/test_run_error_details.py` (python, 1.6 KB) - Test file for python code
+- `tests/test_run_step_execution.py` (python, 10.8 KB) - Test file for python code
+- `tests/test_run_step_processing.py` (python, 14.3 KB) - Test file for python code
+- `tests/test_strict_schema.py` (python, 4.7 KB) - Test file for python code
+- `tests/test_tool_choice_reset.py` (python, 8.8 KB) - Test file for python code
+- `tests/test_tool_converter.py` (python, 1.7 KB) - Test file for python code
+- `tests/test_tool_use_behavior.py` (python, 6.8 KB) - Test file for python code
+- `tests/test_trace_processor.py` (python, 8.9 KB) - Test file for python code
+- `tests/test_tracing.py` (python, 11.0 KB) - Test file for python code
+- `tests/test_tracing_errors.py` (python, 17.5 KB) - Test file for python code
+- `tests/test_tracing_errors_streamed.py` (python, 19.7 KB) - Test file for python code
+- `tests/test_usage.py` (python, 1.5 KB) - Test file for python code
+- `tests/test_visualization.py` (python, 4.8 KB) - Test file for python code
+- `tests/testing_processor.py` (python, 4.2 KB) - Test file for python code
+- `tests/tracing/test_processor_api_key.py` (python, 899.0 B) - Test file for python code
+- `tests/voice/__init__.py` (python, 0.0 B) - Python package initialization file
+- `tests/voice/conftest.py` (python, 271.0 B) - Test file for python code
+- `tests/voice/fake_models.py` (python, 3.3 KB) - Test file for python code
+- `tests/voice/helpers.py` (python, 759.0 B) - Test file for python code
+- `tests/voice/test_input.py` (python, 4.4 KB) - Test file for python code
+- `tests/voice/test_openai_stt.py` (python, 12.4 KB) - Test file for python code
+- `tests/voice/test_openai_tts.py` (python, 3.2 KB) - Test file for python code
+- `tests/voice/test_pipeline.py` (python, 6.1 KB) - Test file for python code
+- `tests/voice/test_workflow.py` (python, 6.3 KB) - Test file for python code
