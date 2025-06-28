@@ -3,7 +3,7 @@ Agent definitions and configurations for the Circuitron system.
 Contains all specialized agents used in the PCB design pipeline.
 """
 
-from agents import Agent
+from agents import Agent, handoff
 from agents.model_settings import ModelSettings
 from .prompts import PLAN_PROMPT, PLAN_EDIT_PROMPT, PARTFINDER_PROMPT
 from .models import PlanOutput, PlanEditorOutput, PartFinderOutput
@@ -55,3 +55,7 @@ def create_partfinder_agent() -> Agent:
 planner = create_planning_agent()
 plan_editor = create_plan_edit_agent()
 part_finder = create_partfinder_agent()
+
+# Configure handoffs between agents
+planner.handoffs = [plan_editor]
+plan_editor.handoffs = [handoff(planner), handoff(part_finder)]
