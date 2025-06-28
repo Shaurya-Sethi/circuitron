@@ -47,7 +47,10 @@ MCP_URL=http://localhost:8051
 
 ```
 
-`OPENAI_API_KEY`, `MODEL_PLAN`, `MODEL_PART`, `MODEL_CODE`, and `MCP_URL` must be provided. The others have sensible defaults.
+Required variables:
+`OPENAI_API_KEY`, `PLANNING_MODEL`, `PLAN_EDIT_MODEL`, `PART_FINDER_MODEL`, and `MCP_URL`.
+Optional overrides:
+`CALC_IMAGE` and `KICAD_IMAGE` for custom Docker images.
 
 ## Tech Stack
 

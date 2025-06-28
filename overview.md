@@ -116,4 +116,10 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 - [SKiDL Documentation](https://devbisme.github.io/skidl/)
 - [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
+
+### Configuration
+
+Runtime models and Docker images are configured via environment variables read
+by ``development.settings``. See ``README.md`` for details on the available
+variables.
 ---
