@@ -120,3 +120,16 @@ class PlanEditorOutput(BaseModel):
             )
         return model
 
+
+# ========== Part Search Agent Models ==========
+
+class PartSearchOutput(BaseModel):
+    """Complete output from the Part Search Agent."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    
+    # Search plans as formatted strings
+    search_plans: List[str] = Field(default_factory=list, description="Search plans for each component with ranked queries and rationales")
+    
+    # Search results as formatted strings  
+    search_results: List[str] = Field(default_factory=list, description="Found parts with name, library, description, footprint, and specifications")
+
