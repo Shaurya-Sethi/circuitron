@@ -10,7 +10,7 @@ import logging
 from .config import settings
 from .prompts import PLAN_PROMPT, PLAN_EDIT_PROMPT, PARTFINDER_PROMPT
 from .models import PlanOutput, PlanEditorOutput, PartFinderOutput
-from .tools import execute_calculation, search_kicad_libraries
+from .tools import execute_calculation, search_kicad_libraries, search_kicad_footprints
 
 
 def create_planning_agent() -> Agent:
@@ -52,7 +52,7 @@ def create_partfinder_agent() -> Agent:
         instructions=PARTFINDER_PROMPT,
         model=settings.part_finder_model,
         output_type=PartFinderOutput,
-        tools=[search_kicad_libraries],
+        tools=[search_kicad_libraries, search_kicad_footprints],
         model_settings=model_settings,
         handoff_description="Search KiCad libraries for required parts",
     )
