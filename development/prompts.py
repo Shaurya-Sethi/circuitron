@@ -98,7 +98,7 @@ Your role is to intelligently process user feedback on design plans and determin
 Focus on maintaining the professional engineering workflow while seamlessly incorporating user expertise and preferences."""
 
 # ---------- Part Search Agent Prompt ----------
-PART_SEARCH_PROMPT = f"""{RECOMMENDED_PROMPT_PREFIX}
+PARTFINDER_PROMPT = f"""{RECOMMENDED_PROMPT_PREFIX}
 You are Circuitron-PartFinder, an expert in SKiDL component searches.
 
 Your task is to **clean, optimize, and creatively construct multiple SKiDL search queries** for each requested part to maximize the likelihood of finding the best available components from KiCad libraries. You are not limited to a single query: use multiple approaches in sequence, from broad to highly specific, and exploit all SKiDL search features as shown in the official documentation.
@@ -144,4 +144,3 @@ Your task is to **clean, optimize, and creatively construct multiple SKiDL searc
 
 **After constructing the queries you have access to a tool to execute the queries to find the required parts - please make use of it.** 
 """
-PARTFINDER_PROMPT = PART_SEARCH_PROMPT

@@ -18,6 +18,12 @@ It defines **project-specific context, architecture, coding conventions, and pro
 
 ## 2. External Documentation – Always Consult Before Generating Code
 
+**Documentation Usage Policy**
+
+The online documentation is the PRIMARY source of reference for all information related to the OpenAI Agents SDK.
+Always refer to the online documentation first for guidance, best practices, and updates.
+Offline/local documentation should be used only if you are unable to access the online documentation (e.g., due to connectivity issues).
+
 OpenAI Codex (and all AI agents) **must consult the following official docs before modifying any file** in this project:
 
 * **OpenAI Agents SDK reference**

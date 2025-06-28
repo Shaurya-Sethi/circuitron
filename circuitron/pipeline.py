@@ -6,13 +6,19 @@ import sys
 
 from agents import Runner
 
-from development.agents import planner, plan_editor
+from development.agents import planner, plan_editor, part_finder
 from agents.result import RunResult
-from development.models import PlanOutput, UserFeedback, PlanEditorOutput
+from development.models import (
+    PlanOutput,
+    UserFeedback,
+    PlanEditorOutput,
+    PartFinderOutput,
+)
 from development.utils import (
     pretty_print_plan,
     pretty_print_edited_plan,
     pretty_print_regeneration_prompt,
+    pretty_print_found_parts,
     extract_reasoning_summary,
     collect_user_feedback,
     format_plan_edit_input,
@@ -33,8 +39,17 @@ async def run_plan_editor(
     return result.final_output
 
 
-async def pipeline(prompt: str, show_reasoning: bool = False, debug: bool = False) -> PlanOutput:
-    """Execute planning and optional plan editing flow."""
+async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
+    """Search KiCad libraries for components from the plan."""
+    query_text = "\n".join(plan.component_search_queries)
+    result = await Runner.run(part_finder, query_text)
+    return result.final_output
+
+
+async def pipeline(
+    prompt: str, show_reasoning: bool = False, debug: bool = False
+) -> PartFinderOutput:
+    """Execute planning, plan editing and part search flow."""
     plan_result = await run_planner(prompt)
     plan = plan_result.final_output
     pretty_print_plan(plan)
@@ -54,20 +69,27 @@ async def pipeline(prompt: str, show_reasoning: bool = False, debug: bool = Fals
         feedback.requested_edits,
         feedback.additional_requirements,
     ]):
-        return plan
+        part_output = await run_part_finder(plan)
+        pretty_print_found_parts(part_output.found_components_json)
+        return part_output
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
 
     if edit_result.decision.action == "edit_plan":
         pretty_print_edited_plan(edit_result)
-        return edit_result.updated_plan  # type: ignore[return-value]
+        final_plan = edit_result.updated_plan  # type: ignore[assignment]
+        part_output = await run_part_finder(final_plan)
+        pretty_print_found_parts(part_output.found_components_json)
+        return part_output
 
     pretty_print_regeneration_prompt(edit_result)
     assert edit_result.reconstructed_prompt is not None
     regen_result = await run_planner(edit_result.reconstructed_prompt)
     new_plan = regen_result.final_output
     pretty_print_plan(new_plan)
-    return new_plan
+    part_output = await run_part_finder(new_plan)
+    pretty_print_found_parts(part_output.found_components_json)
+    return part_output
 
 
 async def main() -> None:
