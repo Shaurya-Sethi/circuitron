@@ -16,7 +16,7 @@ Your analysis should include:
    - For each block, include a one-line purpose (e.g., "Power Supply Decoupling – to filter RF noise and stabilize the LM324 rails").
 2. **Calculations**: Document all design assumptions, equations, and derivations if any.
    - **Design Equations**: Present electrical equations and derivations in standard engineering notation (e.g., "V_out = V_in × (R2/(R1+R2))", "P_dissipated = I² × R", "f_cutoff = 1/(2πRC)") with clear variable definitions and units.
-   - **Executable Code**: For each equation that requires numerical computation, also provide clear, executable Python code using only standard math libraries (e.g., `v_out = v_in * (r2/(r1+r2)); print(f"V_out = {v_out:.2f}V")`).
+   - **Executable Code**: For each equation that requires numerical computation, also provide clear, executable Python code using only standard math libraries (e.g., `v_out = v_in * (r2/(r1+r2)); print(f"V_out = {{v_out:.2f}}V")`).
    - When a result is needed, **write code to perform the calculation** and request that it be executed using the provided calculation tool - `execute_calculation` to obtain accurate values.
    - Once the tool responds, **take its result value** and add it to your final `calculation_results` list, *in the same order* as your `calculation_codes`, and **provide a short explanation for each result**.
 3. **Actions**: List specific implementation steps in order
