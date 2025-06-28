@@ -10,13 +10,14 @@ import asyncio
 
 from agents import Runner
 
-from circuitron.agents import planner, plan_editor, part_finder
+from circuitron.agents import planner, plan_editor, part_finder, part_selector
 from agents.result import RunResult
 from circuitron.models import (
     PlanOutput,
     UserFeedback,
     PlanEditorOutput,
     PartFinderOutput,
+    PartSelectionOutput,
 )
 from circuitron.utils import (
     pretty_print_plan,
@@ -24,8 +25,10 @@ from circuitron.utils import (
     pretty_print_regeneration_prompt,
     pretty_print_found_parts,
     extract_reasoning_summary,
+    pretty_print_selected_parts,
     collect_user_feedback,
     format_plan_edit_input,
+    format_part_selection_input,
 )
 
 
@@ -50,9 +53,18 @@ async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
     return result.final_output
 
 
+async def run_part_selector(
+    plan: PlanOutput, part_output: PartFinderOutput
+) -> PartSelectionOutput:
+    """Select optimal parts using search results."""
+    input_msg = format_part_selection_input(plan, part_output)
+    result = await Runner.run(part_selector, input_msg)
+    return result.final_output
+
+
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
-) -> PartFinderOutput:
+) -> PartSelectionOutput:
     """Execute planning, plan editing and part search flow.
 
     Args:
@@ -61,7 +73,7 @@ async def pipeline(
         debug: Print calculation code when ``True``.
 
     Returns:
-        The :class:`PartFinderOutput` produced after searching libraries.
+        The :class:`PartSelectionOutput` produced after selecting parts.
 
     Example:
         >>> asyncio.run(pipeline("buck converter"))
@@ -87,7 +99,9 @@ async def pipeline(
     ]):
         part_output = await run_part_finder(plan)
         pretty_print_found_parts(part_output.found_components_json)
-        return part_output
+        selection = await run_part_selector(plan, part_output)
+        pretty_print_selected_parts(selection)
+        return selection
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
 
@@ -97,7 +111,9 @@ async def pipeline(
         final_plan = edit_result.updated_plan
         part_output = await run_part_finder(final_plan)
         pretty_print_found_parts(part_output.found_components_json)
-        return part_output
+        selection = await run_part_selector(final_plan, part_output)
+        pretty_print_selected_parts(selection)
+        return selection
 
     pretty_print_regeneration_prompt(edit_result)
     assert edit_result.reconstructed_prompt is not None
@@ -106,7 +122,9 @@ async def pipeline(
     pretty_print_plan(new_plan)
     part_output = await run_part_finder(new_plan)
     pretty_print_found_parts(part_output.found_components_json)
-    return part_output
+    selection = await run_part_selector(new_plan, part_output)
+    pretty_print_selected_parts(selection)
+    return selection
 
 
 async def main() -> None:

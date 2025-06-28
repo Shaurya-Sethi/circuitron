@@ -6,7 +6,7 @@ Contains formatting, printing, and other helper utilities.
 from typing import List
 from agents.items import ReasoningItem
 from agents.result import RunResult
-from .models import PlanOutput, UserFeedback, PlanEditorOutput
+from .models import PlanOutput, UserFeedback, PlanEditorOutput, PartFinderOutput, PartSelectionOutput
 
 
 def extract_reasoning_summary(run_result: RunResult) -> str:
@@ -239,6 +239,25 @@ def format_plan_edit_input(original_prompt: str, plan: PlanOutput, feedback: Use
     return "\n".join(input_parts)
 
 
+def format_part_selection_input(plan: PlanOutput, found: PartFinderOutput) -> str:
+    """Format input for the Part Selection agent."""
+    parts = [
+        "PART SELECTION CONTEXT",
+        "=" * 40,
+        "",
+    ]
+
+    if plan.functional_blocks:
+        parts.extend(["Functional Blocks:", *[f"• {b}" for b in plan.functional_blocks], ""])
+
+    if plan.component_search_queries:
+        parts.extend(["Original Search Queries:", *[f"• {q}" for q in plan.component_search_queries], ""])
+
+    parts.extend(["FOUND COMPONENTS JSON:", found.found_components_json, ""])
+    parts.append("Select the best components and extract pin details.")
+    return "\n".join(parts)
+
+
 def pretty_print_edited_plan(edited_output: PlanEditorOutput):
     """Pretty print an edited plan output with change summary."""
     print("\n" + "="*60)
@@ -296,3 +315,21 @@ def pretty_print_found_parts(found_json: str) -> None:
 
     print("\n=== FOUND COMPONENTS JSON ===\n")
     print(found_json)
+
+
+def pretty_print_selected_parts(selection: PartSelectionOutput) -> None:
+    """Display parts selected by the PartSelector agent."""
+    if not selection.selections:
+        print("\nNo parts selected.")
+        return
+
+    print("\n=== SELECTED COMPONENTS ===")
+    for part in selection.selections:
+        print(f"\n{part.name} ({part.library}) -> {part.footprint}")
+        if part.selection_reason:
+            print(f"Reason: {part.selection_reason}")
+        if part.pin_details:
+            print("Pins:")
+            for pin in part.pin_details:
+                print(f"  {pin.number}: {pin.name} / {pin.function}")
+

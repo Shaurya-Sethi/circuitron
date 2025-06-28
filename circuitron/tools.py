@@ -145,3 +145,54 @@ print(json.dumps(results))
     except Exception as exc:  # pragma: no cover - unexpected errors
         return json.dumps({{"error": str(exc)}})
     return proc.stdout.strip()
+
+
+@function_tool
+async def extract_pin_details(library: str, part_name: str) -> str:
+    """Return pin details using skidl.show()."""
+    script = textwrap.dedent(f"""
+import json, io, contextlib, skidl
+buf = io.StringIO()
+try:
+    with contextlib.redirect_stdout(buf):
+        skidl.show({library!r}, {part_name!r})
+except Exception as exc:
+    print(json.dumps({{"error": str(exc)}}))
+    raise SystemExit()
+text = buf.getvalue().splitlines()
+pins = []
+for line in text:
+    line = line.strip()
+    if line.startswith("Pin "):
+        parts = line.split("/")
+        if len(parts) >= 4:
+            pins.append({{"number": parts[1], "name": parts[2], "function": parts[3]}})
+print(json.dumps(pins))
+""")
+    docker_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "512m",
+        "--pids-limit",
+        "256",
+        settings.kicad_image,
+        "python",
+        "-c",
+        script,
+    ]
+    try:
+        proc = subprocess.run(
+            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps({{"error": "pin extract timeout", "details": str(exc)}})
+    except subprocess.CalledProcessError as exc:
+        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+    except Exception as exc:  # pragma: no cover - unexpected errors
+        return json.dumps({{"error": str(exc)}})
+    return proc.stdout.strip()
+
