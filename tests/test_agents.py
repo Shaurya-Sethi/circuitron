@@ -14,3 +14,13 @@ def test_agent_models_from_env(monkeypatch):
     assert mod.plan_editor.model == "y-model"
     assert mod.part_finder.model == "z-model"
 
+
+def test_partfinder_includes_footprint_tool():
+    import sys
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    mod = importlib.import_module("circuitron.agents")
+    tool_names = [tool.name for tool in mod.part_finder.tools]
+    assert "search_kicad_footprints" in tool_names
+

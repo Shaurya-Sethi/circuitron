@@ -105,3 +105,43 @@ print(json.dumps(results))
     except Exception as exc:  # pragma: no cover - unexpected errors
         return json.dumps({{"error": str(exc)}})
     return proc.stdout.strip()
+
+
+@function_tool
+async def search_kicad_footprints(query: str) -> str:
+    """Search KiCad footprint libraries using skidl.search_footprints."""
+    script = textwrap.dedent(f"""
+import json, skidl
+footprints = skidl.search_footprints({query!r})
+results = []
+if footprints:
+    for fp in footprints:
+        results.append({{"name": fp.name, "library": getattr(fp, "lib", ""), "description": getattr(fp, "description", None)}})
+print(json.dumps(results))
+""")
+    docker_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "512m",
+        "--pids-limit",
+        "256",
+        settings.kicad_image,
+        "python",
+        "-c",
+        script,
+    ]
+    try:
+        proc = subprocess.run(
+            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps({{"error": "footprint search timeout", "details": str(exc)}})
+    except subprocess.CalledProcessError as exc:
+        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+    except Exception as exc:  # pragma: no cover - unexpected errors
+        return json.dumps({{"error": str(exc)}})
+    return proc.stdout.strip()

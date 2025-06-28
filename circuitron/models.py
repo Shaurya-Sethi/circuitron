@@ -143,6 +143,15 @@ class FoundPart(BaseModel):
     description: str | None = None
 
 
+class FoundFootprint(BaseModel):
+    """Structure for a footprint found in KiCad libraries."""
+
+    name: str
+    library: str
+    description: str | None = None
+    package_type: str | None = None
+
+
 class PartFinderOutput(BaseModel):
     """Output from the PartFinder agent."""
     model_config = ConfigDict(extra="forbid", strict=True)
