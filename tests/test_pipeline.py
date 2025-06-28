@@ -2,7 +2,15 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from development.models import PlanOutput, PlanEditDecision, PlanEditorOutput, UserFeedback, PartFinderOutput
+from circuitron.models import (
+    PlanOutput,
+    PlanEditDecision,
+    PlanEditorOutput,
+    UserFeedback,
+    PartFinderOutput,
+)
+import circuitron.config as cfg
+cfg.setup_environment()
 from circuitron import pipeline as pl
 
 

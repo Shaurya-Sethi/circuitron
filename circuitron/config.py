@@ -20,5 +20,3 @@ def setup_environment() -> None:
     settings = Settings()
 
 
-# Initialize when module is imported
-setup_environment()

@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-circuitron = "circuitron.pipeline:main"
+circuitron = "circuitron.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

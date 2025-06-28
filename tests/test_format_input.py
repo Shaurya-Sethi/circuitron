@@ -1,10 +1,5 @@
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from development.models import PlanOutput, UserFeedback
-from development.utils import format_plan_edit_input
+from circuitron.models import PlanOutput, UserFeedback
+from circuitron.utils import format_plan_edit_input
 
 
 def test_format_plan_edit_input_includes_sections():

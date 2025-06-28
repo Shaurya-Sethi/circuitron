@@ -1,10 +1,6 @@
-import os
-import sys
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from development.models import PlanOutput, PlanEditDecision, PlanEditorOutput
+from circuitron.models import PlanOutput, PlanEditDecision, PlanEditorOutput
 
 
 def test_plan_editor_output_edit():

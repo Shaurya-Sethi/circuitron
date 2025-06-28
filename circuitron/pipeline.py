@@ -10,15 +10,15 @@ import asyncio
 
 from agents import Runner
 
-from development.agents import planner, plan_editor, part_finder
+from circuitron.agents import planner, plan_editor, part_finder
 from agents.result import RunResult
-from development.models import (
+from circuitron.models import (
     PlanOutput,
     UserFeedback,
     PlanEditorOutput,
     PartFinderOutput,
 )
-from development.utils import (
+from circuitron.utils import (
     pretty_print_plan,
     pretty_print_edited_plan,
     pretty_print_regeneration_prompt,

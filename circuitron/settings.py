@@ -3,7 +3,7 @@
 Environment variables can override defaults.
 
 Example:
-    from development.config import settings
+    from circuitron.config import settings
     print(settings.planning_model)
 """
 
