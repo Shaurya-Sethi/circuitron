@@ -17,3 +17,14 @@ def test_search_kicad_libraries():
         data = json.loads(result)
         assert data[0]["name"] == "LM324"
         run_mock.assert_called_once()
+
+
+def test_search_kicad_libraries_timeout():
+    with patch(
+        "development.tools.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
+    ):
+        ctx = RunContextWrapper(context=None)
+        args = json.dumps({"query": "123"})
+        result = asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
+        assert "error" in result.lower()

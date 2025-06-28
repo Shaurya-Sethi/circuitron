@@ -1,8 +1,12 @@
-"""Circuitron orchestration pipeline."""
+"""Circuitron orchestration pipeline.
+
+This module wires together the planner, plan editor and part finder agents.
+It also exposes a simple CLI for running the pipeline from the command line.
+"""
 from __future__ import annotations
 
+import argparse
 import asyncio
-import sys
 
 from agents import Runner
 
@@ -49,7 +53,19 @@ async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
 ) -> PartFinderOutput:
-    """Execute planning, plan editing and part search flow."""
+    """Execute planning, plan editing and part search flow.
+
+    Args:
+        prompt: Natural language design request.
+        show_reasoning: Print the reasoning summary when ``True``.
+        debug: Print calculation code when ``True``.
+
+    Returns:
+        The :class:`PartFinderOutput` produced after searching libraries.
+
+    Example:
+        >>> asyncio.run(pipeline("buck converter"))
+    """
     plan_result = await run_planner(prompt)
     plan = plan_result.final_output
     pretty_print_plan(plan)
@@ -77,7 +93,8 @@ async def pipeline(
 
     if edit_result.decision.action == "edit_plan":
         pretty_print_edited_plan(edit_result)
-        final_plan = edit_result.updated_plan  # type: ignore[assignment]
+        assert edit_result.updated_plan is not None
+        final_plan = edit_result.updated_plan
         part_output = await run_part_finder(final_plan)
         pretty_print_found_parts(part_output.found_components_json)
         return part_output
@@ -94,10 +111,22 @@ async def pipeline(
 
 async def main() -> None:
     """CLI entry point for the Circuitron pipeline."""
-    prompt = sys.argv[1] if len(sys.argv) > 1 else input("Prompt: ")
-    show_reasoning = "--reasoning" in sys.argv or "-r" in sys.argv
-    debug = "--debug" in sys.argv or "-d" in sys.argv
-    await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
+    args = parse_args()
+    prompt = args.prompt or input("Prompt: ")
+    await pipeline(prompt, show_reasoning=args.reasoning, debug=args.debug)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments.
+
+    Example:
+        >>> args = parse_args(["prompt text", "-r"])
+    """
+    parser = argparse.ArgumentParser(description="Run the Circuitron pipeline")
+    parser.add_argument("prompt", nargs="?", help="Design prompt")
+    parser.add_argument("-r", "--reasoning", action="store_true", help="show reasoning summary")
+    parser.add_argument("-d", "--debug", action="store_true", help="show debug info")
+    return parser.parse_args(argv)
 
 
 if __name__ == "__main__":

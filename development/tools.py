@@ -8,6 +8,7 @@ import subprocess
 import textwrap
 import json
 from .models import CalcResult
+from .config import settings
 
 
 @function_tool
@@ -28,27 +29,42 @@ async def execute_calculation(
     """
     safe_code = textwrap.dedent(code)
     docker_cmd = [
-        "docker", "run", "--rm",
-        "--network", "none",
-        "--memory", "128m",
-        "--pids-limit", "64",
-        "python:3.12-slim",
-        "python", "-c", safe_code,
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "128m",
+        "--pids-limit",
+        "64",
+        settings.calculation_image,
+        "python",
+        "-c",
+        safe_code,
     ]
     try:
-        proc = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=15)
-        return CalcResult(
-            calculation_id=calculation_id,
-            success=proc.returncode == 0,
-            stdout=proc.stdout.strip(),
-            stderr=proc.stderr.strip(),
+        proc = subprocess.run(
+            docker_cmd, capture_output=True, text=True, timeout=15, check=True
         )
-    except Exception as e:
+    except subprocess.TimeoutExpired as exc:
+        return CalcResult(calculation_id=calculation_id, success=False, stderr=str(exc))
+    except subprocess.CalledProcessError as exc:
         return CalcResult(
             calculation_id=calculation_id,
             success=False,
-            stderr=str(e),
+            stdout=exc.stdout.strip(),
+            stderr=exc.stderr.strip(),
         )
+    except Exception as exc:  # pragma: no cover - unexpected errors
+        return CalcResult(calculation_id=calculation_id, success=False, stderr=str(exc))
+
+    return CalcResult(
+        calculation_id=calculation_id,
+        success=True,
+        stdout=proc.stdout.strip(),
+        stderr=proc.stderr.strip(),
+    )
 
 
 @function_tool
@@ -64,12 +80,28 @@ if parts:
 print(json.dumps(results))
 """)
     docker_cmd = [
-        "docker", "run", "--rm", "--network", "none", "--memory", "512m", "--pids-limit", "256",
-        "ghcr.io/circuitron/kicad-skidl:latest",
-        "python", "-c", script
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "512m",
+        "--pids-limit",
+        "256",
+        settings.kicad_image,
+        "python",
+        "-c",
+        script,
     ]
     try:
-        proc = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=30)
-        return proc.stdout.strip()
-    except Exception as e:
-        return json.dumps({{"error": str(e)}})
+        proc = subprocess.run(
+            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps({{"error": "search timeout", "details": str(exc)}})
+    except subprocess.CalledProcessError as exc:
+        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+    except Exception as exc:  # pragma: no cover - unexpected errors
+        return json.dumps({{"error": str(exc)}})
+    return proc.stdout.strip()
