@@ -367,3 +367,17 @@ def pretty_print_regeneration_prompt(regen_output: PlanEditorOutput):
     print("RECONSTRUCTED PROMPT")
     print("="*40)
     print(regen_output.reconstructed_prompt)
+
+
+def pretty_print_found_parts(found_json: str) -> None:
+    """Display the components found by the PartFinder agent.
+
+    Args:
+        found_json: JSON string mapping each search query to a list of found parts.
+
+    Example:
+        >>> pretty_print_found_parts('[{"name": "LM324"}]')
+    """
+
+    print("\n=== FOUND COMPONENTS JSON ===\n")
+    print(found_json)
