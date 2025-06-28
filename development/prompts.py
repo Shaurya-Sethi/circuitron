@@ -143,3 +143,4 @@ Your task is to **clean, optimize, and creatively construct multiple SKiDL searc
 
 **After constructing the queries you have access to a tool to execute the queries to find the required parts - please make use of it.** 
 """
+PARTFINDER_PROMPT = PART_SEARCH_PROMPT

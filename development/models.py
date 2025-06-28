@@ -133,3 +133,17 @@ class PartSearchOutput(BaseModel):
     # Search results as formatted strings  
     search_results: List[str] = Field(default_factory=list, description="Found parts with name, library, description, footprint, and specifications")
 
+
+
+class FoundPart(BaseModel):
+    """Structure for a component found in KiCad libraries."""
+    name: str
+    library: str
+    footprint: str | None = None
+    description: str | None = None
+
+
+class PartFinderOutput(BaseModel):
+    """Output from the PartFinder agent."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    found_components_json: str = Field(description="JSON mapping search query to list of found components")

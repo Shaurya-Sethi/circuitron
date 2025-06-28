@@ -6,6 +6,7 @@ Contains calculation tools and other utilities that agents can use.
 from agents import function_tool
 import subprocess
 import textwrap
+import json
 from .models import CalcResult
 
 
@@ -48,3 +49,27 @@ async def execute_calculation(
             success=False,
             stderr=str(e),
         )
+
+
+@function_tool
+async def search_kicad_libraries(query: str) -> str:
+    """Search KiCad libraries using skidl.search."""
+    script = textwrap.dedent(f"""
+import json, skidl
+parts = skidl.search({query!r})
+results = []
+if parts:
+    for p in parts:
+        results.append({{"name": p.name, "library": getattr(p, "lib", ""), "footprint": getattr(p, "footprint", None), "description": getattr(p, "description", None)}})
+print(json.dumps(results))
+""")
+    docker_cmd = [
+        "docker", "run", "--rm", "--network", "none", "--memory", "512m", "--pids-limit", "256",
+        "ghcr.io/circuitron/kicad-skidl:latest",
+        "python", "-c", script
+    ]
+    try:
+        proc = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=30)
+        return proc.stdout.strip()
+    except Exception as e:
+        return json.dumps({{"error": str(e)}})
