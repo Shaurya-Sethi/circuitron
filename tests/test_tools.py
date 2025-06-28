@@ -4,13 +4,15 @@ import subprocess
 from unittest.mock import patch
 
 from agents.run_context import RunContextWrapper
-from development.tools import search_kicad_libraries
+import circuitron.config as cfg
 
 
 def test_search_kicad_libraries():
+    cfg.setup_environment()
+    from circuitron.tools import search_kicad_libraries
     fake_output = '[{"name": "LM324", "library": "linear", "footprint": "DIP-14", "description": "op amp"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
-    with patch("development.tools.subprocess.run", return_value=completed) as run_mock:
+    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
         ctx = RunContextWrapper(context=None)
         args = json.dumps({"query": "opamp lm324"})
         result = asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
@@ -20,8 +22,10 @@ def test_search_kicad_libraries():
 
 
 def test_search_kicad_libraries_timeout():
+    cfg.setup_environment()
+    from circuitron.tools import search_kicad_libraries
     with patch(
-        "development.tools.subprocess.run",
+        "circuitron.tools.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = RunContextWrapper(context=None)

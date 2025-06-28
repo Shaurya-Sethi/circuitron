@@ -6,8 +6,8 @@ Circuitron is an agentic PCB design accelerator that transforms natural language
 
 ## Current Development Status
 
-**✅ Working Prototype:** `prototype.py` - Functional demo with planning agent, calculations, and basic SKiDL code generation  
-**🔧 Development Branch:** `development/` - Modular architecture using OpenAI Agents SDK (in progress)  
+**✅ Working Prototype:** `examples/prototype.py` - Functional demo with planning agent, calculations, and basic SKiDL code generation
+**🔧 Modular Package:** `circuitron/` - Standard Python package using OpenAI Agents SDK
 **📚 Documentation:** Complete offline OpenAI Agents SDK docs available for LLM agents without internet access
 
 ### What's Working Now:
@@ -70,31 +70,41 @@ See [AGENTS.md](AGENTS.md) for AI coding guidelines and [overview.md](overview.m
 
 ### Run the Working Prototype:
 ```bash
-python prototype.py
+python examples/prototype.py
 ```
 
-### Run the Development Version:
+### Run the Package CLI:
 ```bash
-python main.py
+python -m circuitron "Design a voltage divider"
+```
+
+After installation:
+```bash
+circuitron "Design a voltage divider"
 ```
 
 ### Try the Interactive Notebook:
 ```bash
-jupyter notebook prototype.ipynb
+jupyter notebook examples/prototype.ipynb
 ```
 
 ## Project Structure
 
 ```
-circuitron/
+examples/
 ├── prototype.py            # Working prototype (main demo)
 ├── prototype.ipynb         # Jupyter notebook for interactive testing
-├── main.py                 # Entry point for new architecture
-├── development/            # Modular agent architecture (in progress)
-│   ├── agents.py           # Agent definitions
-│   ├── tools.py            # Tool implementations
-│   ├── models.py           # Data models
-│   └── utils.py            # Utility functions
+circuitron/
+├── cli.py                  # CLI entry point
+├── __main__.py             # Allows `python -m circuitron`
+├── agents.py               # Agent definitions
+├── models.py               # Data models
+├── tools.py                # Tool implementations
+├── prompts.py              # Prompt texts
+├── utils.py                # Utility functions
+├── config.py               # Environment setup
+├── settings.py             # Configuration dataclass
+├── pipeline.py             # Orchestration logic
 ├── openai-agents-sdk-docs.md  # Offline docs for LLM agents
 ├── lib_pickle_dir/         # Cached KiCad component libraries
 └── tests/                  # Test suite

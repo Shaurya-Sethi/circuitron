@@ -120,6 +120,6 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ### Configuration
 
 Runtime models and Docker images are configured via environment variables read
-by ``development.settings``. See ``README.md`` for details on the available
+by ``circuitron.settings``. See ``README.md`` for details on the available
 variables.
 ---
