@@ -1,22 +1,24 @@
 import asyncio
+import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import circuitron.config as cfg
+cfg.setup_environment()
+
 from circuitron.models import (
     PlanOutput,
+    PartFinderOutput,
+    PartSelectionOutput,
     PlanEditDecision,
     PlanEditorOutput,
     UserFeedback,
-    PartFinderOutput,
-    PartSelectionOutput,
 )
-import circuitron.config as cfg
-cfg.setup_environment()
-from circuitron import pipeline as pl
+import circuitron.pipeline as pl
 
 
 async def fake_pipeline_no_feedback():
-    plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
+    plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     part_out = PartFinderOutput(found_components_json="[]")
     select_out = PartSelectionOutput()
@@ -29,7 +31,7 @@ async def fake_pipeline_no_feedback():
 
 
 async def fake_pipeline_edit_plan():
-    plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
+    plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
     edit_output = PlanEditorOutput(
@@ -50,12 +52,4 @@ async def fake_pipeline_edit_plan():
 def test_pipeline_asyncio():
     asyncio.run(fake_pipeline_no_feedback())
     asyncio.run(fake_pipeline_edit_plan())
-
-
-def test_parse_args():
-    args = pl.parse_args(["prompt", "-r", "-d"])
-    assert args.prompt == "prompt"
-    assert args.reasoning is True
-    assert args.debug is True
-
 

@@ -156,3 +156,30 @@ class PartFinderOutput(BaseModel):
     """Output from the PartFinder agent."""
     model_config = ConfigDict(extra="forbid", strict=True)
     found_components_json: str = Field(description="JSON mapping search query to list of found components")
+
+
+class PinDetail(BaseModel):
+    """Detailed pin information for a selected component."""
+
+    number: str | None = None
+    name: str | None = None
+    function: str | None = None
+
+
+class SelectedPart(BaseModel):
+    """A part chosen for the design with footprint and pin info."""
+
+    name: str
+    library: str
+    footprint: str | None = None
+    selection_reason: str | None = None
+    pin_details: List[PinDetail] = Field(default_factory=list)
+
+
+class PartSelectionOutput(BaseModel):
+    """Output from the Part Selection agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    selections: List[SelectedPart] = Field(default_factory=list, description="Chosen parts with rationale and pin info")
+    summary: List[str] = Field(default_factory=list, description="Overall selection rationale")
+
