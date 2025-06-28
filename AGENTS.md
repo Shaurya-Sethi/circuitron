@@ -18,12 +18,18 @@ It defines **project-specific context, architecture, coding conventions, and pro
 
 ## 2. External Documentation – Always Consult Before Generating Code
 
+**Documentation Usage Policy**
+
+The online documentation is the PRIMARY source of reference for all information related to the OpenAI Agents SDK.
+Always refer to the online documentation first for guidance, best practices, and updates.
+Offline/local documentation should be used only if you are unable to access the online documentation (e.g., due to connectivity issues).
+
 OpenAI Codex (and all AI agents) **must consult the following official docs before modifying any file** in this project:
 
 * **OpenAI Agents SDK reference**
   URL: [https://openai.github.io/openai-agents-python/](https://openai.github.io/openai-agents-python/)
   GitHub: [`openai/openai-agents-python`](https://github.com/openai/openai-agents-python)
-  **Offline Fallback:** If unable to access the official documentation, consult the local file `openai_agents_sdk_docs_final_perfect.md` in the project root, which contains the complete, LLM-optimized OpenAI Agents SDK documentation.
+  **Offline Fallback:** If unable to access the official documentation, consult the local file `openai-agents-sdk-docs.md` in the project root, which contains the complete, LLM-optimized OpenAI Agents SDK documentation.
 
 * **OpenAI Platform API reference**
   URL: [https://platform.openai.com/docs/guides/](https://platform.openai.com/docs/guides/)
@@ -122,15 +128,7 @@ OpenAI Codex (and all AI agents) **must consult the following official docs befo
 
 ---
 
-## 8. Frequently Used References (for Codex)
-
-* [SKiDL API reference](https://devbisme.github.io/skidl/)
-* [OpenAI Agents SDK docs](https://openai.github.io/openai-agents-python/)
-* **Local Documentation:** `openai_agents_sdk_docs_final_perfect.md` - Complete offline OpenAI Agents SDK documentation (use when internet access is unavailable)
-
----
-
-## 9. For OpenAI Codex and AI Agents
+## 8. For OpenAI Codex and AI Agents
 
 * If you are ever uncertain about project requirements, **ask the user for clarification rather than hallucinating.**
 * Re-query the documentation links above regularly for changes or updates.
