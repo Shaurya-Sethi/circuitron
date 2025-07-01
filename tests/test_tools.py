@@ -3,7 +3,7 @@ import json
 import subprocess
 from unittest.mock import patch
 
-from agents.run_context import RunContextWrapper
+from agents.tool_context import ToolContext
 import circuitron.config as cfg
 
 
@@ -13,7 +13,7 @@ def test_search_kicad_libraries():
     fake_output = '[{"name": "LM324", "library": "linear", "footprint": "DIP-14", "description": "op amp"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
     with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t1")
         args = json.dumps({"query": "opamp lm324"})
         result = asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
         data = json.loads(result)
@@ -28,7 +28,7 @@ def test_search_kicad_libraries_timeout():
         "circuitron.tools.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t2")
         args = json.dumps({"query": "123"})
         result = asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
         assert "error" in result.lower()
@@ -40,7 +40,7 @@ def test_search_kicad_footprints():
     fake_output = '[{"name": "SOIC-8", "library": "Package_SO", "description": "soic"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
     with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t3")
         args = json.dumps({"query": "SOIC-8"})
         result = asyncio.run(search_kicad_footprints.on_invoke_tool(ctx, args))
         data = json.loads(result)
@@ -55,7 +55,7 @@ def test_search_kicad_footprints_timeout():
         "circuitron.tools.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t4")
         args = json.dumps({"query": "DIP"})
         result = asyncio.run(search_kicad_footprints.on_invoke_tool(ctx, args))
         assert "error" in result.lower()
@@ -67,7 +67,7 @@ def test_extract_pin_details():
     fake_output = '[{"number": "1", "name": "VCC", "function": "POWER"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
     with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t5")
         args = json.dumps({"library": "linear", "part_name": "lm386"})
         result = asyncio.run(extract_pin_details.on_invoke_tool(ctx, args))
         data = json.loads(result)
@@ -82,7 +82,7 @@ def test_extract_pin_details_timeout():
         "circuitron.tools.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = RunContextWrapper(context=None)
+        ctx = ToolContext(context=None, tool_call_id="t6")
         args = json.dumps({"library": "lin", "part_name": "bad"})
         result = asyncio.run(extract_pin_details.on_invoke_tool(ctx, args))
         assert "error" in result.lower()
