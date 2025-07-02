@@ -121,6 +121,9 @@ scheme.
 Use `CIRCUITRON_BANNER_THEME` to choose the ASCII banner gradient. Available
 options are `electric` (default), `solarizedDark`, and `sunset`.
 
+You can also switch themes at runtime using the `/theme` command. Run
+`/help` inside the CLI to see available commands.
+
 See `assets/ascii_banner.png` for a preview of the banner style.
 
 ### Run the Backend API (Docker)
