@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Text } from 'ink';
-import axios from 'axios';
+import React from 'react';
+import { Box, Text } from 'ink';
+import AsciiArt from './components/AsciiArt';
+import { BackendProvider, useBackendContext } from './contexts/BackendContext';
 
 const BACKEND_URL = process.env.CIRCUITRON_BACKEND_URL || 'http://localhost:8000';
 
-const App: React.FC = () => {
-  const [message, setMessage] = useState('Connecting to backend...');
-
-  useEffect(() => {
-    axios
-      .post(`${BACKEND_URL}/run`, { prompt: 'ping' })
-      .then((res) => {
-        setMessage(res.data.status ?? 'ok');
-      })
-      .catch(() => setMessage('Failed to connect'));
-  }, []);
-
-  return <Text>{message}</Text>;
+const Status: React.FC = () => {
+  const { connected } = useBackendContext();
+  return <Text>{connected ? 'Connected to backend' : 'Failed to connect'}</Text>;
 };
+
+const App: React.FC = () => (
+  <BackendProvider url={BACKEND_URL}>
+    <Box flexDirection="column">
+      <AsciiArt />
+      <Status />
+    </Box>
+  </BackendProvider>
+);
 
 export default App;
