@@ -4,9 +4,11 @@ Contains calculation tools and other utilities that agents can use.
 """
 
 from agents import function_tool
+from agents.tool import HostedMCPTool
 import subprocess
 import textwrap
 import json
+import os
 from .models import CalcResult
 from .config import settings
 
@@ -195,4 +197,18 @@ print(json.dumps(pins))
     except Exception as exc:  # pragma: no cover - unexpected errors
         return json.dumps({{"error": str(exc)}})
     return proc.stdout.strip()
+
+
+def create_mcp_documentation_tools() -> list[HostedMCPTool]:
+    """Create MCP tools for documentation lookup."""
+    server_url = os.getenv("MCP_URL", settings.mcp_url)
+    tool = HostedMCPTool(
+        tool_config={
+            "type": "mcp",
+            "server_label": "skidl_docs",
+            "server_url": server_url,
+            "require_approval": "never",
+        }
+    )
+    return [tool]
 

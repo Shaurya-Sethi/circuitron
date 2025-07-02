@@ -6,7 +6,14 @@ Contains formatting, printing, and other helper utilities.
 from typing import List
 from agents.items import ReasoningItem
 from agents.result import RunResult
-from .models import PlanOutput, UserFeedback, PlanEditorOutput, PartFinderOutput, PartSelectionOutput
+from .models import (
+    PlanOutput,
+    UserFeedback,
+    PlanEditorOutput,
+    PartFinderOutput,
+    PartSelectionOutput,
+    DocumentationOutput,
+)
 
 
 def extract_reasoning_summary(run_result: RunResult) -> str:
@@ -258,6 +265,30 @@ def format_part_selection_input(plan: PlanOutput, found: PartFinderOutput) -> st
     return "\n".join(parts)
 
 
+def format_documentation_input(
+    plan: PlanOutput, selection: PartSelectionOutput
+) -> str:
+    """Format input for the Documentation agent."""
+    parts = [
+        "DOCUMENTATION CONTEXT",
+        "=" * 40,
+        "",
+    ]
+    if plan.functional_blocks:
+        parts.extend(["Functional Blocks:", *[f"• {b}" for b in plan.functional_blocks], ""])
+    if plan.implementation_actions:
+        parts.extend(["Implementation Actions:", *[f"{i+1}. {a}" for i, a in enumerate(plan.implementation_actions)], ""])
+    if selection.selections:
+        parts.append("Selected Components:")
+        for part in selection.selections:
+            parts.append(f"- {part.name} ({part.library})")
+            for pin in part.pin_details:
+                parts.append(f"  pin {pin.number}: {pin.name} / {pin.function}")
+        parts.append("")
+    parts.append("Gather SKiDL documentation for these components and connections.")
+    return "\n".join(parts)
+
+
 def pretty_print_edited_plan(edited_output: PlanEditorOutput):
     """Pretty print an edited plan output with change summary."""
     print("\n" + "="*60)
@@ -332,4 +363,15 @@ def pretty_print_selected_parts(selection: PartSelectionOutput) -> None:
             print("Pins:")
             for pin in part.pin_details:
                 print(f"  {pin.number}: {pin.name} / {pin.function}")
+
+
+def pretty_print_documentation(docs: DocumentationOutput) -> None:
+    """Display documentation queries and findings."""
+    print("\n=== DOCUMENTATION QUERIES ===")
+    for q in docs.research_queries:
+        print(f" • {q}")
+    print("\n=== DOCUMENTATION FINDINGS ===")
+    for item in docs.documentation_findings:
+        print(f" • {item}")
+    print(f"\nImplementation Readiness: {docs.implementation_readiness}")
 

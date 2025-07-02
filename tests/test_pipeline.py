@@ -9,6 +9,7 @@ from circuitron.models import (
     UserFeedback,
     PartFinderOutput,
     PartSelectionOutput,
+    DocumentationOutput,
 )
 import circuitron.config as cfg
 cfg.setup_environment()
@@ -20,12 +21,16 @@ async def fake_pipeline_no_feedback():
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     part_out = PartFinderOutput(found_components_json="[]")
     select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
-    assert result is select_out
+    assert result is doc_out
 
 
 async def fake_pipeline_edit_plan():
@@ -38,13 +43,17 @@ async def fake_pipeline_edit_plan():
     )
     part_out = PartFinderOutput(found_components_json="[]")
     select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
          patch.object(pl, "run_plan_editor", AsyncMock(return_value=edit_output)), \
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
-         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)):
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)):
         result = await pl.pipeline("test")
-    assert result is select_out
+    assert result is doc_out
 
 
 def test_pipeline_asyncio():
