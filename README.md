@@ -118,6 +118,10 @@ The TUI attempts to connect to `http://localhost:8000` on start. Set
 `CIRCUITRON_BACKEND_URL` to point at a different server.
 Set `CIRCUITRON_THEME` to `dark`, `light`, or `sunset` to change the color
 scheme.
+Use `CIRCUITRON_BANNER_THEME` to choose the ASCII banner gradient. Available
+options are `electric` (default), `solarizedDark`, and `sunset`.
+
+See `assets/ascii_banner.png` for a preview of the banner style.
 
 ### Run the Backend API (Docker)
 
