@@ -23,7 +23,7 @@ Circuitron is an agentic PCB design accelerator that transforms natural language
 - Code validation with knowledge-graph-based hallucination checks
 - Automated code correction loop to resolve validation and ERC issues
 - Enhanced UI/UX with session management
-- PCB layout generation and auto-routing
+ - PCB layout generation (auto-routing via the DeepPCB API will be added in the future)
 - Production-ready deployment structure
 
 Part selection now leverages SKiDL's full search syntax: queries may contain multiple terms, quoted phrases, regular expressions, and OR pipes for precise component lookup.
