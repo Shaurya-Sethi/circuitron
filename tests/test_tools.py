@@ -90,7 +90,7 @@ def test_extract_pin_details_timeout():
 
 def test_create_mcp_documentation_tools():
     cfg.setup_environment()
-    from circuitron.tools import create_mcp_documentation_tools, create_mcp_tool
+    from circuitron.tools import create_mcp_documentation_tools
 
     dummy_tool = object()
     with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
@@ -101,7 +101,7 @@ def test_create_mcp_documentation_tools():
 
 def test_create_mcp_validation_tools():
     cfg.setup_environment()
-    from circuitron.tools import create_mcp_validation_tools, create_mcp_tool
+    from circuitron.tools import create_mcp_validation_tools
 
     dummy_tool = object()
     with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
