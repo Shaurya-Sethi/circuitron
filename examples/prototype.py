@@ -1,9 +1,18 @@
-"""prototype.py"""
+"""Prototype implementation for Circuitron."""
 
-# ---------- Set up tracing and load environment variables ----------
+import asyncio
+import subprocess
+import sys
+import textwrap
+from typing import List
 
 import logfire
 from dotenv import load_dotenv
+from pydantic import BaseModel, ConfigDict, Field
+
+from agents import Agent, Runner, function_tool
+from agents.items import ReasoningItem
+from agents.model_settings import ModelSettings
 
 load_dotenv()
 logfire.configure()
@@ -44,8 +53,6 @@ Focus on creating a complete, actionable plan that later agents can execute. **W
 # This module defines all the BaseModels required for getting structured outputs
 # from each agent in the pipeline, following OpenAI Agents SDK patterns.
 
-from typing import List
-from pydantic import BaseModel, Field, ConfigDict
 
 class PlanOutput(BaseModel):
     """Complete output from the Planning Agent."""
@@ -96,9 +103,6 @@ class CalcResult(BaseModel):
 
 # ========== Calculation Tool ==========
 
-from agents import function_tool
-import subprocess, textwrap
-
 @function_tool
 async def execute_calculation(
     calculation_id: str,
@@ -142,8 +146,6 @@ async def execute_calculation(
 
 # ---------- Reasoning extraction utility ----------
 
-from agents.items import ReasoningItem
-
 def extract_reasoning_summary(run_result):
     """
     Return the concatenated model‐generated reasoning summary text
@@ -160,9 +162,7 @@ def extract_reasoning_summary(run_result):
 
 # ---------- Planning Agent -------------
 
-import asyncio
-from agents import Agent, Runner
-from agents.model_settings import ModelSettings  # <-- Import ModelSettings
+
 
 model_settings = ModelSettings(
     tool_choice="required",
@@ -231,8 +231,6 @@ def pretty_print_plan(plan: PlanOutput):
 
 
 # ---------- Main execution block ----------
-
-import sys
 
 async def run_circuitron(prompt: str):
     return await Runner.run(planner, prompt)
