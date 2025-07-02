@@ -2,12 +2,12 @@
 
 import asyncio
 from .config import setup_environment
-from .models import PartFinderOutput
+from .models import CodeGenerationOutput
 
 
 async def run_circuitron(
     prompt: str, show_reasoning: bool = False, debug: bool = False
-) -> PartFinderOutput:
+) -> CodeGenerationOutput:
     """Execute the Circuitron workflow using the full pipeline."""
     from circuitron.pipeline import pipeline
 
@@ -25,10 +25,10 @@ def main():
     debug = args.debug
     
     # Execute pipeline
-    part_output = asyncio.run(run_circuitron(prompt, show_reasoning, debug))
-    if part_output:
-        print("\nFOUND COMPONENTS JSON:\n")
-        print(part_output.found_components_json)
+    code_output = asyncio.run(run_circuitron(prompt, show_reasoning, debug))
+    if code_output:
+        print("\n=== GENERATED SKiDL CODE ===\n")
+        print(code_output.complete_skidl_code)
 
 
 if __name__ == "__main__":

@@ -210,3 +210,45 @@ class DocumentationOutput(BaseModel):
         description="Assessment of readiness for code generation",
     )
 
+
+class CodeGenerationOutput(BaseModel):
+    """Complete output from the Code Generation Agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    # Complete SKiDL code
+    complete_skidl_code: str = Field(
+        ..., description="Complete executable SKiDL code"
+    )
+
+    # Code metadata as formatted strings
+    imports: List[str] = Field(
+        default_factory=list, description="Required import statements"
+    )
+    power_rails: List[str] = Field(
+        default_factory=list,
+        description="Power rail configurations with names and settings",
+    )
+    components: List[str] = Field(
+        default_factory=list,
+        description="Component instantiations with part and footprint details",
+    )
+    connections: List[str] = Field(
+        default_factory=list,
+        description="Connections between components with net names",
+    )
+    validation_calls: List[str] = Field(
+        default_factory=list, description="ERC and other validation calls"
+    )
+    output_generation: List[str] = Field(
+        default_factory=list, description="Output generation calls"
+    )
+
+    # Implementation notes and assumptions
+    implementation_notes: List[str] = Field(
+        default_factory=list, description="Important implementation notes"
+    )
+    assumptions: List[str] = Field(
+        default_factory=list, description="Assumptions made during generation"
+    )
+
