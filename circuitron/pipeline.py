@@ -16,6 +16,7 @@ from circuitron.agents import (
     part_finder,
     part_selector,
     documentation,
+    code_generator,
 )
 from agents.result import RunResult
 from circuitron.models import (
@@ -25,6 +26,7 @@ from circuitron.models import (
     PartFinderOutput,
     PartSelectionOutput,
     DocumentationOutput,
+    CodeGenerationOutput,
 )
 from circuitron.utils import (
     pretty_print_plan,
@@ -38,6 +40,9 @@ from circuitron.utils import (
     format_plan_edit_input,
     format_part_selection_input,
     format_documentation_input,
+    format_code_generation_input,
+    pretty_print_generated_code,
+    validate_code_generation_results,
 )
 
 
@@ -80,9 +85,21 @@ async def run_documentation(
     return result.final_output
 
 
+async def run_code_generation(
+    plan: PlanOutput, selection: PartSelectionOutput, docs: DocumentationOutput
+) -> CodeGenerationOutput:
+    """Generate SKiDL code using plan, selected parts, and documentation."""
+    input_msg = format_code_generation_input(plan, selection, docs)
+    result = await Runner.run(code_generator, input_msg)
+    code_output = result.final_output
+    pretty_print_generated_code(code_output)
+    validate_code_generation_results(code_output)
+    return code_output
+
+
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
-) -> DocumentationOutput:
+) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
     Args:
@@ -91,7 +108,7 @@ async def pipeline(
         debug: Print calculation code when ``True``.
 
     Returns:
-        The :class:`DocumentationOutput` gathered for code generation.
+        The :class:`CodeGenerationOutput` generated from the pipeline.
 
     Example:
         >>> asyncio.run(pipeline("buck converter"))
@@ -121,7 +138,7 @@ async def pipeline(
         pretty_print_selected_parts(selection)
         docs = await run_documentation(plan, selection)
         pretty_print_documentation(docs)
-        return docs
+        return await run_code_generation(plan, selection, docs)
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
 
@@ -135,7 +152,7 @@ async def pipeline(
         pretty_print_selected_parts(selection)
         docs = await run_documentation(final_plan, selection)
         pretty_print_documentation(docs)
-        return docs
+        return await run_code_generation(final_plan, selection, docs)
 
     pretty_print_regeneration_prompt(edit_result)
     assert edit_result.reconstructed_prompt is not None
@@ -148,7 +165,7 @@ async def pipeline(
     pretty_print_selected_parts(selection)
     docs = await run_documentation(new_plan, selection)
     pretty_print_documentation(docs)
-    return docs
+    return await run_code_generation(new_plan, selection, docs)
 
 
 async def main() -> None:

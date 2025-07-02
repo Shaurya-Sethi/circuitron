@@ -9,6 +9,7 @@ from circuitron.models import (
     PartFinderOutput,
     PartSelectionOutput,
     DocumentationOutput,
+    CodeGenerationOutput,
     PlanEditDecision,
     PlanEditorOutput,
     UserFeedback,
@@ -25,13 +26,15 @@ async def fake_pipeline_no_feedback():
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
     )
+    code_out = CodeGenerationOutput(complete_skidl_code="")
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
-    assert result is doc_out
+    assert result is code_out
 
 
 async def fake_pipeline_edit_plan():
@@ -48,14 +51,16 @@ async def fake_pipeline_edit_plan():
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
     )
+    code_out = CodeGenerationOutput(complete_skidl_code="")
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
          patch.object(pl, "run_plan_editor", AsyncMock(return_value=edit_output)), \
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
-         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)):
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)):
         result = await pl.pipeline("test")
-    assert result is doc_out
+    assert result is code_out
 
 
 def test_pipeline_asyncio():

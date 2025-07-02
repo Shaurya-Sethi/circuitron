@@ -1,5 +1,16 @@
-from circuitron.models import PlanOutput, UserFeedback, SelectedPart, PinDetail, PartSelectionOutput
-from circuitron.utils import format_plan_edit_input, format_documentation_input
+from circuitron.models import (
+    PlanOutput,
+    UserFeedback,
+    SelectedPart,
+    PinDetail,
+    PartSelectionOutput,
+    DocumentationOutput,
+)
+from circuitron.utils import (
+    format_plan_edit_input,
+    format_documentation_input,
+    format_code_generation_input,
+)
 
 
 def test_format_plan_edit_input_includes_sections():
@@ -31,3 +42,16 @@ def test_format_documentation_input_includes_parts():
     assert "DOCUMENTATION CONTEXT" in text
     assert "U1 (lib)" in text
     assert "pin 1: VCC" in text
+
+
+def test_format_code_generation_input_includes_docs():
+    plan = PlanOutput(functional_blocks=["Block"], implementation_actions=["Do"])
+    pin = PinDetail(number="1", name="VCC", function="POWER-IN")
+    part = SelectedPart(name="U1", library="lib", pin_details=[pin])
+    selection = PartSelectionOutput(selections=[part])
+    docs = DocumentationOutput(
+        research_queries=[], documentation_findings=["example"], implementation_readiness="ok"
+    )
+    text = format_code_generation_input(plan, selection, docs)
+    assert "CODE GENERATION CONTEXT" in text
+    assert "example" in text
