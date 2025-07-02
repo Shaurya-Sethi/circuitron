@@ -97,3 +97,40 @@ def test_create_mcp_documentation_tools():
     tool = tools[0]
     assert tool.tool_config["server_url"] == cfg.settings.mcp_url
 
+
+def test_create_mcp_validation_tools():
+    cfg.setup_environment()
+    from circuitron.tools import create_mcp_validation_tools
+
+    tools = create_mcp_validation_tools()
+    assert len(tools) == 1
+    tool = tools[0]
+    assert tool.tool_config["server_url"] == cfg.settings.mcp_url
+
+
+def test_run_erc_success():
+    cfg.setup_environment()
+    from circuitron.tools import run_erc
+
+    completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="{}", stderr="")
+    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
+        ctx = ToolContext(context=None, tool_call_id="t7")
+        args = json.dumps({"script_path": "/tmp/a.py"})
+        result = asyncio.run(run_erc.on_invoke_tool(ctx, args))
+        assert "{}" in result
+        run_mock.assert_called_once()
+
+
+def test_run_erc_timeout():
+    cfg.setup_environment()
+    from circuitron.tools import run_erc
+
+    with patch(
+        "circuitron.tools.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=60),
+    ):
+        ctx = ToolContext(context=None, tool_call_id="t8")
+        args = json.dumps({"script_path": "/tmp/a.py"})
+        result = asyncio.run(run_erc.on_invoke_tool(ctx, args))
+        assert "success" in result
+

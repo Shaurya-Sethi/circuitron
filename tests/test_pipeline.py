@@ -11,6 +11,7 @@ from circuitron.models import (
     PartSelectionOutput,
     DocumentationOutput,
     CodeGenerationOutput,
+    CodeValidationOutput,
 )
 import circuitron.config as cfg
 cfg.setup_environment()
@@ -31,6 +32,7 @@ async def fake_pipeline_no_feedback():
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
     assert result is code_out
@@ -57,7 +59,8 @@ async def fake_pipeline_edit_plan():
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
-         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)):
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))):
         result = await pl.pipeline("test")
     assert result is code_out
 
@@ -73,5 +76,33 @@ def test_parse_args():
     assert args.prompt == "prompt"
     assert args.reasoning is True
     assert args.debug is True
+
+
+def test_run_code_validation_calls_erc():
+    import circuitron.pipeline as pl
+    code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    selection = PartSelectionOutput()
+    docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    val_out = CodeValidationOutput(status="pass", summary="ok")
+    with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+        with patch("circuitron.pipeline.run_erc", AsyncMock(return_value="{}")) as erc_mock, \
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+            result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
+            erc_mock.assert_called_once()
+    assert result.status == "pass"
+
+
+def test_run_code_validation_no_erc_on_fail():
+    import circuitron.pipeline as pl
+    code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    selection = PartSelectionOutput()
+    docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    val_out = CodeValidationOutput(status="fail", summary="bad")
+    with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+        with patch("circuitron.pipeline.run_erc", AsyncMock()) as erc_mock, \
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+            result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
+            erc_mock.assert_not_called()
+    assert result.status == "fail"
 
 

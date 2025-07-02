@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 
 from agents import Runner
 
@@ -17,6 +18,7 @@ from circuitron.agents import (
     part_selector,
     documentation,
     code_generator,
+    code_validator,
 )
 from agents.result import RunResult
 from circuitron.models import (
@@ -41,9 +43,13 @@ from circuitron.utils import (
     format_part_selection_input,
     format_documentation_input,
     format_code_generation_input,
+    format_code_validation_input,
+    write_temp_skidl_script,
+    pretty_print_validation,
     pretty_print_generated_code,
     validate_code_generation_results,
 )
+from circuitron.tools import run_erc
 
 
 async def run_planner(prompt: str) -> RunResult:
@@ -97,6 +103,29 @@ async def run_code_generation(
     return code_output
 
 
+async def run_code_validation(
+    code_output: CodeGenerationOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+) -> CodeValidationOutput:
+    """Validate generated code and optionally run ERC."""
+
+    script_path = write_temp_skidl_script(code_output.complete_skidl_code)
+    input_msg = format_code_validation_input(script_path, selection, docs)
+    result = await Runner.run(code_validator, input_msg)
+    validation = result.final_output
+    pretty_print_validation(validation)
+    if validation.status == "pass":
+        erc_json = await run_erc(script_path)
+        try:
+            erc_result = json.loads(erc_json)
+        except Exception:
+            erc_result = {"success": False, "stderr": erc_json}
+        print("\n=== ERC RESULT ===")
+        print(erc_result)
+    return validation
+
+
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
 ) -> CodeGenerationOutput:
@@ -138,7 +167,9 @@ async def pipeline(
         pretty_print_selected_parts(selection)
         docs = await run_documentation(plan, selection)
         pretty_print_documentation(docs)
-        return await run_code_generation(plan, selection, docs)
+        code_out = await run_code_generation(plan, selection, docs)
+        await run_code_validation(code_out, selection, docs)
+        return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
 
@@ -152,7 +183,9 @@ async def pipeline(
         pretty_print_selected_parts(selection)
         docs = await run_documentation(final_plan, selection)
         pretty_print_documentation(docs)
-        return await run_code_generation(final_plan, selection, docs)
+        code_out = await run_code_generation(final_plan, selection, docs)
+        await run_code_validation(code_out, selection, docs)
+        return code_out
 
     pretty_print_regeneration_prompt(edit_result)
     assert edit_result.reconstructed_prompt is not None
@@ -165,7 +198,9 @@ async def pipeline(
     pretty_print_selected_parts(selection)
     docs = await run_documentation(new_plan, selection)
     pretty_print_documentation(docs)
-    return await run_code_generation(new_plan, selection, docs)
+    code_out = await run_code_generation(new_plan, selection, docs)
+    await run_code_validation(code_out, selection, docs)
+    return code_out
 
 
 async def main() -> None:

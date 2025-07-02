@@ -9,6 +9,7 @@ import subprocess
 import textwrap
 import json
 import os
+from typing import Any, Dict
 from .models import CalcResult
 from .config import settings
 
@@ -211,4 +212,71 @@ def create_mcp_documentation_tools() -> list[HostedMCPTool]:
         }
     )
     return [tool]
+
+
+def create_mcp_validation_tools() -> list[HostedMCPTool]:
+    """Create MCP tool for hallucination checks."""
+    server_url = os.getenv("MCP_URL", settings.mcp_url)
+    tool = HostedMCPTool(
+        tool_config={
+            "type": "mcp",
+            "server_label": "skidl_validation",
+            "server_url": server_url,
+            "require_approval": "never",
+        }
+    )
+    return [tool]
+
+
+@function_tool
+async def run_erc(script_path: str) -> str:
+    """Run a SKiDL script and perform ERC inside Docker."""
+
+    wrapper = textwrap.dedent(
+        """
+        import json, runpy, io, contextlib, skidl
+        out = io.StringIO()
+        err = io.StringIO()
+        success = True
+        erc_passed = False
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                runpy.run_path('/tmp/script.py', run_name='__main__')
+                result = skidl.ERC()
+                erc_passed = not bool(result)
+        except Exception as exc:
+            success = False
+            err.write(str(exc))
+        print(json.dumps({'success': success, 'erc_passed': erc_passed, 'stdout': out.getvalue(), 'stderr': err.getvalue()}))
+        """
+    )
+    docker_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--memory",
+        "512m",
+        "--pids-limit",
+        "256",
+        "-v",
+        f"{script_path}:/tmp/script.py:ro",
+        settings.kicad_image,
+        "python",
+        "-c",
+        wrapper,
+    ]
+    try:
+        proc = subprocess.run(
+            docker_cmd, capture_output=True, text=True, timeout=60, check=True
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps({"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)})
+    except subprocess.CalledProcessError as exc:
+        return json.dumps({"success": False, "erc_passed": False, "stdout": exc.stdout.strip(), "stderr": exc.stderr.strip()})
+    except Exception as exc:  # pragma: no cover
+        return json.dumps({"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)})
+
+    return proc.stdout.strip()
 
