@@ -1,12 +1,18 @@
 import os
+from pathlib import Path
 from types import SimpleNamespace
 
 from typing import Any, cast
 
+import pytest
+
 from agents.result import RunResult
 
 from agents.items import ReasoningItem
-from openai.types.responses.response_reasoning_item import ResponseReasoningItem, Summary
+from openai.types.responses.response_reasoning_item import (
+    ResponseReasoningItem,
+    Summary,
+)
 
 from circuitron.models import (
     CodeGenerationOutput,
@@ -39,6 +45,7 @@ from circuitron.utils import (
 )
 
 
+
 def test_extract_reasoning_summary() -> None:
     summary = Summary(text="explain", type="summary_text")
     rr = ResponseReasoningItem(id="1", summary=[summary], type="reasoning")
@@ -46,8 +53,6 @@ def test_extract_reasoning_summary() -> None:
     result = extract_reasoning_summary(cast(RunResult, SimpleNamespace(new_items=[item])))
     assert "explain" in result
 
-
-from pathlib import Path
 
 
 def test_write_temp_skidl_script(tmp_path: Path) -> None:
@@ -102,8 +107,6 @@ def test_format_code_validation_and_correction_input() -> None:
     corr = format_code_correction_input("/tmp/s.py", val, {"erc_passed": False})
     assert "Validation Summary: bad" in corr
     assert "erc_passed" in corr
-
-import pytest
 
 
 def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
