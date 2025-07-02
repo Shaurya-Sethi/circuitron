@@ -75,6 +75,13 @@ This project is in active development. The prototype demonstrates core functiona
 
 See [AGENTS.md](AGENTS.md) for AI coding guidelines and [overview.md](overview.md) for detailed project architecture.
 
+Before submitting a pull request, run the linter locally. CI executes `ruff` to
+enforce style:
+
+```bash
+ruff check .
+```
+
 ## Usage
 
 ### Run the Working Prototype:
