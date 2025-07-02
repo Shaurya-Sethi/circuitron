@@ -9,10 +9,17 @@ from backend.api import app
 from circuitron.models import CodeGenerationOutput, UserFeedback
 
 
-def test_run_endpoint_returns_result():
+def test_run_endpoint_returns_result() -> None:
     out = CodeGenerationOutput(complete_skidl_code="code")
 
-    async def fake_pipeline(prompt: str, show_reasoning: bool = False, debug: bool = False, *, user_feedback: UserFeedback | None = None, interactive: bool = True):
+    async def fake_pipeline(
+        prompt: str,
+        show_reasoning: bool = False,
+        debug: bool = False,
+        *,
+        user_feedback: UserFeedback | None = None,
+        interactive: bool = True,
+    ) -> CodeGenerationOutput:
         assert prompt == "p"
         assert show_reasoning is False
         assert debug is False

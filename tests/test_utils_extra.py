@@ -1,6 +1,10 @@
 import os
 from types import SimpleNamespace
 
+from typing import Any, cast
+
+from agents.result import RunResult
+
 from agents.items import ReasoningItem
 from openai.types.responses.response_reasoning_item import ResponseReasoningItem, Summary
 
@@ -15,6 +19,7 @@ from circuitron.models import (
     SelectedPart,
     ValidationIssue,
     ValidationSummary,
+    DocumentationOutput,
 )
 from circuitron.utils import (
     extract_reasoning_summary,
@@ -34,15 +39,18 @@ from circuitron.utils import (
 )
 
 
-def test_extract_reasoning_summary():
+def test_extract_reasoning_summary() -> None:
     summary = Summary(text="explain", type="summary_text")
     rr = ResponseReasoningItem(id="1", summary=[summary], type="reasoning")
-    item = ReasoningItem(agent=SimpleNamespace(), raw_item=rr)
-    result = extract_reasoning_summary(SimpleNamespace(new_items=[item]))
+    item = ReasoningItem(agent=cast(Any, SimpleNamespace()), raw_item=rr)
+    result = extract_reasoning_summary(cast(RunResult, SimpleNamespace(new_items=[item])))
     assert "explain" in result
 
 
-def test_write_temp_skidl_script(tmp_path):
+from pathlib import Path
+
+
+def test_write_temp_skidl_script(tmp_path: Path) -> None:
     path = write_temp_skidl_script("print('hi')")
     assert os.path.exists(path)
     with open(path) as fh:
@@ -51,7 +59,7 @@ def test_write_temp_skidl_script(tmp_path):
     os.remove(path)
 
 
-def test_parse_hallucination_report_roundtrip():
+def test_parse_hallucination_report_roundtrip() -> None:
     summary = ValidationSummary(
         total_validations=1,
         valid_count=1,
@@ -83,11 +91,11 @@ def test_parse_hallucination_report_roundtrip():
     assert parsed.validation_summary.valid_count == 1
 
 
-def test_format_code_validation_and_correction_input():
+def test_format_code_validation_and_correction_input() -> None:
     pin = PinDetail(number="1", name="VCC", function="pwr")
     part = SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[pin])
     selection = PartSelectionOutput(selections=[part])
-    docs = SimpleNamespace(documentation_findings=["doc"])
+    docs = cast(DocumentationOutput, SimpleNamespace(documentation_findings=["doc"]))
     val = CodeValidationOutput(status="fail", summary="bad", issues=[ValidationIssue(category="err", message="m", line=1)])
     text = format_code_validation_input("/tmp/s.py", selection, docs)
     assert "s.py" in text and "U1" in text and "doc" in text
@@ -95,7 +103,10 @@ def test_format_code_validation_and_correction_input():
     assert "Validation Summary: bad" in corr
     assert "erc_passed" in corr
 
-def test_pretty_print_helpers(capsys):
+import pytest
+
+
+def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     from circuitron.models import PlanEditDecision, PlanEditorOutput, PlanOutput, DocumentationOutput
     plan = PlanOutput(
         design_rationale=["why"],
@@ -125,7 +136,7 @@ def test_pretty_print_helpers(capsys):
     out = capsys.readouterr().out
     assert "SELECTED COMPONENTS" in out
 
-def test_collect_user_feedback(monkeypatch):
+def test_collect_user_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
     plan = PlanOutput(design_limitations=["q"], component_search_queries=[])
     answers = iter(["ans", "edit1", "", "req1", ""])
     monkeypatch.setattr("builtins.input", lambda _: next(answers))

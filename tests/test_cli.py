@@ -7,20 +7,20 @@ from circuitron.models import CodeGenerationOutput
 
 
 class FakeResponse:
-    def __init__(self, data: dict):
+    def __init__(self, data: dict[str, object]):
         self._data = data
 
     def raise_for_status(self) -> None:
         pass
 
-    def json(self) -> dict:
+    def json(self) -> dict[str, object]:
         return self._data
 
 
-def test_run_circuitron_invokes_backend():
+def test_run_circuitron_invokes_backend() -> None:
     out = CodeGenerationOutput(complete_skidl_code="code")
 
-    async def fake_post(url: str, json: dict) -> FakeResponse:
+    async def fake_post(url: str, json: dict[str, object]) -> FakeResponse:
         assert "p" == json["prompt"]
         assert json["reasoning"] is True
         assert json["debug"] is False
@@ -35,7 +35,10 @@ def test_run_circuitron_invokes_backend():
     assert result == out
 
 
-def test_cli_main_uses_args_and_prints(capsys):
+import pytest
+
+
+def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:
     out = CodeGenerationOutput(complete_skidl_code="abc")
     args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
     with patch("circuitron.cli.setup_environment"), \
@@ -47,7 +50,7 @@ def test_cli_main_uses_args_and_prints(capsys):
     assert "abc" in captured
 
 
-def test_cli_main_prompts_for_input(monkeypatch):
+def test_cli_main_prompts_for_input(monkeypatch: pytest.MonkeyPatch) -> None:
     out = CodeGenerationOutput(complete_skidl_code="xyz")
     args = SimpleNamespace(prompt=None, reasoning=True, debug=True)
     with patch("circuitron.cli.setup_environment"), \
@@ -58,7 +61,7 @@ def test_cli_main_prompts_for_input(monkeypatch):
         run_mock.assert_awaited_with("hello", True, True)
 
 
-def test_module_main_called():
+def test_module_main_called() -> None:
     import runpy
     with patch("circuitron.cli.main") as main_mock:
         runpy.run_module("circuitron", run_name="__main__")
