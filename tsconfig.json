@@ -8,7 +8,12 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "jsx": "react"
+    "jsx": "react",
+    "types": ["node", "react", "jest"],
+    "baseUrl": "./",
+    "paths": {
+      "ink": ["node_modules/ink/build/index.d.ts"]
+    }
   },
   "include": ["packages/cli/src/**/*"]
 }

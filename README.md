@@ -99,6 +99,26 @@ After installation:
 circuitron "Design a voltage divider"
 ```
 
+### Run the Node.js TUI
+
+First build the TypeScript sources:
+
+```bash
+npm run build
+node packages/cli/dist/index.js
+```
+
+After installing globally you can run:
+
+```bash
+circuitron-cli
+```
+
+The TUI attempts to connect to `http://localhost:8000` on start. Set
+`CIRCUITRON_BACKEND_URL` to point at a different server.
+Set `CIRCUITRON_THEME` to `dark`, `light`, or `sunset` to change the color
+scheme.
+
 ### Run the Backend API (Docker)
 
 Start the FastAPI server using uvicorn inside the provided Docker container:
