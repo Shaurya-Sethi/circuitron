@@ -1,17 +1,38 @@
 """Command line interface for Circuitron."""
 
 import asyncio
-from .config import setup_environment
-from .models import CodeGenerationOutput
+import httpx
+from .config import setup_environment, settings
+from .models import CodeGenerationOutput, UserFeedback
 
 
 async def run_circuitron(
-    prompt: str, show_reasoning: bool = False, debug: bool = False
+    prompt: str,
+    show_reasoning: bool = False,
+    debug: bool = False,
+    user_feedback: UserFeedback | None = None,
 ) -> CodeGenerationOutput:
-    """Execute the Circuitron workflow using the full pipeline."""
-    from circuitron.pipeline import pipeline
+    """Send the prompt to the backend API and return the generated code."""
 
-    return await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
+    payload: dict[str, object] = {
+        "prompt": prompt,
+        "reasoning": show_reasoning,
+        "debug": debug,
+    }
+    if user_feedback is not None:
+        payload["user_feedback"] = user_feedback.model_dump()
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(f"{settings.api_url}/run", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+
+    if stdout := data.get("stdout"):
+        print(stdout)
+    if stderr := data.get("stderr"):
+        print(stderr)
+
+    return CodeGenerationOutput.model_validate(data["result"])
 
 
 def main() -> None:
