@@ -4,6 +4,8 @@ Contains all specialized agents used in the PCB design pipeline.
 """
 
 from agents import Agent, RunContextWrapper, handoff
+from agents.tool import Tool
+from typing import Callable
 from agents.model_settings import ModelSettings
 import logging
 
@@ -43,12 +45,14 @@ def create_planning_agent() -> Agent:
     """Create and configure the Planning Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = [execute_calculation]
+
     return Agent(
         name="Circuitron-Planner",
         instructions=PLAN_PROMPT,
         model=settings.planning_model,
         output_type=PlanOutput,
-        tools=[execute_calculation],
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Generate initial design plan",
     )
@@ -58,12 +62,14 @@ def create_plan_edit_agent() -> Agent:
     """Create and configure the Plan Edit Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = [execute_calculation]
+
     return Agent(
         name="Circuitron-PlanEditor",
         instructions=PLAN_EDIT_PROMPT,
         model=settings.plan_edit_model,
         output_type=PlanEditorOutput,
-        tools=[execute_calculation],
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Review user feedback and adjust the plan",
     )
@@ -73,12 +79,14 @@ def create_partfinder_agent() -> Agent:
     """Create and configure the PartFinder Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = [search_kicad_libraries, search_kicad_footprints]
+
     return Agent(
         name="Circuitron-PartFinder",
         instructions=PARTFINDER_PROMPT,
         model=settings.part_finder_model,
         output_type=PartFinderOutput,
-        tools=[search_kicad_libraries, search_kicad_footprints],
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Search KiCad libraries for required parts",
     )
@@ -88,12 +96,14 @@ def create_partselection_agent() -> Agent:
     """Create and configure the Part Selection Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = [extract_pin_details]
+
     return Agent(
         name="Circuitron-PartSelector",
         instructions=PART_SELECTION_PROMPT,
         model=settings.part_selection_model,
         output_type=PartSelectionOutput,
-        tools=[extract_pin_details],
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Select optimal components and extract pin info",
     )
@@ -103,12 +113,14 @@ def create_documentation_agent() -> Agent:
     """Create and configure the Documentation Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = create_mcp_documentation_tools()
+
     return Agent(
         name="Circuitron-DocSeeker",
         instructions=DOC_AGENT_PROMPT,
         model=settings.documentation_model,
         output_type=DocumentationOutput,
-        tools=create_mcp_documentation_tools(),
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Gather SKiDL documentation",
     )
@@ -118,12 +130,14 @@ def create_code_generation_agent() -> Agent:
     """Create and configure the Code Generation Agent."""
     model_settings = ModelSettings(tool_choice="auto")
 
+    tools: list[Tool] = create_mcp_documentation_tools()
+
     return Agent(
         name="Circuitron-Coder",
         instructions=CODE_GENERATION_PROMPT,
         model=settings.code_generation_model,
         output_type=CodeGenerationOutput,
-        tools=create_mcp_documentation_tools(),
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Generate production-ready SKiDL code",
     )
@@ -133,12 +147,14 @@ def create_code_validation_agent() -> Agent:
     """Create and configure the Code Validation Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = create_mcp_validation_tools()
+
     return Agent(
         name="Circuitron-Validator",
         instructions=CODE_VALIDATION_PROMPT,
         model=settings.code_validation_model,
         output_type=CodeValidationOutput,
-        tools=create_mcp_validation_tools(),
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Validate SKiDL code",
     )
@@ -148,22 +164,24 @@ def create_code_correction_agent() -> Agent:
     """Create and configure the Code Correction Agent."""
     model_settings = ModelSettings(tool_choice="required")
 
+    tools: list[Tool] = [
+        *create_mcp_documentation_tools(),
+        *create_mcp_validation_tools(),
+        run_erc,
+    ]
+
     return Agent(
         name="Circuitron-Corrector",
         instructions=CODE_CORRECTION_PROMPT,
         model=settings.code_validation_model,
         output_type=CodeCorrectionOutput,
-        tools=[
-            *create_mcp_documentation_tools(),
-            *create_mcp_validation_tools(),
-            run_erc,
-        ],
+        tools=tools,
         model_settings=model_settings,
         handoff_description="Iteratively fix SKiDL code",
     )
 
 
-def _log_handoff_to(target: str):
+def _log_handoff_to(target: str) -> Callable[[RunContextWrapper[None]], None]:
     """Return a callback that logs when a handoff occurs."""
 
     def _callback(ctx: RunContextWrapper[None]) -> None:

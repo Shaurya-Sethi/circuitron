@@ -37,7 +37,7 @@ def extract_reasoning_summary(run_result: RunResult) -> str:
     return "\n\n".join(texts).strip() or "(no summary returned)"
 
 
-def print_section(title: str, items: List[str], bullet: str = "•", numbered: bool = False):
+def print_section(title: str, items: List[str], bullet: str = "•", numbered: bool = False) -> None:
     """Helper function to print a section with consistent formatting."""
     if not items:
         return
@@ -50,7 +50,7 @@ def print_section(title: str, items: List[str], bullet: str = "•", numbered: b
             print(f" {bullet} {item}")
 
 
-def pretty_print_plan(plan: PlanOutput):
+def pretty_print_plan(plan: PlanOutput) -> None:
     """Pretty print a structured plan output."""
     # Section 0: Design Rationale (if provided)
     print_section("Design Rationale", plan.design_rationale)
@@ -294,7 +294,7 @@ def format_documentation_input(
     return "\n".join(parts)
 
 
-def pretty_print_edited_plan(edited_output: PlanEditorOutput):
+def pretty_print_edited_plan(edited_output: PlanEditorOutput) -> None:
     """Pretty print an edited plan output with change summary."""
     print("\n" + "="*60)
     print("PLAN SUCCESSFULLY UPDATED")
@@ -317,7 +317,7 @@ def pretty_print_edited_plan(edited_output: PlanEditorOutput):
         pretty_print_plan(edited_output.updated_plan)
 
 
-def pretty_print_regeneration_prompt(regen_output: PlanEditorOutput):
+def pretty_print_regeneration_prompt(regen_output: PlanEditorOutput) -> None:
     """Pretty print a regeneration prompt output."""
     print("\n" + "="*60)
     print("PLAN REGENERATION REQUIRED")
@@ -485,7 +485,7 @@ def pretty_print_validation(result: CodeValidationOutput) -> None:
 def format_code_correction_input(
     script_path: str,
     validation: CodeValidationOutput,
-    erc_result: dict | None = None,
+    erc_result: dict[str, object] | None = None,
 ) -> str:
     """Format input for the Code Correction agent."""
 

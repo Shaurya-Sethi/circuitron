@@ -14,7 +14,7 @@ async def run_circuitron(
     return await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
 
 
-def main():
+def main() -> None:
     """Main entry point for the Circuitron system."""
     setup_environment()
     from circuitron.pipeline import parse_args

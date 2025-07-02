@@ -4,7 +4,7 @@ Contains calculation tools and other utilities that agents can use.
 """
 
 from agents import function_tool
-from agents.tool import HostedMCPTool
+from agents.tool import HostedMCPTool, Tool
 import subprocess
 import textwrap
 import json
@@ -219,12 +219,12 @@ def create_mcp_tool(server_label: str) -> HostedMCPTool:
     )
 
 
-def create_mcp_documentation_tools() -> list[HostedMCPTool]:
+def create_mcp_documentation_tools() -> list[Tool]:
     """Create MCP tools for documentation lookup."""
     return [create_mcp_tool("skidl_docs")]
 
 
-def create_mcp_validation_tools() -> list[HostedMCPTool]:
+def create_mcp_validation_tools() -> list[Tool]:
     """Create MCP tool for hallucination checks."""
     return [create_mcp_tool("skidl_validation")]
 
