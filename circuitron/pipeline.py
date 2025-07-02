@@ -29,6 +29,7 @@ from circuitron.models import (
     PartSelectionOutput,
     DocumentationOutput,
     CodeGenerationOutput,
+    CodeValidationOutput
 )
 from circuitron.utils import (
     pretty_print_plan,
