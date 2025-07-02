@@ -1,3 +1,10 @@
+import argparse
+import time
+from rich.color import Color
+from rich.console import Console
+from rich.style import Style
+from rich.text import Text
+
 LOGO_ART = """
  ██████╗ ██╗██████╗  ██████╗██╗   ██╗██╗████████╗██████╗  ██████╗ ███╗   ██╗
 ██╔════╝ ██║██╔══██╗██╔════╝██║   ██║██║╚══██╔══╝██╔══██╗██╔═══██╗████╗  ██║
@@ -6,14 +13,6 @@ LOGO_ART = """
 ╚██████╗ ██║██║  ██║╚██████╗╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██║ ╚████║
  ╚═════╝ ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 """
-
-
-import time
-from rich.console import Console
-from rich.text import Text
-from rich.color import Color
-from rich.style import Style
-import argparse
 
 THEMES = {
     "fire": ["#FFD700", "#FF8C00", "#FF4500", "#DC143C"],

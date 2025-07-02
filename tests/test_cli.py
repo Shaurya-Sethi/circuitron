@@ -2,6 +2,8 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 import circuitron.cli as cli
 from circuitron.models import CodeGenerationOutput
 
@@ -34,8 +36,6 @@ def test_run_circuitron_invokes_backend() -> None:
         result = asyncio.run(cli.run_circuitron("p", show_reasoning=True))
     assert result == out
 
-
-import pytest
 
 
 def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:
