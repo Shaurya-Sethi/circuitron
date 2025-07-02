@@ -1,0 +1,65 @@
+import asyncio
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import circuitron.pipeline as pl
+from circuitron.models import (
+    PlanOutput,
+    PlanEditDecision,
+    PlanEditorOutput,
+    UserFeedback,
+    CodeCorrectionOutput,
+    PartFinderOutput,
+    PartSelectionOutput,
+    DocumentationOutput,
+    CodeGenerationOutput,
+    CodeValidationOutput,
+)
+
+
+async def run_wrappers():
+    with patch("circuitron.pipeline.run_erc", AsyncMock(return_value="{}")), \
+         patch("circuitron.pipeline.Runner.run", AsyncMock()) as run_mock:
+        run_mock.return_value = SimpleNamespace(final_output=PlanOutput())
+        await pl.run_planner("p")
+        run_mock.assert_awaited_with(pl.planner, "p")
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=PlanEditorOutput(decision=PlanEditDecision(action="edit_plan", reasoning="x"), updated_plan=PlanOutput()))
+        await pl.run_plan_editor("p", PlanOutput(), UserFeedback())
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=PartFinderOutput(found_components_json="[]"))
+        await pl.run_part_finder(PlanOutput(component_search_queries=["Q"]))
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=PartSelectionOutput())
+        await pl.run_part_selector(PlanOutput(), PartFinderOutput(found_components_json="[]"))
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"))
+        await pl.run_documentation(PlanOutput(), PartSelectionOutput())
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=CodeGenerationOutput(complete_skidl_code="code"))
+        await pl.run_code_generation(PlanOutput(), PartSelectionOutput(), DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"))
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=CodeValidationOutput(status="pass", summary="ok"))
+        await pl.run_code_validation(CodeGenerationOutput(complete_skidl_code="code"), PartSelectionOutput(), DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"))
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes=""))
+        await pl.run_code_correction(CodeGenerationOutput(complete_skidl_code="code"), CodeValidationOutput(status="fail", summary="bad"))
+
+
+def test_wrapper_functions():
+    asyncio.run(run_wrappers())
+
+
+def test_pipeline_main(monkeypatch):
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
+    monkeypatch.setattr(pl, "parse_args", lambda argv=None: args)
+    monkeypatch.setattr(pl, "pipeline", AsyncMock())
+    asyncio.run(pl.main())
+    pl.pipeline.assert_awaited_with("p", show_reasoning=False, debug=False)
