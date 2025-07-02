@@ -1,5 +1,7 @@
 import argparse
 import time
+from typing import cast
+
 from rich.color import Color
 from rich.console import Console
 from rich.style import Style
@@ -25,14 +27,24 @@ THEMES = {
 def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
     """Converts a hex color string to an RGB tuple."""
     hex_color = hex_color.lstrip('#')
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    return cast(tuple[int, int, int], tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4)))
 
-def interpolate_color(start_rgb, end_rgb, factor):
-    """Linearly interpolates between two RGB colors."""
-    return tuple(int(start + (end - start) * factor) for start, end in zip(start_rgb, end_rgb))
+def interpolate_color(
+    start_rgb: tuple[int, int, int],
+    end_rgb: tuple[int, int, int],
+    factor: float,
+) -> tuple[int, int, int]:
+    """Linearly interpolate between two RGB colors."""
+    return cast(
+        tuple[int, int, int],
+        tuple(
+            int(start + (end - start) * factor)
+            for start, end in zip(start_rgb, end_rgb)
+        ),
+    )
 
-def apply_gradient(text: Text, colors: list[str]):
-    """Applies a horizontal gradient to a Rich Text object using a list of colors."""
+def apply_gradient(text: Text, colors: list[str]) -> Text:
+    """Apply a horizontal gradient to a ``Text`` object."""
     if not colors:
         return text
 
@@ -72,10 +84,8 @@ def apply_gradient(text: Text, colors: list[str]):
         new_text.append("\n")
     return new_text
 
-def main():
-    """
-    Displays the CIRCUITRON banner with a configurable color gradient theme.
-    """
+def main() -> None:
+    """Display the CIRCUITRON banner with an optional color theme."""
     parser = argparse.ArgumentParser(description="Display the CIRCUITRON banner with various color themes.")
     parser.add_argument("--theme", type=str, choices=THEMES.keys(), help="Specify the color theme to use.")
     args = parser.parse_args()
