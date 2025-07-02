@@ -98,7 +98,7 @@ print(json.dumps(results))
     ]
     try:
         proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+            docker_cmd, capture_output=True, text=True, timeout=120, check=True
         )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({{"error": "search timeout", "details": str(exc)}})
@@ -138,7 +138,7 @@ print(json.dumps(results))
     ]
     try:
         proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+            docker_cmd, capture_output=True, text=True, timeout=120, check=True
         )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({{"error": "footprint search timeout", "details": str(exc)}})
@@ -188,7 +188,7 @@ print(json.dumps(pins))
     ]
     try:
         proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=30, check=True
+            docker_cmd, capture_output=True, text=True, timeout=120, check=True
         )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({{"error": "pin extract timeout", "details": str(exc)}})
