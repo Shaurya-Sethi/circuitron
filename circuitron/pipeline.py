@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from typing import cast
 
 from agents import Runner
 
@@ -30,7 +31,8 @@ from circuitron.models import (
     PartSelectionOutput,
     DocumentationOutput,
     CodeGenerationOutput,
-    CodeValidationOutput
+    CodeValidationOutput,
+    CodeCorrectionOutput,
 )
 from circuitron.utils import (
     pretty_print_plan,
@@ -66,14 +68,14 @@ async def run_plan_editor(
     """Run the PlanEditor agent with formatted input."""
     input_msg = format_plan_edit_input(original_prompt, plan, feedback)
     result = await Runner.run(plan_editor, input_msg)
-    return result.final_output
+    return cast(PlanEditorOutput, result.final_output)
 
 
 async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
     """Search KiCad libraries for components from the plan."""
     query_text = "\n".join(plan.component_search_queries)
     result = await Runner.run(part_finder, query_text)
-    return result.final_output
+    return cast(PartFinderOutput, result.final_output)
 
 
 async def run_part_selector(
@@ -82,7 +84,7 @@ async def run_part_selector(
     """Select optimal parts using search results."""
     input_msg = format_part_selection_input(plan, part_output)
     result = await Runner.run(part_selector, input_msg)
-    return result.final_output
+    return cast(PartSelectionOutput, result.final_output)
 
 
 async def run_documentation(
@@ -91,7 +93,7 @@ async def run_documentation(
     """Gather SKiDL documentation based on plan and selected parts."""
     input_msg = format_documentation_input(plan, selection)
     result = await Runner.run(documentation, input_msg)
-    return result.final_output
+    return cast(DocumentationOutput, result.final_output)
 
 
 async def run_code_generation(
@@ -100,7 +102,7 @@ async def run_code_generation(
     """Generate SKiDL code using plan, selected parts, and documentation."""
     input_msg = format_code_generation_input(plan, selection, docs)
     result = await Runner.run(code_generator, input_msg)
-    code_output = result.final_output
+    code_output = cast(CodeGenerationOutput, result.final_output)
     pretty_print_generated_code(code_output)
     validate_code_generation_results(code_output)
     return code_output
@@ -110,17 +112,17 @@ async def run_code_validation(
     code_output: CodeGenerationOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
-) -> tuple[CodeValidationOutput, dict | None]:
+) -> tuple[CodeValidationOutput, dict[str, object] | None]:
     """Validate generated code and optionally run ERC."""
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     input_msg = format_code_validation_input(script_path, selection, docs)
     result = await Runner.run(code_validator, input_msg)
-    validation = result.final_output
+    validation = cast(CodeValidationOutput, result.final_output)
     pretty_print_validation(validation)
-    erc_result: dict | None = None
+    erc_result: dict[str, object] | None = None
     if validation.status == "pass":
-        erc_json = await run_erc(script_path)
+        erc_json = await run_erc(script_path)  # type: ignore[operator]
         try:
             erc_result = json.loads(erc_json)
         except Exception:
@@ -133,14 +135,14 @@ async def run_code_validation(
 async def run_code_correction(
     code_output: CodeGenerationOutput,
     validation: CodeValidationOutput,
-    erc_result: dict | None = None,
+    erc_result: dict[str, object] | None = None,
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     input_msg = format_code_correction_input(script_path, validation, erc_result)
     result = await Runner.run(code_corrector, input_msg)
-    correction = result.final_output
+    correction = cast(CodeCorrectionOutput, result.final_output)
     code_output.complete_skidl_code = correction.corrected_code
     return code_output
 

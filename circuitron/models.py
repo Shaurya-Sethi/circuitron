@@ -110,16 +110,16 @@ class PlanEditorOutput(BaseModel):
         description="Guidance for the Planner when regenerating a plan.",
     )
 
-    @model_validator(mode="after")  # type: ignore[misc,arg-type]
-    def validate_fields(cls, model: "PlanEditorOutput") -> "PlanEditorOutput":
-        action = model.decision.action
-        if action == "edit_plan" and model.updated_plan is None:
+    @model_validator(mode="after")
+    def validate_fields(self) -> "PlanEditorOutput":
+        action = self.decision.action
+        if action == "edit_plan" and self.updated_plan is None:
             raise ValueError("updated_plan must be provided when action is 'edit_plan'")
-        if action == "regenerate_plan" and model.reconstructed_prompt is None:
+        if action == "regenerate_plan" and self.reconstructed_prompt is None:
             raise ValueError(
                 "reconstructed_prompt must be provided when action is 'regenerate_plan'"
             )
-        return model
+        return self
 
 
 # ========== Part Search Agent Models ==========
