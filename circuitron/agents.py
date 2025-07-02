@@ -15,6 +15,7 @@ from .prompts import (
     PART_SELECTION_PROMPT,
     DOC_AGENT_PROMPT,
     CODE_GENERATION_PROMPT,
+    CODE_VALIDATION_PROMPT,
 )
 from .models import (
     PlanOutput,
@@ -23,6 +24,7 @@ from .models import (
     PartSelectionOutput,
     DocumentationOutput,
     CodeGenerationOutput,
+    CodeValidationOutput,
 )
 from .tools import (
     execute_calculation,
@@ -30,6 +32,7 @@ from .tools import (
     search_kicad_footprints,
     extract_pin_details,
     create_mcp_documentation_tools,
+    create_mcp_validation_tools,
 )
 
 
@@ -123,6 +126,21 @@ def create_code_generation_agent() -> Agent:
     )
 
 
+def create_code_validation_agent() -> Agent:
+    """Create and configure the Code Validation Agent."""
+    model_settings = ModelSettings(tool_choice="required")
+
+    return Agent(
+        name="Circuitron-Validator",
+        instructions=CODE_VALIDATION_PROMPT,
+        model=settings.code_validation_model,
+        output_type=CodeValidationOutput,
+        tools=create_mcp_validation_tools(),
+        model_settings=model_settings,
+        handoff_description="Validate SKiDL code",
+    )
+
+
 def _log_handoff_to(target: str):
     """Return a callback that logs when a handoff occurs."""
 
@@ -138,6 +156,7 @@ part_finder = create_partfinder_agent()
 part_selector = create_partselection_agent()
 documentation = create_documentation_agent()
 code_generator = create_code_generation_agent()
+code_validator = create_code_validation_agent()
 
 # Configure handoffs between agents
 planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"))]
@@ -148,3 +167,4 @@ plan_editor.handoffs = [
 part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"))]
 part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"))]
 documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"))]
+code_generator.handoffs = [handoff(code_validator, on_handoff=_log_handoff_to("CodeValidation"))]

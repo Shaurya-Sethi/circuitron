@@ -69,15 +69,17 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 3. **Part Selection & SKiDL Code Generation:**  
    - Agent searches local KiCad libraries for real parts matching requirements via SKiDL's built in `search()` function.
    - LLM generates SKiDL code, reflecting user preferences and constraints.
-4. **File Generation:**  
+4. **File Generation:**
    - SKiDL script can generate:
      - `.sch` schematic
      - Netlist and BOM
      - SVG schematic for UI preview
      - `.kicad_pcb` layout file
-5. **Electrical Rule Checking:**
+5. **Code Validation:**
+   - A dedicated agent checks the script for hallucinations and syntax issues using a knowledge graph.
+6. **Electrical Rule Checking:**
    - SKiDL Performs electrical rules checking (ERC) for common mistakes (e.g., unconnected device I/O pins).
-5. **PCB Autorouting:**  
+7. **PCB Autorouting:**
    - `.kicad_pcb` submitted to DeepPCB for AI-assisted routing.
 6. **Review & Handoff:**  
    - UI displays all files, design logs, and rationale.

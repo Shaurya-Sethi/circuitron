@@ -4,6 +4,8 @@ Contains formatting, printing, and other helper utilities.
 """
 
 from typing import List
+import tempfile
+import os
 from agents.items import ReasoningItem
 from agents.result import RunResult
 from .models import (
@@ -14,6 +16,8 @@ from .models import (
     PartSelectionOutput,
     DocumentationOutput,
     CodeGenerationOutput,
+    CodeValidationOutput,
+    HallucinationReport,
 )
 
 
@@ -409,6 +413,32 @@ def format_code_generation_input(
     return "\n".join(parts)
 
 
+def format_code_validation_input(
+    script_path: str, selection: PartSelectionOutput, docs: DocumentationOutput
+) -> str:
+    """Format input for the Code Validation agent."""
+
+    parts = [
+        "CODE VALIDATION CONTEXT",
+        "=" * 40,
+        f"Script Path: {script_path}",
+        "",
+    ]
+    if selection.selections:
+        parts.append("Selected Components:")
+        for part in selection.selections:
+            parts.append(f"- {part.name} ({part.library}) -> {part.footprint}")
+            for pin in part.pin_details:
+                parts.append(f"  pin {pin.number}: {pin.name}")
+        parts.append("")
+    if docs.documentation_findings:
+        parts.append("Relevant Documentation Snippets:")
+        parts.extend([f"• {d}" for d in docs.documentation_findings])
+        parts.append("")
+    parts.append("Validate the script and report any issues.")
+    return "\n".join(parts)
+
+
 def pretty_print_generated_code(code_output: CodeGenerationOutput) -> None:
     """Display generated SKiDL code."""
     print("\n=== GENERATED SKiDL CODE ===\n")
@@ -423,4 +453,31 @@ def validate_code_generation_results(code_output: CodeGenerationOutput) -> bool:
             print(f"Warning: expected phrase '{phrase}' not found in code")
             return False
     return True
+
+
+def write_temp_skidl_script(code: str) -> str:
+    """Write SKiDL code to a temporary script and return its path."""
+
+    fd, path = tempfile.mkstemp(prefix="skidl_", suffix=".py")
+    with os.fdopen(fd, "w") as fh:
+        fh.write(code)
+    return path
+
+
+def parse_hallucination_report(text: str) -> HallucinationReport:
+    """Parse JSON response from check_ai_script_hallucinations."""
+
+    return HallucinationReport.model_validate_json(text)
+
+
+def pretty_print_validation(result: CodeValidationOutput) -> None:
+    """Display validation summary and issues."""
+
+    print("\n=== CODE VALIDATION SUMMARY ===")
+    print(result.summary)
+    if result.issues:
+        print("\nIssues:")
+        for issue in result.issues:
+            line = f"line {issue.line}: " if issue.line else ""
+            print(f" - {line}{issue.category}: {issue.message}")
 

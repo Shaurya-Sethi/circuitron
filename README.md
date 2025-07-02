@@ -20,6 +20,7 @@ Circuitron is an agentic PCB design accelerator that transforms natural language
 ### In Development:
 - Full OpenAI Agents SDK integration
 - Modular agent architecture
+- Code validation with knowledge-graph-based hallucination checks
 - Enhanced UI/UX with session management
 - PCB layout generation and auto-routing
 - Production-ready deployment structure
@@ -51,6 +52,13 @@ Required variables:
 `OPENAI_API_KEY`, `PLANNING_MODEL`, `PLAN_EDIT_MODEL`, `PART_FINDER_MODEL`, and `MCP_URL`.
 Optional overrides:
 `CALC_IMAGE` and `KICAD_IMAGE` for custom Docker images.
+
+To enable hallucination checks, set `USE_KNOWLEDGE_GRAPH=true` and ensure the
+knowledge graph database is populated. The MCP README describes how to add a
+repository, for example:
+```
+python knowledge_graphs/ai_hallucination_detector.py add https://github.com/pydantic/pydantic-ai.git
+```
 
 ## Tech Stack
 

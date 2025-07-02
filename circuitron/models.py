@@ -3,7 +3,7 @@ Pydantic models for structured outputs in the Circuitron pipeline.
 Defines all BaseModels required for getting structured outputs from agents.
 """
 
-from typing import List
+from typing import List, Literal
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
@@ -252,3 +252,58 @@ class CodeGenerationOutput(BaseModel):
         default_factory=list, description="Assumptions made during generation"
     )
 
+class ValidationIssue(BaseModel):
+    """Issue detected during code validation."""
+
+    line: int | None = Field(
+        default=None, description="Line number where the issue was found"
+    )
+    category: str = Field(
+        ..., description="Type of issue such as syntax, mismatch, or warning"
+    )
+    message: str = Field(..., description="Human readable description of the issue")
+
+
+class ValidationSummary(BaseModel):
+    """Summary counts from hallucination checking."""
+
+    total_validations: int
+    valid_count: int
+    invalid_count: int
+    uncertain_count: int
+    not_found_count: int
+    hallucination_rate: float
+
+
+class AnalysisMetadata(BaseModel):
+    """Metadata about script analysis."""
+
+    total_imports: int
+    total_classes: int
+    total_methods: int
+    total_attributes: int
+    total_functions: int
+
+
+class HallucinationReport(BaseModel):
+    """Result from ``check_ai_script_hallucinations``."""
+
+    success: bool
+    script_path: str
+    overall_confidence: float | int
+    validation_summary: ValidationSummary
+    hallucinations_detected: bool
+    recommendations: List[str] = Field(default_factory=list)
+    analysis_metadata: AnalysisMetadata
+    libraries_analyzed: List[str] = Field(default_factory=list)
+
+
+class CodeValidationOutput(BaseModel):
+    """Output from the Code Validation agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    status: Literal["pass", "fail"]
+    summary: str = Field(..., description="Overall validation summary")
+    issues: List[ValidationIssue] = Field(default_factory=list)
+    hallucination_report: HallucinationReport | None = None
