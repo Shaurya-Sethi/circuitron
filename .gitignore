@@ -6,8 +6,11 @@ __pycache__/
 lib_pickle_dir
 openai_agents_sdk_docs.md
 src/
+!packages/cli/src/
 .pytest_cache/
 *.egg-info/
 prototype.ipynb
 legacy/
 .gemini/
+node_modules/
+packages/cli/dist/

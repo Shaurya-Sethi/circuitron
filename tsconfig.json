@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "commonjs",
+    "lib": ["es2019"],
+    "outDir": "packages/cli/dist",
+    "rootDir": "packages/cli/src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react"
+  },
+  "include": ["packages/cli/src/**/*"]
+}
