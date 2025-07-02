@@ -5,6 +5,7 @@ from circuitron.models import (
     PlanEditDecision,
     PlanEditorOutput,
     DocumentationOutput,
+    CodeGenerationOutput,
 )
 
 
@@ -34,3 +35,11 @@ def test_documentation_output():
         implementation_readiness="ready",
     )
     assert out.implementation_readiness == "ready"
+
+
+def test_code_generation_output():
+    out = CodeGenerationOutput(
+        complete_skidl_code="from skidl import *\n",
+        imports=["from skidl import *"],
+    )
+    assert "skidl" in out.complete_skidl_code

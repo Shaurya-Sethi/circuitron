@@ -14,6 +14,7 @@ from .prompts import (
     PARTFINDER_PROMPT,
     PART_SELECTION_PROMPT,
     DOC_AGENT_PROMPT,
+    CODE_GENERATION_PROMPT,
 )
 from .models import (
     PlanOutput,
@@ -21,6 +22,7 @@ from .models import (
     PartFinderOutput,
     PartSelectionOutput,
     DocumentationOutput,
+    CodeGenerationOutput,
 )
 from .tools import (
     execute_calculation,
@@ -106,6 +108,21 @@ def create_documentation_agent() -> Agent:
     )
 
 
+def create_code_generation_agent() -> Agent:
+    """Create and configure the Code Generation Agent."""
+    model_settings = ModelSettings(tool_choice="auto")
+
+    return Agent(
+        name="Circuitron-Coder",
+        instructions=CODE_GENERATION_PROMPT,
+        model=settings.code_generation_model,
+        output_type=CodeGenerationOutput,
+        tools=create_mcp_documentation_tools(),
+        model_settings=model_settings,
+        handoff_description="Generate production-ready SKiDL code",
+    )
+
+
 def _log_handoff_to(target: str):
     """Return a callback that logs when a handoff occurs."""
 
@@ -120,6 +137,7 @@ plan_editor = create_plan_edit_agent()
 part_finder = create_partfinder_agent()
 part_selector = create_partselection_agent()
 documentation = create_documentation_agent()
+code_generator = create_code_generation_agent()
 
 # Configure handoffs between agents
 planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"))]
@@ -129,3 +147,4 @@ plan_editor.handoffs = [
 ]
 part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"))]
 part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"))]
+documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"))]

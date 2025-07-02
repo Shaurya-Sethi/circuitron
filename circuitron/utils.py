@@ -13,6 +13,7 @@ from .models import (
     PartFinderOutput,
     PartSelectionOutput,
     DocumentationOutput,
+    CodeGenerationOutput,
 )
 
 
@@ -374,4 +375,52 @@ def pretty_print_documentation(docs: DocumentationOutput) -> None:
     for item in docs.documentation_findings:
         print(f" • {item}")
     print(f"\nImplementation Readiness: {docs.implementation_readiness}")
+
+
+def format_code_generation_input(
+    plan: PlanOutput, selection: PartSelectionOutput, docs: DocumentationOutput
+) -> str:
+    """Format input for the Code Generation agent."""
+    parts = [
+        "CODE GENERATION CONTEXT",
+        "=" * 40,
+        "",
+    ]
+    if plan.functional_blocks:
+        parts.extend(["Functional Blocks:", *[f"• {b}" for b in plan.functional_blocks], ""])
+    if plan.implementation_actions:
+        parts.extend([
+            "Implementation Actions:",
+            *[f"{i+1}. {a}" for i, a in enumerate(plan.implementation_actions)],
+            "",
+        ])
+    if selection.selections:
+        parts.append("Selected Components:")
+        for part in selection.selections:
+            parts.append(f"- {part.name} ({part.library}) -> {part.footprint}")
+            for pin in part.pin_details:
+                parts.append(f"  pin {pin.number}: {pin.name} / {pin.function}")
+        parts.append("")
+    if docs.documentation_findings:
+        parts.append("Relevant Documentation Snippets:")
+        parts.extend([f"• {d}" for d in docs.documentation_findings])
+        parts.append("")
+    parts.append("Generate complete SKiDL code implementing the design plan.")
+    return "\n".join(parts)
+
+
+def pretty_print_generated_code(code_output: CodeGenerationOutput) -> None:
+    """Display generated SKiDL code."""
+    print("\n=== GENERATED SKiDL CODE ===\n")
+    print(code_output.complete_skidl_code)
+
+
+def validate_code_generation_results(code_output: CodeGenerationOutput) -> bool:
+    """Basic validation of the generated code output."""
+    required_phrases = ["from skidl import"]
+    for phrase in required_phrases:
+        if phrase not in code_output.complete_skidl_code:
+            print(f"Warning: expected phrase '{phrase}' not found in code")
+            return False
+    return True
 
