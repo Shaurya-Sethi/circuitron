@@ -148,7 +148,12 @@ async def run_code_correction(
 
 
 async def pipeline(
-    prompt: str, show_reasoning: bool = False, debug: bool = False
+    prompt: str,
+    show_reasoning: bool = False,
+    debug: bool = False,
+    *,
+    user_feedback: UserFeedback | None = None,
+    interactive: bool = True,
 ) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
@@ -156,6 +161,8 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         debug: Print calculation code when ``True``.
+        user_feedback: Predefined feedback to apply instead of prompting.
+        interactive: Enable interactive prompts when ``True``.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -176,7 +183,7 @@ async def pipeline(
         print("\n=== Reasoning Summary ===\n")
         print(extract_reasoning_summary(plan_result))
 
-    feedback = collect_user_feedback(plan)
+    feedback = user_feedback if user_feedback is not None else collect_user_feedback(plan, interactive=interactive)
     if not any([
         feedback.open_question_answers,
         feedback.requested_edits,

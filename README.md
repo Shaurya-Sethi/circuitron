@@ -92,6 +92,18 @@ After installation:
 circuitron "Design a voltage divider"
 ```
 
+### Run the Backend API (Docker)
+
+Start the FastAPI server using uvicorn inside the provided Docker container:
+
+```bash
+docker build -t circuitron-backend .
+docker run -p 8000:8000 circuitron-backend uvicorn backend.api:app --host 0.0.0.0
+```
+
+The CLI communicates with the server at `http://localhost:8000` by default. Set
+`CIRCUITRON_API_URL` to change this location.
+
 ### Try the Interactive Notebook:
 ```bash
 jupyter notebook examples/prototype.ipynb

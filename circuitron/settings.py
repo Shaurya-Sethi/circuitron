@@ -25,3 +25,4 @@ class Settings:
     calculation_image: str = os.getenv("CALC_IMAGE", "python:3.12-slim")
     kicad_image: str = os.getenv("KICAD_IMAGE", "circuitron-backend")
     mcp_url: str = os.getenv("MCP_URL", "http://localhost:8051")
+    api_url: str = os.getenv("CIRCUITRON_API_URL", "http://localhost:8000")

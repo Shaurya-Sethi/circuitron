@@ -87,11 +87,14 @@ def pretty_print_plan(plan: PlanOutput) -> None:
 
 
 
-def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
+def collect_user_feedback(plan: PlanOutput, interactive: bool = True) -> UserFeedback:
+    """Collect user feedback on the design plan.
+
+    When ``interactive`` is ``False``, an empty :class:`UserFeedback` is
+    returned without prompting the user.
     """
-    Interactively collect user feedback on the design plan.
-    This function prompts the user to answer open questions and request edits.
-    """
+    if not interactive:
+        return UserFeedback()
     print("\n" + "="*60)
     print("PLAN REVIEW & FEEDBACK")
     print("="*60)
