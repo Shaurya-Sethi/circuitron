@@ -90,22 +90,24 @@ def test_extract_pin_details_timeout():
 
 def test_create_mcp_documentation_tools():
     cfg.setup_environment()
-    from circuitron.tools import create_mcp_documentation_tools
+    from circuitron.tools import create_mcp_documentation_tools, create_mcp_tool
 
-    tools = create_mcp_documentation_tools()
-    assert len(tools) == 1
-    tool = tools[0]
-    assert tool.tool_config["server_url"] == cfg.settings.mcp_url
+    dummy_tool = object()
+    with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
+        tools = create_mcp_documentation_tools()
+        helper.assert_called_once_with("skidl_docs")
+        assert tools == [dummy_tool]
 
 
 def test_create_mcp_validation_tools():
     cfg.setup_environment()
-    from circuitron.tools import create_mcp_validation_tools
+    from circuitron.tools import create_mcp_validation_tools, create_mcp_tool
 
-    tools = create_mcp_validation_tools()
-    assert len(tools) == 1
-    tool = tools[0]
-    assert tool.tool_config["server_url"] == cfg.settings.mcp_url
+    dummy_tool = object()
+    with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
+        tools = create_mcp_validation_tools()
+        helper.assert_called_once_with("skidl_validation")
+        assert tools == [dummy_tool]
 
 
 def test_run_erc_success():

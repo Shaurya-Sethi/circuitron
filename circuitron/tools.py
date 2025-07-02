@@ -200,32 +200,34 @@ print(json.dumps(pins))
     return proc.stdout.strip()
 
 
-def create_mcp_documentation_tools() -> list[HostedMCPTool]:
-    """Create MCP tools for documentation lookup."""
+def create_mcp_tool(server_label: str) -> HostedMCPTool:
+    """Return a HostedMCPTool configured for the given server label.
+
+    Args:
+        server_label: The target label of the MCP server.
+
+    Returns:
+        HostedMCPTool configured with the appropriate server URL.
+    """
     server_url = os.getenv("MCP_URL", settings.mcp_url)
-    tool = HostedMCPTool(
+    return HostedMCPTool(
         tool_config={
             "type": "mcp",
-            "server_label": "skidl_docs",
+            "server_label": server_label,
             "server_url": server_url,
             "require_approval": "never",
         }
     )
-    return [tool]
+
+
+def create_mcp_documentation_tools() -> list[HostedMCPTool]:
+    """Create MCP tools for documentation lookup."""
+    return [create_mcp_tool("skidl_docs")]
 
 
 def create_mcp_validation_tools() -> list[HostedMCPTool]:
     """Create MCP tool for hallucination checks."""
-    server_url = os.getenv("MCP_URL", settings.mcp_url)
-    tool = HostedMCPTool(
-        tool_config={
-            "type": "mcp",
-            "server_label": "skidl_validation",
-            "server_url": server_url,
-            "require_approval": "never",
-        }
-    )
-    return [tool]
+    return [create_mcp_tool("skidl_validation")]
 
 
 @function_tool
