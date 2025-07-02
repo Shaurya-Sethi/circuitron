@@ -14,26 +14,26 @@ from circuitron.models import (
 )
 
 
-def test_plan_editor_output_edit():
+def test_plan_editor_output_edit() -> None:
     plan = PlanOutput()
     decision = PlanEditDecision(action="edit_plan", reasoning="ok")
     result = PlanEditorOutput(decision=decision, updated_plan=plan)
     assert result.updated_plan is plan
 
 
-def test_plan_editor_output_edit_missing_plan():
+def test_plan_editor_output_edit_missing_plan() -> None:
     decision = PlanEditDecision(action="edit_plan", reasoning="bad")
     with pytest.raises(ValueError):
         PlanEditorOutput(decision=decision)
 
 
-def test_plan_editor_output_regenerate():
+def test_plan_editor_output_regenerate() -> None:
     decision = PlanEditDecision(action="regenerate_plan", reasoning="redo")
     result = PlanEditorOutput(decision=decision, reconstructed_prompt="new")
     assert result.reconstructed_prompt == "new"
 
 
-def test_documentation_output():
+def test_documentation_output() -> None:
     out = DocumentationOutput(
         research_queries=["q"],
         documentation_findings=["f"],
@@ -42,7 +42,7 @@ def test_documentation_output():
     assert out.implementation_readiness == "ready"
 
 
-def test_code_generation_output():
+def test_code_generation_output() -> None:
     out = CodeGenerationOutput(
         complete_skidl_code="from skidl import *\n",
         imports=["from skidl import *"],
@@ -50,7 +50,7 @@ def test_code_generation_output():
     assert "skidl" in out.complete_skidl_code
 
 
-def test_code_validation_output():
+def test_code_validation_output() -> None:
     issue = ValidationIssue(line=1, category="syntax", message="bad")
     summary = ValidationSummary(
         total_validations=1,

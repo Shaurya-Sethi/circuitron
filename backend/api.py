@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import io
 from contextlib import redirect_stdout, redirect_stderr
+from typing import Any
 
 from circuitron.models import UserFeedback
 
@@ -21,7 +22,7 @@ class RunRequest(BaseModel):
     user_feedback: UserFeedback | None = None
 
 @app.post("/run")
-async def run_job(req: RunRequest):
+async def run_job(req: RunRequest) -> dict[str, Any]:
     """Execute the Circuitron pipeline and capture stdout and stderr."""
     from circuitron.pipeline import pipeline
 

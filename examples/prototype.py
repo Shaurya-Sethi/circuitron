@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 
 from agents import Agent, Runner, function_tool
+from agents.result import RunResult
 from agents.items import ReasoningItem
-from agents.model_settings import ModelSettings, Reasoning
+from agents.model_settings import ModelSettings, Reasoning  # type: ignore[attr-defined]
 
 load_dotenv()
 logfire.configure()
@@ -146,7 +147,7 @@ async def execute_calculation(
 
 # ---------- Reasoning extraction utility ----------
 
-def extract_reasoning_summary(run_result):
+def extract_reasoning_summary(run_result: RunResult) -> str:
     """
     Return the concatenated model‐generated reasoning summary text
     from ResponseReasoningItem.raw_item.summary entries.
@@ -180,7 +181,7 @@ planner = Agent(
 
 # ---------- Pretty printing utilities ----------
 
-def print_section(title: str, items: List[str], bullet: str = "•", numbered: bool = False):
+def print_section(title: str, items: List[str], bullet: str = "•", numbered: bool = False) -> None:
     """Helper function to print a section with consistent formatting."""
     if not items:
         return
@@ -192,7 +193,7 @@ def print_section(title: str, items: List[str], bullet: str = "•", numbered: b
         else:
             print(f" {bullet} {item}")
 
-def pretty_print_plan(plan: PlanOutput):
+def pretty_print_plan(plan: PlanOutput) -> None:
     # Section 0: Design Rationale (if provided)
     print_section("Design Rationale", plan.design_rationale)
 
@@ -229,7 +230,7 @@ def pretty_print_plan(plan: PlanOutput):
 
 # ---------- Main execution block ----------
 
-async def run_circuitron(prompt: str):
+async def run_circuitron(prompt: str) -> RunResult:
     return await Runner.run(planner, prompt)
 
 if __name__ == "__main__":
