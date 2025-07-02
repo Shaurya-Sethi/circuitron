@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agents import Agent, Runner, function_tool
 from agents.items import ReasoningItem
-from agents.model_settings import ModelSettings
+from agents.model_settings import ModelSettings, Reasoning
 
 load_dotenv()
 logfire.configure()
@@ -166,10 +166,7 @@ def extract_reasoning_summary(run_result):
 
 model_settings = ModelSettings(
     tool_choice="required",
-    reasoning={
-        "effort": "medium", # default
-        "summary": "detailed"  
-    }
+    reasoning=Reasoning(effort="medium", summary="detailed"),
 )
 
 planner = Agent(
