@@ -13,18 +13,21 @@ from .prompts import (
     PLAN_EDIT_PROMPT,
     PARTFINDER_PROMPT,
     PART_SELECTION_PROMPT,
+    DOC_AGENT_PROMPT,
 )
 from .models import (
     PlanOutput,
     PlanEditorOutput,
     PartFinderOutput,
     PartSelectionOutput,
+    DocumentationOutput,
 )
 from .tools import (
     execute_calculation,
     search_kicad_libraries,
     search_kicad_footprints,
     extract_pin_details,
+    create_mcp_documentation_tools,
 )
 
 
@@ -88,6 +91,21 @@ def create_partselection_agent() -> Agent:
     )
 
 
+def create_documentation_agent() -> Agent:
+    """Create and configure the Documentation Agent."""
+    model_settings = ModelSettings(tool_choice="required")
+
+    return Agent(
+        name="Circuitron-DocSeeker",
+        instructions=DOC_AGENT_PROMPT,
+        model=settings.documentation_model,
+        output_type=DocumentationOutput,
+        tools=create_mcp_documentation_tools(),
+        model_settings=model_settings,
+        handoff_description="Gather SKiDL documentation",
+    )
+
+
 def _log_handoff_to(target: str):
     """Return a callback that logs when a handoff occurs."""
 
@@ -101,6 +119,7 @@ planner = create_planning_agent()
 plan_editor = create_plan_edit_agent()
 part_finder = create_partfinder_agent()
 part_selector = create_partselection_agent()
+documentation = create_documentation_agent()
 
 # Configure handoffs between agents
 planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"))]
@@ -109,3 +128,4 @@ plan_editor.handoffs = [
     handoff(part_finder, on_handoff=_log_handoff_to("PartFinder")),
 ]
 part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"))]
+part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"))]

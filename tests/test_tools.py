@@ -87,3 +87,13 @@ def test_extract_pin_details_timeout():
         result = asyncio.run(extract_pin_details.on_invoke_tool(ctx, args))
         assert "error" in result.lower()
 
+
+def test_create_mcp_documentation_tools():
+    cfg.setup_environment()
+    from circuitron.tools import create_mcp_documentation_tools
+
+    tools = create_mcp_documentation_tools()
+    assert len(tools) == 1
+    tool = tools[0]
+    assert tool.tool_config["server_url"] == cfg.settings.mcp_url
+

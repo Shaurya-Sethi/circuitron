@@ -4,6 +4,7 @@ Defines all BaseModels required for getting structured outputs from agents.
 """
 
 from typing import List
+from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
@@ -182,4 +183,30 @@ class PartSelectionOutput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     selections: List[SelectedPart] = Field(default_factory=list, description="Chosen parts with rationale and pin info")
     summary: List[str] = Field(default_factory=list, description="Overall selection rationale")
+
+
+class PriorityLevel(str, Enum):
+    """Priority levels for documentation queries."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class DocumentationOutput(BaseModel):
+    """Complete output from the Documentation Agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    research_queries: List[str] = Field(
+        default_factory=list,
+        description="Prioritized research queries with context",
+    )
+    documentation_findings: List[str] = Field(
+        default_factory=list,
+        description="Research findings with code examples and references",
+    )
+    implementation_readiness: str = Field(
+        ...,
+        description="Assessment of readiness for code generation",
+    )
 

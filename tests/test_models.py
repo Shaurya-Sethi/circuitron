@@ -1,6 +1,11 @@
 import pytest
 
-from circuitron.models import PlanOutput, PlanEditDecision, PlanEditorOutput
+from circuitron.models import (
+    PlanOutput,
+    PlanEditDecision,
+    PlanEditorOutput,
+    DocumentationOutput,
+)
 
 
 def test_plan_editor_output_edit():
@@ -20,3 +25,12 @@ def test_plan_editor_output_regenerate():
     decision = PlanEditDecision(action="regenerate_plan", reasoning="redo")
     result = PlanEditorOutput(decision=decision, reconstructed_prompt="new")
     assert result.reconstructed_prompt == "new"
+
+
+def test_documentation_output():
+    out = DocumentationOutput(
+        research_queries=["q"],
+        documentation_findings=["f"],
+        implementation_readiness="ready",
+    )
+    assert out.implementation_readiness == "ready"
