@@ -19,6 +19,7 @@ from circuitron.agents import (
     documentation,
     code_generator,
     code_validator,
+    code_corrector,
 )
 from agents.result import RunResult
 from circuitron.models import (
@@ -45,6 +46,7 @@ from circuitron.utils import (
     format_documentation_input,
     format_code_generation_input,
     format_code_validation_input,
+    format_code_correction_input,
     write_temp_skidl_script,
     pretty_print_validation,
     pretty_print_generated_code,
@@ -108,7 +110,7 @@ async def run_code_validation(
     code_output: CodeGenerationOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
-) -> CodeValidationOutput:
+) -> tuple[CodeValidationOutput, dict | None]:
     """Validate generated code and optionally run ERC."""
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
@@ -116,6 +118,7 @@ async def run_code_validation(
     result = await Runner.run(code_validator, input_msg)
     validation = result.final_output
     pretty_print_validation(validation)
+    erc_result: dict | None = None
     if validation.status == "pass":
         erc_json = await run_erc(script_path)
         try:
@@ -124,7 +127,22 @@ async def run_code_validation(
             erc_result = {"success": False, "stderr": erc_json}
         print("\n=== ERC RESULT ===")
         print(erc_result)
-    return validation
+    return validation, erc_result
+
+
+async def run_code_correction(
+    code_output: CodeGenerationOutput,
+    validation: CodeValidationOutput,
+    erc_result: dict | None = None,
+) -> CodeGenerationOutput:
+    """Run the Code Correction agent and return updated code."""
+
+    script_path = write_temp_skidl_script(code_output.complete_skidl_code)
+    input_msg = format_code_correction_input(script_path, validation, erc_result)
+    result = await Runner.run(code_corrector, input_msg)
+    correction = result.final_output
+    code_output.complete_skidl_code = correction.corrected_code
+    return code_output
 
 
 async def pipeline(
@@ -169,7 +187,14 @@ async def pipeline(
         docs = await run_documentation(plan, selection)
         pretty_print_documentation(docs)
         code_out = await run_code_generation(plan, selection, docs)
-        await run_code_validation(code_out, selection, docs)
+        validation, erc_result = await run_code_validation(code_out, selection, docs)
+        attempts = 0
+        while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
+            code_out = await run_code_correction(code_out, validation, erc_result)
+            validation, erc_result = await run_code_validation(code_out, selection, docs)
+            attempts += 1
+            if attempts >= 3:
+                break
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -185,7 +210,14 @@ async def pipeline(
         docs = await run_documentation(final_plan, selection)
         pretty_print_documentation(docs)
         code_out = await run_code_generation(final_plan, selection, docs)
-        await run_code_validation(code_out, selection, docs)
+        validation, erc_result = await run_code_validation(code_out, selection, docs)
+        attempts = 0
+        while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
+            code_out = await run_code_correction(code_out, validation, erc_result)
+            validation, erc_result = await run_code_validation(code_out, selection, docs)
+            attempts += 1
+            if attempts >= 3:
+                break
         return code_out
 
     pretty_print_regeneration_prompt(edit_result)
@@ -200,7 +232,14 @@ async def pipeline(
     docs = await run_documentation(new_plan, selection)
     pretty_print_documentation(docs)
     code_out = await run_code_generation(new_plan, selection, docs)
-    await run_code_validation(code_out, selection, docs)
+    validation, erc_result = await run_code_validation(code_out, selection, docs)
+    attempts = 0
+    while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
+        code_out = await run_code_correction(code_out, validation, erc_result)
+        validation, erc_result = await run_code_validation(code_out, selection, docs)
+        attempts += 1
+        if attempts >= 3:
+            break
     return code_out
 
 

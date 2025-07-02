@@ -77,9 +77,11 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
      - `.kicad_pcb` layout file
 5. **Code Validation:**
    - A dedicated agent checks the script for hallucinations and syntax issues using a knowledge graph.
-6. **Electrical Rule Checking:**
+6. **Code Correction Loop:**
+   - If validation fails or ERC reports errors, an automated agent iteratively fixes the code and re-runs checks.
+7. **Electrical Rule Checking:**
    - SKiDL Performs electrical rules checking (ERC) for common mistakes (e.g., unconnected device I/O pins).
-7. **PCB Autorouting:**
+8. **PCB Autorouting:**
    - `.kicad_pcb` submitted to DeepPCB for AI-assisted routing.
 6. **Review & Handoff:**  
    - UI displays all files, design logs, and rationale.

@@ -21,6 +21,7 @@ Circuitron is an agentic PCB design accelerator that transforms natural language
 - Full OpenAI Agents SDK integration
 - Modular agent architecture
 - Code validation with knowledge-graph-based hallucination checks
+- Automated code correction loop to resolve validation and ERC issues
 - Enhanced UI/UX with session management
 - PCB layout generation and auto-routing
 - Production-ready deployment structure
