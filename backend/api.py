@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import io
 from contextlib import redirect_stdout, redirect_stderr
-from typing import Any
 
 from circuitron.models import UserFeedback
 
