@@ -16,6 +16,7 @@ from .prompts import (
     DOC_AGENT_PROMPT,
     CODE_GENERATION_PROMPT,
     CODE_VALIDATION_PROMPT,
+    CODE_CORRECTION_PROMPT,
 )
 from .models import (
     PlanOutput,
@@ -25,6 +26,7 @@ from .models import (
     DocumentationOutput,
     CodeGenerationOutput,
     CodeValidationOutput,
+    CodeCorrectionOutput,
 )
 from .tools import (
     execute_calculation,
@@ -33,6 +35,7 @@ from .tools import (
     extract_pin_details,
     create_mcp_documentation_tools,
     create_mcp_validation_tools,
+    run_erc,
 )
 
 
@@ -141,6 +144,25 @@ def create_code_validation_agent() -> Agent:
     )
 
 
+def create_code_correction_agent() -> Agent:
+    """Create and configure the Code Correction Agent."""
+    model_settings = ModelSettings(tool_choice="required")
+
+    return Agent(
+        name="Circuitron-Corrector",
+        instructions=CODE_CORRECTION_PROMPT,
+        model=settings.code_validation_model,
+        output_type=CodeCorrectionOutput,
+        tools=[
+            *create_mcp_documentation_tools(),
+            *create_mcp_validation_tools(),
+            run_erc,
+        ],
+        model_settings=model_settings,
+        handoff_description="Iteratively fix SKiDL code",
+    )
+
+
 def _log_handoff_to(target: str):
     """Return a callback that logs when a handoff occurs."""
 
@@ -157,6 +179,7 @@ part_selector = create_partselection_agent()
 documentation = create_documentation_agent()
 code_generator = create_code_generation_agent()
 code_validator = create_code_validation_agent()
+code_corrector = create_code_correction_agent()
 
 # Configure handoffs between agents
 planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"))]
@@ -168,3 +191,4 @@ part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartS
 part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"))]
 documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"))]
 code_generator.handoffs = [handoff(code_validator, on_handoff=_log_handoff_to("CodeValidation"))]
+code_validator.handoffs = [handoff(code_corrector, on_handoff=_log_handoff_to("CodeCorrection"))]

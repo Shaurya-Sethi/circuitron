@@ -307,3 +307,26 @@ class CodeValidationOutput(BaseModel):
     summary: str = Field(..., description="Overall validation summary")
     issues: List[ValidationIssue] = Field(default_factory=list)
     hallucination_report: HallucinationReport | None = None
+
+
+class CodeCorrectionOutput(BaseModel):
+    """Complete output from the Code Correction Agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    issues_identified: List[str] = Field(
+        default_factory=list,
+        description="All issues identified with type, description, and location",
+    )
+    corrections_made: List[str] = Field(
+        default_factory=list,
+        description="Corrections applied with rationale",
+    )
+    documentation_references: List[str] = Field(
+        default_factory=list,
+        description="Documentation references used",
+    )
+    corrected_code: str = Field(..., description="Complete corrected SKiDL code")
+    validation_notes: str = Field(
+        ..., description="Notes about the validation and correction process"
+    )

@@ -58,3 +58,14 @@ def test_code_generation_agent_has_mcp_tool():
     mod = importlib.import_module("circuitron.agents")
     assert any(tool.__class__.__name__ == "HostedMCPTool" for tool in mod.code_generator.tools)
 
+
+def test_code_corrector_configuration():
+    import sys
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    mod = importlib.import_module("circuitron.agents")
+    assert mod.code_corrector.model == cfg.settings.code_validation_model
+    tool_names = [t.name for t in mod.code_corrector.tools]
+    assert "run_erc" in tool_names
+

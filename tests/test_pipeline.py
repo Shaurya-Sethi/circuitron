@@ -32,7 +32,7 @@ async def fake_pipeline_no_feedback():
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
     assert result is code_out
@@ -60,7 +60,7 @@ async def fake_pipeline_edit_plan():
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))):
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))):
         result = await pl.pipeline("test")
     assert result is code_out
 
@@ -85,11 +85,13 @@ def test_run_code_validation_calls_erc():
     docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     val_out = CodeValidationOutput(status="pass", summary="ok")
     with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
-        with patch("circuitron.pipeline.run_erc", AsyncMock(return_value="{}")) as erc_mock, \
+        with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')) as erc_mock, \
              patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
             erc_mock.assert_called_once()
-    assert result.status == "pass"
+    validation, erc = result
+    assert validation.status == "pass"
+    assert erc["erc_passed"] is True
 
 
 def test_run_code_validation_no_erc_on_fail():
@@ -103,6 +105,36 @@ def test_run_code_validation_no_erc_on_fail():
              patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
             erc_mock.assert_not_called()
-    assert result.status == "fail"
+    validation, erc = result
+    assert validation.status == "fail"
+    assert erc is None
+
+
+async def fake_pipeline_with_correction():
+    from circuitron import pipeline as pl
+    plan = PlanOutput()
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    code_out = CodeGenerationOutput(complete_skidl_code="init")
+    corrected = CodeGenerationOutput(complete_skidl_code="fixed")
+    val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
+    val_warn = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": False})
+    val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_warn, val_ok])), \
+         patch.object(pl, "run_code_correction", AsyncMock(return_value=corrected)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+        result = await pl.pipeline("test")
+    assert result.complete_skidl_code == "fixed"
+
+
+def test_pipeline_correction_flow():
+    asyncio.run(fake_pipeline_with_correction())
 
 

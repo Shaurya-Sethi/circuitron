@@ -33,7 +33,7 @@ async def fake_pipeline_no_feedback():
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
     assert result is code_out
@@ -61,7 +61,7 @@ async def fake_pipeline_edit_plan():
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(return_value=CodeValidationOutput(status="pass", summary="ok"))):
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))):
         result = await pl.pipeline("test")
     assert result is code_out
 

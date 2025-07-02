@@ -481,3 +481,33 @@ def pretty_print_validation(result: CodeValidationOutput) -> None:
             line = f"line {issue.line}: " if issue.line else ""
             print(f" - {line}{issue.category}: {issue.message}")
 
+
+def format_code_correction_input(
+    script_path: str,
+    validation: CodeValidationOutput,
+    erc_result: dict | None = None,
+) -> str:
+    """Format input for the Code Correction agent."""
+
+    parts = [
+        "CODE CORRECTION CONTEXT",
+        "=" * 40,
+        f"Script Path: {script_path}",
+        "",
+        f"Validation Summary: {validation.summary}",
+    ]
+    if validation.issues:
+        parts.append("Issues:")
+        for issue in validation.issues:
+            line = f"line {issue.line}: " if issue.line else ""
+            parts.append(f"- {line}{issue.category}: {issue.message}")
+        parts.append("")
+    if erc_result is not None:
+        parts.append("ERC Result:")
+        parts.append(str(erc_result))
+        parts.append("")
+    parts.append(
+        "Apply iterative corrections until validation passes and ERC shows zero errors."
+    )
+    return "\n".join(parts)
+
