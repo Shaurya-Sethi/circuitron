@@ -30,7 +30,7 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 ### **3. PCB Layout & Autorouting**
 - **PCB Layout Generation:** Using SKiDL’s `generate_pcb()` or compatible tools, Circuitron outputs `.kicad_pcb` files for physical design.
-- **DeepPCB API Integration:** Circuitron can optionally submit PCB layouts to `DeepPCB` for AI-assisted auto-routing via their API.  
+ - **DeepPCB API Integration:** *Planned*: Circuitron will optionally submit PCB layouts to `DeepPCB` for AI-assisted auto-routing. The public API documentation is currently limited, so this feature will be implemented in a future release.
   - **Caveat:** All autorouted layouts are clearly labeled as drafts for human review and optimization, especially for power applications.
 - **Full Design Transparency:** All design artifacts (reasoning, schematic, PCB, logs) are provided for auditability and compliance.
 
@@ -51,7 +51,7 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 - **RAG:** Via MCP (Model Context Protocol) server, indexing SKiDL docs, example designs
 - **Schematic & Netlist Generation:** SKiDL (Python)
 - **PCB Layout Generation:** SKiDL
-- **Autorouting:** DeepPCB API
+ - **Autorouting:** Planned DeepPCB API integration (documentation still evolving)
 - **File Management:** Local or Dockerized KiCad install for part queries and file validation
 - **API Service:** FastAPI (Python)
 - **Frontend:** Streamlit (prototype), React/Next.js (production)
@@ -81,8 +81,8 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
    - If validation fails or ERC reports errors, an automated agent iteratively fixes the code and re-runs checks.
 7. **Electrical Rule Checking:**
    - SKiDL Performs electrical rules checking (ERC) for common mistakes (e.g., unconnected device I/O pins).
-8. **PCB Autorouting:**
-   - `.kicad_pcb` submitted to DeepPCB for AI-assisted routing.
+8. **PCB Autorouting (future):**
+   - Planned support for submitting `.kicad_pcb` files to DeepPCB for AI-assisted routing once the API stabilizes.
 6. **Review & Handoff:**  
    - UI displays all files, design logs, and rationale.
    - Engineers can download and open all files directly in KiCad for review, simulation, further editing, and sign-off.
