@@ -13,10 +13,10 @@ from circuitron.models import (
 )
 import circuitron.config as cfg
 cfg.setup_environment()
-from circuitron import pipeline as pl
 
 
 async def fake_pipeline_no_feedback():
+    from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     part_out = PartFinderOutput(found_components_json="[]")
@@ -34,6 +34,7 @@ async def fake_pipeline_no_feedback():
 
 
 async def fake_pipeline_edit_plan():
+    from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
@@ -62,6 +63,7 @@ def test_pipeline_asyncio():
 
 
 def test_parse_args():
+    from circuitron import pipeline as pl
     args = pl.parse_args(["prompt", "-r", "-d"])
     assert args.prompt == "prompt"
     assert args.reasoning is True

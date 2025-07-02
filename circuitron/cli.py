@@ -17,7 +17,7 @@ async def run_circuitron(
 def main():
     """Main entry point for the Circuitron system."""
     setup_environment()
-    from circuitron.pipeline import pipeline, parse_args
+    from circuitron.pipeline import parse_args
 
     args = parse_args()
     prompt = args.prompt or input("Prompt: ")
