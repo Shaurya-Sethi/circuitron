@@ -1,10 +1,8 @@
 import asyncio
-import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import circuitron.config as cfg
-cfg.setup_environment()
 
 from circuitron.models import (
     PlanOutput,
@@ -15,10 +13,11 @@ from circuitron.models import (
     PlanEditorOutput,
     UserFeedback,
 )
-import circuitron.pipeline as pl
+cfg.setup_environment()
 
 
 async def fake_pipeline_no_feedback():
+    import circuitron.pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     part_out = PartFinderOutput(found_components_json="[]")
@@ -36,6 +35,7 @@ async def fake_pipeline_no_feedback():
 
 
 async def fake_pipeline_edit_plan():
+    import circuitron.pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
