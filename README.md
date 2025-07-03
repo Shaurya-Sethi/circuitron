@@ -40,12 +40,15 @@ See [overview.md](overview.md) for detailed project goals and structure.
 
 ### Setup
 
-Install dependencies with `pip install -r requirements.txt` and install the
-package so the CLI and tests can run:
+Install dependencies directly from `pyproject.toml` and install the package so
+the CLI and tests can run:
 
 ```bash
 pip install -e .  # or `pip install .`
 ```
+
+This installs `openai-agents`, `python-dotenv`, `skidl`, and `logfire`.
+A matching `requirements.txt` is included for convenience.
 
 Copy `.env.example` to `.env` and fill in the required values:
 
