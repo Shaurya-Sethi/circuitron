@@ -12,6 +12,7 @@ from circuitron.models import (
     DocumentationOutput,
     CodeGenerationOutput,
     CodeValidationOutput,
+    CodeCorrectionOutput,
 )
 import circuitron.config as cfg
 cfg.setup_environment()
@@ -225,3 +226,45 @@ async def fake_pipeline_regen_with_correction():
 
 def test_pipeline_regen_with_correction():
     asyncio.run(fake_pipeline_regen_with_correction())
+
+
+def test_run_code_validation_cleanup(tmp_path):
+    import circuitron.pipeline as pl
+
+    code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    selection = PartSelectionOutput()
+    docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    val_out = CodeValidationOutput(status="pass", summary="ok")
+
+    script_path = tmp_path / "temp.py"
+
+    def fake_write_temp(code: str) -> str:
+        script_path.write_text(code)
+        return str(script_path)
+
+    with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
+        with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+            with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')):
+                asyncio.run(pl.run_code_validation(code_out, selection, docs))
+
+    assert not script_path.exists()
+
+
+def test_run_code_correction_cleanup(tmp_path):
+    import circuitron.pipeline as pl
+
+    code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    validation = CodeValidationOutput(status="fail", summary="bad")
+    correction_out = CodeCorrectionOutput(corrected_code="fixed", validation_notes="")
+
+    script_path = tmp_path / "temp.py"
+
+    def fake_write_temp(code: str) -> str:
+        script_path.write_text(code)
+        return str(script_path)
+
+    with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
+        with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction_out))):
+            asyncio.run(pl.run_code_correction(code_out, validation))
+
+    assert not script_path.exists()
