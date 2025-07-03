@@ -37,7 +37,7 @@ from .tools import (
     extract_pin_details,
     create_mcp_documentation_tools,
     create_mcp_validation_tools,
-    run_erc,
+    run_erc_tool,
 )
 
 
@@ -167,7 +167,7 @@ def create_code_correction_agent() -> Agent:
     tools: list[Tool] = [
         *create_mcp_documentation_tools(),
         *create_mcp_validation_tools(),
-        run_erc,
+        run_erc_tool,
     ]
 
     return Agent(
