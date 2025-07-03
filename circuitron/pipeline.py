@@ -124,7 +124,7 @@ async def run_code_validation(
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
         if validation.status == "pass":
-            erc_json = await run_erc(script_path)  # type: ignore[operator]
+            erc_json = await run_erc(script_path)
             try:
                 erc_result = json.loads(erc_json)
             except Exception:

@@ -113,20 +113,20 @@ def test_create_mcp_validation_tools() -> None:
 
 def test_run_erc_success() -> None:
     cfg.setup_environment()
-    from circuitron.tools import run_erc
+    from circuitron.tools import run_erc_tool
 
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="{}", stderr="")
     with patch("circuitron.tools.kicad_session.exec_erc", return_value=completed) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t7")
         args = json.dumps({"script_path": "/tmp/a.py"})
-        result: str = asyncio.run(cast(Coroutine[Any, Any, str], run_erc.on_invoke_tool(ctx, args)))
+        result: str = asyncio.run(cast(Coroutine[Any, Any, str], run_erc_tool.on_invoke_tool(ctx, args)))
         assert "{}" in result
         run_mock.assert_called_once()
 
 
 def test_run_erc_timeout() -> None:
     cfg.setup_environment()
-    from circuitron.tools import run_erc
+    from circuitron.tools import run_erc_tool
 
     with patch(
         "circuitron.tools.kicad_session.exec_erc",
@@ -134,7 +134,7 @@ def test_run_erc_timeout() -> None:
     ):
         ctx = ToolContext(context=None, tool_call_id="t8")
         args = json.dumps({"script_path": "/tmp/a.py"})
-        result: str = asyncio.run(cast(Coroutine[Any, Any, str], run_erc.on_invoke_tool(ctx, args)))
+        result: str = asyncio.run(cast(Coroutine[Any, Any, str], run_erc_tool.on_invoke_tool(ctx, args)))
         assert "success" in result
 
 

@@ -206,9 +206,19 @@ def create_mcp_validation_tools() -> list[Tool]:
     return [create_mcp_tool("skidl_validation", cache_tools_list=True)]
 
 
-@function_tool
 async def run_erc(script_path: str) -> str:
-    """Run a SKiDL script and perform ERC inside Docker."""
+    """Run a SKiDL script and perform ERC inside Docker.
+
+    Args:
+        script_path: Path to the SKiDL script.
+
+    Returns:
+        JSON string with ``success`` flag, ``erc_passed`` status, stdout, and stderr.
+
+    Example:
+        >>> await run_erc("/tmp/test.py")
+        '{"success": true, "erc_passed": true, "stdout": "", "stderr": ""}'
+    """
 
     wrapper = textwrap.dedent(
         """
@@ -242,3 +252,6 @@ async def run_erc(script_path: str) -> str:
         return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
 
     return proc.stdout.strip()
+
+
+run_erc_tool = function_tool(run_erc)
