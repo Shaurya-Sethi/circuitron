@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 
 from agents import Agent, Runner, function_tool
-from agents.items import ReasoningItem
-from agents.model_settings import ModelSettings, Reasoning
+from agents.model_settings import ModelSettings, Reasoning  # type: ignore[attr-defined]
+from agents.result import RunResult
+from circuitron.utils import extract_reasoning_summary, pretty_print_plan
 
 load_dotenv()
 logfire.configure()
@@ -144,22 +145,6 @@ async def execute_calculation(
         )
 
 
-# ---------- Reasoning extraction utility ----------
-
-def extract_reasoning_summary(run_result):
-    """
-    Return the concatenated model‐generated reasoning summary text
-    from ResponseReasoningItem.raw_item.summary entries.
-    """
-    texts = []
-    for item in run_result.new_items:
-        if isinstance(item, ReasoningItem):
-            # raw_item.summary is List[ResponseSummaryText]
-            for chunk in item.raw_item.summary:
-                if getattr(chunk, "type", None) == "summary_text":
-                    texts.append(chunk.text)
-    return "\n\n".join(texts).strip() or "(no summary returned)"
-
 # ---------- Planning Agent -------------
 
 
@@ -178,58 +163,9 @@ planner = Agent(
     model_settings=model_settings    # <-- Pass model_settings to Agent
 )
 
-# ---------- Pretty printing utilities ----------
-
-def print_section(title: str, items: List[str], bullet: str = "•", numbered: bool = False):
-    """Helper function to print a section with consistent formatting."""
-    if not items:
-        return
-    
-    print(f"\n=== {title} ===")
-    for i, item in enumerate(items):
-        if numbered:
-            print(f" {i+1}. {item}")
-        else:
-            print(f" {bullet} {item}")
-
-def pretty_print_plan(plan: PlanOutput):
-    # Section 0: Design Rationale (if provided)
-    print_section("Design Rationale", plan.design_rationale)
-
-    # Section 1: Schematic Overview
-    print_section("Schematic Overview", plan.functional_blocks)
-
-    # Section 2: Design Equations & Calculations
-    if plan.design_equations:
-        print_section("Design Equations & Calculations", plan.design_equations)
-        
-        # Show calculation results if available
-        if plan.calculation_results:
-            print("\n=== Calculated Values ===")
-            for i, result in enumerate(plan.calculation_results):
-                print(f" {i+1}. {result}")
-    else:
-        print("\n=== Design Equations & Calculations ===")
-        print("No calculations required for this design.")
-
-    # Section 3: Implementation Actions
-    print_section("Implementation Steps", plan.implementation_actions, numbered=True)
-
-    # Section 4: Component Search Queries
-    print_section("Components to Search", plan.component_search_queries)
-
-    # Section 5: SKiDL Notes
-    print_section("Implementation Notes (SKiDL)", plan.implementation_notes)
-
-    # Section 6: Limitations / Open Questions
-    print_section("Design Limitations / Open Questions", plan.design_limitations)
-    
-    print()  # trailing newline
-
-
 # ---------- Main execution block ----------
 
-async def run_circuitron(prompt: str):
+async def run_circuitron(prompt: str) -> RunResult:
     return await Runner.run(planner, prompt)
 
 if __name__ == "__main__":

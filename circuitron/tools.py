@@ -6,6 +6,7 @@ Contains calculation tools and other utilities that agents can use.
 
 from agents import function_tool
 from agents.tool import HostedMCPTool, Tool
+import asyncio
 import subprocess
 import textwrap
 import json
@@ -51,8 +52,13 @@ async def execute_calculation(
         safe_code,
     ]
     try:
-        proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=15, check=True
+        proc = await asyncio.to_thread(
+            subprocess.run,
+            docker_cmd,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=True,
         )
     except subprocess.TimeoutExpired as exc:
         return CalcResult(calculation_id=calculation_id, success=False, stderr=str(exc))
@@ -89,7 +95,9 @@ if parts:
 print(json.dumps(results))
 """)
     try:
-        proc = kicad_session.exec_python(script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python, script, timeout=120
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -114,7 +122,9 @@ if footprints:
 print(json.dumps(results))
 """)
     try:
-        proc = kicad_session.exec_python(script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python, script, timeout=120
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "footprint search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -150,7 +160,9 @@ print(json.dumps(pins))
 """
     )
     try:
-        proc = kicad_session.exec_python(script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python, script, timeout=120
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "pin extract timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -215,7 +227,9 @@ async def run_erc(script_path: str) -> str:
         """
     )
     try:
-        proc = kicad_session.exec_erc(script_path, wrapper)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_erc, script_path, wrapper
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
     except subprocess.CalledProcessError as exc:

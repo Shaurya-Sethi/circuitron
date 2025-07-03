@@ -3,7 +3,7 @@ import pytest
 import circuitron.config as cfg
 
 
-def test_setup_environment_requires_vars(monkeypatch):
+def test_setup_environment_requires_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("MCP_URL", raising=False)
     with pytest.raises(SystemExit) as exc:
