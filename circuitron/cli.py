@@ -3,6 +3,7 @@
 import asyncio
 from .config import setup_environment
 from .models import CodeGenerationOutput
+from circuitron.tools import kicad_session
 
 
 
@@ -24,13 +25,26 @@ async def run_circuitron(
     )
 
 
+def verify_containers() -> bool:
+    """Ensure required Docker containers are running."""
+
+    try:
+        kicad_session.start()
+    except Exception as exc:
+        print(f"Failed to start KiCad container: {exc}")
+        return False
+    return True
+
+
 def main() -> None:
     """Main entry point for the Circuitron system."""
     from circuitron.pipeline import parse_args
-    from circuitron.tools import kicad_session
 
     args = parse_args()
     setup_environment(dev=args.dev)
+
+    if not verify_containers():
+        return
 
     prompt = args.prompt or input("Prompt: ")
     show_reasoning = args.reasoning
