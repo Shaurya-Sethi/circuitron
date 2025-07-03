@@ -96,7 +96,7 @@ def test_create_mcp_documentation_tools() -> None:
     dummy_tool = object()
     with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
         tools = create_mcp_documentation_tools()
-        helper.assert_called_once_with("skidl_docs")
+        helper.assert_called_once_with("skidl_docs", cache_tools_list=True)
         assert tools == [dummy_tool]
 
 
@@ -107,7 +107,7 @@ def test_create_mcp_validation_tools() -> None:
     dummy_tool = object()
     with patch("circuitron.tools.create_mcp_tool", return_value=dummy_tool) as helper:
         tools = create_mcp_validation_tools()
-        helper.assert_called_once_with("skidl_validation")
+        helper.assert_called_once_with("skidl_validation", cache_tools_list=True)
         assert tools == [dummy_tool]
 
 
