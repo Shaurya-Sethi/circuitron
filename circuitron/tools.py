@@ -1,4 +1,5 @@
 """
+    )
 Tools for the Circuitron agents.
 Contains calculation tools and other utilities that agents can use.
 """
@@ -11,6 +12,10 @@ import json
 import os
 from .models import CalcResult
 from .config import settings
+from .docker_session import DockerSession
+
+
+kicad_session = DockerSession(settings.kicad_image, "circuitron-kicad")
 
 
 @function_tool
@@ -83,31 +88,14 @@ if parts:
         results.append({{"name": p.name, "library": getattr(p, "lib", ""), "footprint": getattr(p, "footprint", None), "description": getattr(p, "description", None)}})
 print(json.dumps(results))
 """)
-    docker_cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--network",
-        "none",
-        "--memory",
-        "512m",
-        "--pids-limit",
-        "256",
-        settings.kicad_image,
-        "python",
-        "-c",
-        script,
-    ]
     try:
-        proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=120, check=True
-        )
+        proc = kicad_session.exec_python(script, timeout=120)
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({{"error": "search timeout", "details": str(exc)}})
+        return json.dumps({"error": "search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+        return json.dumps({"error": "subprocess failed", "details": exc.stderr.strip()})
     except Exception as exc:  # pragma: no cover - unexpected errors
-        return json.dumps({{"error": str(exc)}})
+        return json.dumps({"error": str(exc)})
     return proc.stdout.strip()
 
 
@@ -125,31 +113,14 @@ if footprints:
         results.append({{"name": fp.name, "library": getattr(fp, "lib", ""), "description": getattr(fp, "description", None)}})
 print(json.dumps(results))
 """)
-    docker_cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--network",
-        "none",
-        "--memory",
-        "512m",
-        "--pids-limit",
-        "256",
-        settings.kicad_image,
-        "python",
-        "-c",
-        script,
-    ]
     try:
-        proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=120, check=True
-        )
+        proc = kicad_session.exec_python(script, timeout=120)
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({{"error": "footprint search timeout", "details": str(exc)}})
+        return json.dumps({"error": "footprint search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+        return json.dumps({"error": "subprocess failed", "details": exc.stderr.strip()})
     except Exception as exc:  # pragma: no cover - unexpected errors
-        return json.dumps({{"error": str(exc)}})
+        return json.dumps({"error": str(exc)})
     return proc.stdout.strip()
 
 
@@ -176,32 +147,16 @@ for line in text:
         if len(parts) >= 4:
             pins.append({{"number": parts[1], "name": parts[2], "function": parts[3]}})
 print(json.dumps(pins))
-""")
-    docker_cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--network",
-        "none",
-        "--memory",
-        "512m",
-        "--pids-limit",
-        "256",
-        settings.kicad_image,
-        "python",
-        "-c",
-        script,
-    ]
+"""
+    )
     try:
-        proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=120, check=True
-        )
+        proc = kicad_session.exec_python(script, timeout=120)
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({{"error": "pin extract timeout", "details": str(exc)}})
+        return json.dumps({"error": "pin extract timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({{"error": "subprocess failed", "details": exc.stderr.strip()}})
+        return json.dumps({"error": "subprocess failed", "details": exc.stderr.strip()})
     except Exception as exc:  # pragma: no cover - unexpected errors
-        return json.dumps({{"error": str(exc)}})
+        return json.dumps({"error": str(exc)})
     return proc.stdout.strip()
 
 
@@ -259,33 +214,14 @@ async def run_erc(script_path: str) -> str:
         print(json.dumps({'success': success, 'erc_passed': erc_passed, 'stdout': out.getvalue(), 'stderr': err.getvalue()}))
         """
     )
-    docker_cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--network",
-        "none",
-        "--memory",
-        "512m",
-        "--pids-limit",
-        "256",
-        "-v",
-        f"{script_path}:/tmp/script.py:ro",
-        settings.kicad_image,
-        "python",
-        "-c",
-        wrapper,
-    ]
     try:
-        proc = subprocess.run(
-            docker_cmd, capture_output=True, text=True, timeout=60, check=True
-        )
+        proc = kicad_session.exec_erc(script_path, wrapper)
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)})
+        return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({"success": False, "erc_passed": False, "stdout": exc.stdout.strip(), "stderr": exc.stderr.strip()})
+        return json.dumps({'success': False, 'erc_passed': False, 'stdout': exc.stdout.strip(), 'stderr': exc.stderr.strip()})
     except Exception as exc:  # pragma: no cover
-        return json.dumps({"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)})
+        return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
 
     return proc.stdout.strip()
 
