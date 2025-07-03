@@ -55,6 +55,9 @@ Copy `.env.example` to `.env` and fill in the required values:
 ```
 OPENAI_API_KEY=<your OpenAI API key>
 LOGFIRE_TOKEN=<your token here>
+PLANNING_MODEL=o4-mini
+PLAN_EDIT_MODEL=o4-mini
+PART_FINDER_MODEL=o4-mini
 MCP_URL=http://localhost:8051
 
 ```
