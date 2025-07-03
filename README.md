@@ -131,6 +131,17 @@ circuitron/
 ├── lib_pickle_dir/         # Cached KiCad component libraries
 └── tests/                  # Test suite
 
+## Running Tests
+
+Install the package in editable mode so the CLI and tests use the local sources:
+
+```bash
+pip install -e .  # or `pip install .`
+pytest -q
+```
+
+All tests should pass after installation.
+
 ## License
 
 MIT
