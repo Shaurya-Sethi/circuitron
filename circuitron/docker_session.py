@@ -94,4 +94,3 @@ class DockerSession:
             return
         subprocess.run(["docker", "rm", "-f", self.container_name], capture_output=True)
         self.started = False
-

@@ -224,4 +224,3 @@ async def run_erc(script_path: str) -> str:
         return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
 
     return proc.stdout.strip()
-

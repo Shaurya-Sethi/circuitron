@@ -154,4 +154,3 @@ def test_kicad_session_start_once():
         assert start_mock.call_count == 2
         assert _run_mock.call_count == 2
     kicad_session.started = False
-

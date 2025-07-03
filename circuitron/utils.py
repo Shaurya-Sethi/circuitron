@@ -510,4 +510,3 @@ def format_code_correction_input(
         "Apply iterative corrections until validation passes and ERC shows zero errors."
     )
     return "\n".join(parts)
-
