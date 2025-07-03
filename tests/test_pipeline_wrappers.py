@@ -60,7 +60,7 @@ def test_wrapper_functions() -> None:
 
 
 def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=1)
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=1, dev=False)
     monkeypatch.setattr(pl, "parse_args", lambda argv=None: args)
     monkeypatch.setattr(pl, "run_with_retry", AsyncMock())
     asyncio.run(pl.main())

@@ -282,6 +282,9 @@ async def pipeline(
 async def main() -> None:
     """CLI entry point for the Circuitron pipeline."""
     args = parse_args()
+    from circuitron.config import setup_environment
+
+    setup_environment(dev=args.dev)
     prompt = args.prompt or input("Prompt: ")
     await run_with_retry(
         prompt,
@@ -295,12 +298,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments.
 
     Example:
-        >>> args = parse_args(["prompt text", "-r"])
+        >>> args = parse_args(["prompt text", "-r", "--dev"])
     """
     parser = argparse.ArgumentParser(description="Run the Circuitron pipeline")
     parser.add_argument("prompt", nargs="?", help="Design prompt")
     parser.add_argument("-r", "--reasoning", action="store_true", help="show reasoning summary")
     parser.add_argument("-d", "--debug", action="store_true", help="show debug info")
+    parser.add_argument("--dev", action="store_true", help="enable tracing with logfire")
     parser.add_argument(
         "-n",
         "--retries",

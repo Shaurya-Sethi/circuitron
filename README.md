@@ -47,13 +47,20 @@ the CLI and tests can run:
 pip install -e .  # or `pip install .`
 ```
 
-This installs `openai-agents`, `python-dotenv`, `skidl`, and `logfire`.
+This installs `openai-agents`, `python-dotenv`, and `skidl`.
+To enable tracing with `logfire`, install the optional dev extras:
+
+```bash
+pip install -e .[dev]
+```
+
 A matching `requirements.txt` is included for convenience.
 
 Copy `.env.example` to `.env` and fill in the required values:
 
 ```
 OPENAI_API_KEY=<your OpenAI API key>
+# Only required when using --dev for tracing
 LOGFIRE_TOKEN=<your token here>
 PLANNING_MODEL=o4-mini
 PLAN_EDIT_MODEL=o4-mini
@@ -80,7 +87,7 @@ python knowledge_graphs/ai_hallucination_detector.py add https://github.com/pyda
 - [OpenAI Agents SDK](https://github.com/openai/openai-agents) (integration in progress)
 - [SKiDL](https://github.com/xesscorp/skidl) for schematic generation
 - [python-dotenv](https://github.com/theskumar/python-dotenv) for configuration
-- [logfire](https://pydantic.dev/logfire) for observability and tracing
+- [logfire](https://pydantic.dev/logfire) for observability and tracing (optional)
 
 ## Contributing
 
@@ -103,6 +110,11 @@ python -m circuitron "Design a voltage divider"
 After installation:
 ```bash
 circuitron "Design a voltage divider"
+```
+
+Enable tracing during development:
+```bash
+circuitron --dev "Design a voltage divider"
 ```
 
 ### Try the Interactive Notebook:

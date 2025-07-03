@@ -26,11 +26,12 @@ async def run_circuitron(
 
 def main() -> None:
     """Main entry point for the Circuitron system."""
-    setup_environment()
     from circuitron.pipeline import parse_args
     from circuitron.tools import kicad_session
 
     args = parse_args()
+    setup_environment(dev=args.dev)
+
     prompt = args.prompt or input("Prompt: ")
     show_reasoning = args.reasoning
     debug = args.debug

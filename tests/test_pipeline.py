@@ -74,10 +74,11 @@ def test_pipeline_asyncio() -> None:
 
 def test_parse_args() -> None:
     from circuitron import pipeline as pl
-    args = pl.parse_args(["prompt", "-r", "-d", "-n", "2"])
+    args = pl.parse_args(["prompt", "-r", "-d", "--dev", "-n", "2"])
     assert args.prompt == "prompt"
     assert args.reasoning is True
     assert args.debug is True
+    assert args.dev is True
     assert args.retries == 2
 
 
