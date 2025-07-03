@@ -13,6 +13,7 @@ dependencies = [
     "openai-agents==0.1.0",
     "python-dotenv>=1.1.0",
     "skidl>=2.0.1",
+    "logfire>=3.22.0",
 ]
 
 [project.scripts]
