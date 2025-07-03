@@ -38,4 +38,3 @@ def test_start_logs_failure():
             pass
         log_mock.assert_called_once()
         assert run_mock.call_count == 2
-

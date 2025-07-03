@@ -68,4 +68,3 @@ def test_code_corrector_configuration():
     assert mod.code_corrector.model == cfg.settings.code_validation_model
     tool_names = [t.name for t in mod.code_corrector.tools]
     assert "run_erc" in tool_names
-

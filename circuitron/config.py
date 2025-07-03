@@ -29,5 +29,3 @@ def setup_environment() -> None:
 
     global settings
     settings = Settings()
-
-

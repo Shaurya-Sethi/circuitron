@@ -69,4 +69,3 @@ async def fake_pipeline_edit_plan():
 def test_pipeline_asyncio():
     asyncio.run(fake_pipeline_no_feedback())
     asyncio.run(fake_pipeline_edit_plan())
-
