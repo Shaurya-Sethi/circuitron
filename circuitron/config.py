@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from .settings import Settings
 
-settings: Settings
+settings = Settings()
 
 
 def setup_environment() -> None:

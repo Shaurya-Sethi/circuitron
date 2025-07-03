@@ -3,7 +3,7 @@ import pytest
 import circuitron.config as cfg
 
 
-def test_setup_environment_requires_vars(monkeypatch):
+def test_setup_environment_requires_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("PLANNING_MODEL", raising=False)
     monkeypatch.delenv("PLAN_EDIT_MODEL", raising=False)
