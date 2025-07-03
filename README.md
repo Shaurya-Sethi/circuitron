@@ -36,11 +36,18 @@ See [overview.md](overview.md) for detailed project goals and structure.
 - Python 3.10+
 - KiCad installed (for component libraries)
 - OpenAI API access
+- Docker installed (for containerized steps)
 
 ### Setup
 
-Install dependencies with `pip install -r requirements.txt` then copy
-`.env.example` to `.env` and fill in the required values:
+Install dependencies with `pip install -r requirements.txt` and install the
+package so the CLI and tests can run:
+
+```bash
+pip install -e .  # or `pip install .`
+```
+
+Copy `.env.example` to `.env` and fill in the required values:
 
 ```
 OPENAI_API_KEY=<your OpenAI API key>
