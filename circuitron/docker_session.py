@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import subprocess
 from dataclasses import dataclass
 from typing import Any
@@ -20,6 +21,32 @@ class DockerSession:
         """Start the container if it isn't already running."""
         if self.started:
             return
+        ps_cmd = [
+            "docker",
+            "ps",
+            "-a",
+            "--filter",
+            f"name={self.container_name}",
+            "--format",
+            "{{.Status}}",
+        ]
+        try:
+            proc = self._run(ps_cmd, check=True)
+        except subprocess.CalledProcessError as exc:  # pragma: no cover - docker error
+            logging.error(
+                "Failed to check for existing container %s: %s",
+                self.container_name,
+                exc.stderr.strip(),
+            )
+            raise
+
+        if proc.stdout.strip():
+            status = proc.stdout.strip().lower()
+            if status.startswith("up"):
+                self.started = True
+                return
+            self._run(["docker", "rm", "-f", self.container_name], check=True)
+
         cmd = [
             "docker",
             "run",
@@ -36,7 +63,15 @@ class DockerSession:
             "sleep",
             "infinity",
         ]
-        self._run(cmd, check=True)
+        try:
+            self._run(cmd, check=True)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            logging.error(
+                "Failed to start container %s: %s",
+                self.container_name,
+                getattr(exc, "stderr", str(exc)).strip(),
+            )
+            raise
         self.started = True
 
     def exec_python(self, script: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:

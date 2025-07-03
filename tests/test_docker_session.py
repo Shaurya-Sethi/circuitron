@@ -1,0 +1,41 @@
+import subprocess
+from unittest.mock import patch
+
+from circuitron.docker_session import DockerSession
+
+
+def test_reuse_running_container():
+    session = DockerSession("img", "cont")
+    proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Up 3s\n", stderr="")
+    with patch.object(session, "_run", return_value=proc) as run_mock:
+        session.start()
+        assert session.started is True
+        run_mock.assert_called_once()
+        assert run_mock.call_args.args[0][:3] == ["docker", "ps", "-a"]
+
+
+def test_remove_exited_container():
+    session = DockerSession("img", "cont")
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Exited (0) 1s\n", stderr="")
+    rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "_run", side_effect=[ps_proc, rm_proc, run_proc]) as run_mock:
+        session.start()
+        assert session.started is True
+        assert run_mock.call_args_list[0].args[0][:3] == ["docker", "ps", "-a"]
+        assert run_mock.call_args_list[1].args[0][:3] == ["docker", "rm", "-f"]
+        assert run_mock.call_args_list[2].args[0][0] == "docker" and run_mock.call_args_list[2].args[0][1] == "run"
+
+
+def test_start_logs_failure():
+    session = DockerSession("img", "cont")
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="boom")
+    with patch.object(session, "_run", side_effect=[ps_proc, err]) as run_mock, patch("circuitron.docker_session.logging.error") as log_mock:
+        try:
+            session.start()
+        except subprocess.CalledProcessError:
+            pass
+        log_mock.assert_called_once()
+        assert run_mock.call_count == 2
+
