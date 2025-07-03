@@ -174,12 +174,11 @@ print(json.dumps(pins))
     return proc.stdout.strip()
 
 
-def create_mcp_tool(server_label: str, *, cache_tools_list: bool = False) -> HostedMCPTool:
+def create_mcp_tool(server_label: str) -> HostedMCPTool:
     """Return a HostedMCPTool configured for the given server label.
 
     Args:
         server_label: The target label of the MCP server.
-        cache_tools_list: Whether to cache the tool list on the server.
 
     Returns:
         HostedMCPTool configured with the appropriate server URL.
@@ -191,19 +190,17 @@ def create_mcp_tool(server_label: str, *, cache_tools_list: bool = False) -> Hos
         "server_url": server_url,
         "require_approval": "never",
     }
-    if cache_tools_list:
-        tool_data["cache_tools_list"] = True
     return HostedMCPTool(tool_config=cast(Mcp, tool_data))
 
 
 def create_mcp_documentation_tools() -> list[Tool]:
     """Create MCP tools for documentation lookup."""
-    return [create_mcp_tool("skidl_docs", cache_tools_list=True)]
+    return [create_mcp_tool("skidl_docs")]
 
 
 def create_mcp_validation_tools() -> list[Tool]:
     """Create MCP tool for hallucination checks."""
-    return [create_mcp_tool("skidl_validation", cache_tools_list=True)]
+    return [create_mcp_tool("skidl_validation")]
 
 
 async def run_erc(script_path: str) -> str:
