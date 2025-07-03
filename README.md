@@ -71,6 +71,11 @@ Required variables:
 Optional overrides:
 `CALC_IMAGE` and `KICAD_IMAGE` for custom Docker images.
 
+The KiCad image is published on GitHub Container Registry:
+```bash
+docker pull ghcr.io/shaurya-sethi/circuitron-kicad:latest
+```
+
 When you run `circuitron`, the CLI checks that the KiCad container can start.
 If the container fails to launch, an error message is printed and no prompt is
 requested.
