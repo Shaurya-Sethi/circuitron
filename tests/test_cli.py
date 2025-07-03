@@ -23,7 +23,7 @@ def test_run_circuitron_invokes_pipeline() -> None:
 
 def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:
     out = CodeGenerationOutput(complete_skidl_code="abc")
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0)
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0, dev=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)):
@@ -35,7 +35,7 @@ def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_cli_main_prompts_for_input(monkeypatch: pytest.MonkeyPatch) -> None:
     out = CodeGenerationOutput(complete_skidl_code="xyz")
-    args = SimpleNamespace(prompt=None, reasoning=True, debug=True, retries=0)
+    args = SimpleNamespace(prompt=None, reasoning=True, debug=True, retries=0, dev=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)) as run_mock:
@@ -53,7 +53,7 @@ def test_module_main_called() -> None:
 
 def test_cli_main_stops_session() -> None:
     out = CodeGenerationOutput(complete_skidl_code="123")
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0)
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0, dev=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)), \
@@ -64,7 +64,7 @@ def test_cli_main_stops_session() -> None:
 def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) -> None:
     import circuitron.config as cfg
     cfg.setup_environment()
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0)
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=0, dev=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
         patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=KeyboardInterrupt)), \
@@ -75,7 +75,7 @@ def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) 
 
 
 def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=1)
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=1, dev=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=RuntimeError("fail"))), \
