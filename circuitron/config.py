@@ -19,7 +19,13 @@ def setup_environment() -> None:
     """
     load_dotenv()
 
-    required = ["OPENAI_API_KEY", "MCP_URL"]
+    required = [
+        "OPENAI_API_KEY",
+        "PLANNING_MODEL",
+        "PLAN_EDIT_MODEL",
+        "PART_FINDER_MODEL",
+        "MCP_URL",
+    ]
     missing = [var for var in required if not os.getenv(var)]
     if missing:
         msg = ", ".join(missing)
