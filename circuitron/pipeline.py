@@ -160,6 +160,26 @@ async def run_code_correction(
             pass
 
 
+def validate_edit_result(edit_result: PlanEditorOutput) -> None:
+    """Ensure ``PlanEditorOutput`` contains required fields.
+
+    Args:
+        edit_result: Output returned from the PlanEditor agent.
+
+    Raises:
+        ValueError: If required fields are missing based on the decision action.
+    """
+    action = edit_result.decision.action
+    if action == "edit_plan" and edit_result.updated_plan is None:
+        raise ValueError(
+            "PlanEditor output missing updated_plan for action 'edit_plan'",
+        )
+    if action == "regenerate_plan" and edit_result.reconstructed_prompt is None:
+        raise ValueError(
+            "PlanEditor output missing reconstructed_prompt for action 'regenerate_plan'",
+        )
+
+
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
 ) -> CodeGenerationOutput:
@@ -213,11 +233,11 @@ async def pipeline(
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
+    validate_edit_result(edit_result)
 
     if edit_result.decision.action == "edit_plan":
         pretty_print_edited_plan(edit_result)
-        assert edit_result.updated_plan is not None
-        final_plan = edit_result.updated_plan
+        final_plan = cast(PlanOutput, edit_result.updated_plan)
         part_output = await run_part_finder(final_plan)
         pretty_print_found_parts(part_output.found_components_json)
         selection = await run_part_selector(final_plan, part_output)
@@ -236,8 +256,8 @@ async def pipeline(
         return code_out
 
     pretty_print_regeneration_prompt(edit_result)
-    assert edit_result.reconstructed_prompt is not None
-    regen_result = await run_planner(edit_result.reconstructed_prompt)
+    regen_prompt = cast(str, edit_result.reconstructed_prompt)
+    regen_result = await run_planner(regen_prompt)
     new_plan = regen_result.final_output
     pretty_print_plan(new_plan)
     part_output = await run_part_finder(new_plan)

@@ -2,6 +2,7 @@ import asyncio
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+import pytest
 
 from circuitron.models import (
     PlanOutput,
@@ -270,3 +271,40 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
             asyncio.run(pl.run_code_correction(code_out, validation))
 
     assert not script_path.exists()
+
+
+async def fake_pipeline_invalid_edit() -> None:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput()
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    invalid = PlanEditorOutput.model_construct(
+        decision=PlanEditDecision(action="edit_plan", reasoning="bad"),
+    )
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
+         patch.object(pl, "run_plan_editor", AsyncMock(return_value=invalid)):
+        with pytest.raises(ValueError):
+            await pl.pipeline("test")
+
+
+async def fake_pipeline_invalid_regen() -> None:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput()
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    invalid = PlanEditorOutput.model_construct(
+        decision=PlanEditDecision(action="regenerate_plan", reasoning="bad"),
+    )
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
+         patch.object(pl, "run_plan_editor", AsyncMock(return_value=invalid)):
+        with pytest.raises(ValueError):
+            await pl.pipeline("test")
+
+
+def test_invalid_edit_outputs() -> None:
+    asyncio.run(fake_pipeline_invalid_edit())
+    asyncio.run(fake_pipeline_invalid_regen())
