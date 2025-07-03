@@ -33,3 +33,4 @@ class Settings:
     mcp_url: str = field(
         default_factory=lambda: os.getenv("MCP_URL", "http://localhost:8051")
     )
+    dev_mode: bool = False

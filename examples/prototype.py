@@ -171,18 +171,16 @@ async def run_circuitron(prompt: str) -> RunResult:
 if __name__ == "__main__":
     prompt = sys.argv[1] if len(sys.argv) > 1 else input("Prompt: ")
     show_reasoning = "--reasoning" in sys.argv or "-r" in sys.argv
-    show_debug = "--debug" in sys.argv or "-d" in sys.argv
     
     result = asyncio.run(run_circuitron(prompt))
 
     # Always print the structured plan
     pretty_print_plan(result.final_output)
 
-    # Optionally show calculation codes for debugging
-    if show_debug and result.final_output.calculation_codes:
-        print("\n=== Debug: Calculation Codes ===")
-        for i, code in enumerate(result.final_output.calculation_codes):
-            print(f"\nCalculation #{i+1} code:")
+    if result.final_output.calculation_codes:
+        print("\n=== Calculation Codes ===")
+        for i, code in enumerate(result.final_output.calculation_codes, 1):
+            print(f"\nCalculation #{i} code:")
             print(code)
 
     # Optionally show reasoning summary
