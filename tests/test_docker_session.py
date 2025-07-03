@@ -4,7 +4,7 @@ from unittest.mock import patch
 from circuitron.docker_session import DockerSession
 
 
-def test_reuse_running_container():
+def test_reuse_running_container() -> None:
     session = DockerSession("img", "cont")
     proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Up 3s\n", stderr="")
     with patch.object(session, "_run", return_value=proc) as run_mock:
@@ -14,7 +14,7 @@ def test_reuse_running_container():
         assert run_mock.call_args.args[0][:3] == ["docker", "ps", "-a"]
 
 
-def test_remove_exited_container():
+def test_remove_exited_container() -> None:
     session = DockerSession("img", "cont")
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Exited (0) 1s\n", stderr="")
     rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
@@ -27,7 +27,7 @@ def test_remove_exited_container():
         assert run_mock.call_args_list[2].args[0][0] == "docker" and run_mock.call_args_list[2].args[0][1] == "run"
 
 
-def test_start_logs_failure():
+def test_start_logs_failure() -> None:
     session = DockerSession("img", "cont")
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="boom")

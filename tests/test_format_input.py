@@ -13,7 +13,7 @@ from circuitron.utils import (
 )
 
 
-def test_format_plan_edit_input_includes_sections():
+def test_format_plan_edit_input_includes_sections() -> None:
     plan = PlanOutput(
         design_rationale=["Reason"],
         functional_blocks=["Block"],
@@ -33,7 +33,7 @@ def test_format_plan_edit_input_includes_sections():
     assert "Answers to Open Questions:" in text
 
 
-def test_format_documentation_input_includes_parts():
+def test_format_documentation_input_includes_parts() -> None:
     plan = PlanOutput(functional_blocks=["Block"], implementation_actions=["Do"])
     pin = PinDetail(number="1", name="VCC", function="POWER-IN")
     part = SelectedPart(name="U1", library="lib", pin_details=[pin])
@@ -44,7 +44,7 @@ def test_format_documentation_input_includes_parts():
     assert "pin 1: VCC" in text
 
 
-def test_format_code_generation_input_includes_docs():
+def test_format_code_generation_input_includes_docs() -> None:
     plan = PlanOutput(functional_blocks=["Block"], implementation_actions=["Do"])
     pin = PinDetail(number="1", name="VCC", function="POWER-IN")
     part = SelectedPart(name="U1", library="lib", pin_details=[pin])

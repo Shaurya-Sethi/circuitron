@@ -18,7 +18,7 @@ from circuitron.models import (
 cfg.setup_environment()
 
 
-async def fake_pipeline_no_feedback():
+async def fake_pipeline_no_feedback() -> None:
     import circuitron.pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -39,7 +39,7 @@ async def fake_pipeline_no_feedback():
     assert result is code_out
 
 
-async def fake_pipeline_edit_plan():
+async def fake_pipeline_edit_plan() -> None:
     import circuitron.pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -66,6 +66,6 @@ async def fake_pipeline_edit_plan():
     assert result is code_out
 
 
-def test_pipeline_asyncio():
+def test_pipeline_asyncio() -> None:
     asyncio.run(fake_pipeline_no_feedback())
     asyncio.run(fake_pipeline_edit_plan())
