@@ -73,8 +73,10 @@ async def execute_calculation(
 async def search_kicad_libraries(query: str) -> str:
     """Search KiCad libraries using skidl.search."""
     script = textwrap.dedent(f"""
-import json, skidl
-parts = skidl.search({query!r})
+import json
+from skidl import *
+set_default_tool(KICAD5)
+parts = search({query!r})
 results = []
 if parts:
     for p in parts:
@@ -113,8 +115,10 @@ print(json.dumps(results))
 async def search_kicad_footprints(query: str) -> str:
     """Search KiCad footprint libraries using skidl.search_footprints."""
     script = textwrap.dedent(f"""
-import json, skidl
-footprints = skidl.search_footprints({query!r})
+import json
+from skidl import *
+set_default_tool(KICAD5)
+footprints = search_footprints({query!r})
 results = []
 if footprints:
     for fp in footprints:
@@ -153,11 +157,13 @@ print(json.dumps(results))
 async def extract_pin_details(library: str, part_name: str) -> str:
     """Return pin details using skidl.show()."""
     script = textwrap.dedent(f"""
-import json, io, contextlib, skidl
+import json, io, contextlib
+from skidl import *
+set_default_tool(KICAD5)
 buf = io.StringIO()
 try:
     with contextlib.redirect_stdout(buf):
-        skidl.show({library!r}, {part_name!r})
+        show({library!r}, {part_name!r})
 except Exception as exc:
     print(json.dumps({{"error": str(exc)}}))
     raise SystemExit()
@@ -235,7 +241,9 @@ async def run_erc(script_path: str) -> str:
 
     wrapper = textwrap.dedent(
         """
-        import json, runpy, io, contextlib, skidl
+        import json, runpy, io, contextlib
+        from skidl import *
+        set_default_tool(KICAD5)
         out = io.StringIO()
         err = io.StringIO()
         success = True
@@ -243,7 +251,7 @@ async def run_erc(script_path: str) -> str:
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 runpy.run_path('/tmp/script.py', run_name='__main__')
-                result = skidl.ERC()
+                result = ERC()
                 erc_passed = not bool(result)
         except Exception as exc:
             success = False
