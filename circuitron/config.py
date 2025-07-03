@@ -12,7 +12,7 @@ from .settings import Settings
 settings = Settings()
 
 
-def setup_environment() -> None:
+def setup_environment() -> Settings:
     """Initialize environment variables and configure logging/tracing.
 
     Exits the program if required variables are missing.
@@ -33,5 +33,6 @@ def setup_environment() -> None:
     logfire.configure()
     logfire.instrument_openai_agents()
 
-    global settings
-    settings = Settings()
+    new_settings = Settings()
+    settings.__dict__.update(vars(new_settings))
+    return settings
