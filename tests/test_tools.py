@@ -12,7 +12,7 @@ def test_search_kicad_libraries():
     from circuitron.tools import search_kicad_libraries
     fake_output = '[{"name": "LM324", "library": "linear", "footprint": "DIP-14", "description": "op amp"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
-    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
+    with patch("circuitron.tools.kicad_session.exec_python", return_value=completed) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t1")
         args = json.dumps({"query": "opamp lm324"})
         result = asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
@@ -25,7 +25,7 @@ def test_search_kicad_libraries_timeout():
     cfg.setup_environment()
     from circuitron.tools import search_kicad_libraries
     with patch(
-        "circuitron.tools.subprocess.run",
+        "circuitron.tools.kicad_session.exec_python",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t2")
@@ -39,7 +39,7 @@ def test_search_kicad_footprints():
     from circuitron.tools import search_kicad_footprints
     fake_output = '[{"name": "SOIC-8", "library": "Package_SO", "description": "soic"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
-    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
+    with patch("circuitron.tools.kicad_session.exec_python", return_value=completed) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t3")
         args = json.dumps({"query": "SOIC-8"})
         result = asyncio.run(search_kicad_footprints.on_invoke_tool(ctx, args))
@@ -52,7 +52,7 @@ def test_search_kicad_footprints_timeout():
     cfg.setup_environment()
     from circuitron.tools import search_kicad_footprints
     with patch(
-        "circuitron.tools.subprocess.run",
+        "circuitron.tools.kicad_session.exec_python",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t4")
@@ -66,7 +66,7 @@ def test_extract_pin_details():
     from circuitron.tools import extract_pin_details
     fake_output = '[{"number": "1", "name": "VCC", "function": "POWER"}]'
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=fake_output, stderr="")
-    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
+    with patch("circuitron.tools.kicad_session.exec_python", return_value=completed) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t5")
         args = json.dumps({"library": "linear", "part_name": "lm386"})
         result = asyncio.run(extract_pin_details.on_invoke_tool(ctx, args))
@@ -79,7 +79,7 @@ def test_extract_pin_details_timeout():
     cfg.setup_environment()
     from circuitron.tools import extract_pin_details
     with patch(
-        "circuitron.tools.subprocess.run",
+        "circuitron.tools.kicad_session.exec_python",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t6")
@@ -115,7 +115,7 @@ def test_run_erc_success():
     from circuitron.tools import run_erc
 
     completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="{}", stderr="")
-    with patch("circuitron.tools.subprocess.run", return_value=completed) as run_mock:
+    with patch("circuitron.tools.kicad_session.exec_erc", return_value=completed) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t7")
         args = json.dumps({"script_path": "/tmp/a.py"})
         result = asyncio.run(run_erc.on_invoke_tool(ctx, args))
@@ -128,11 +128,30 @@ def test_run_erc_timeout():
     from circuitron.tools import run_erc
 
     with patch(
-        "circuitron.tools.subprocess.run",
+        "circuitron.tools.kicad_session.exec_erc",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=60),
     ):
         ctx = ToolContext(context=None, tool_call_id="t8")
         args = json.dumps({"script_path": "/tmp/a.py"})
         result = asyncio.run(run_erc.on_invoke_tool(ctx, args))
         assert "success" in result
+
+
+def test_kicad_session_start_once():
+    cfg.setup_environment()
+    from circuitron.tools import search_kicad_libraries, kicad_session
+
+    kicad_session.started = False
+    fake_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="[]", stderr="")
+    def fake_start() -> None:
+        kicad_session.started = True
+
+    with patch.object(kicad_session, "_run", return_value=fake_proc) as _run_mock, patch.object(kicad_session, "start", side_effect=fake_start) as start_mock:
+        ctx = ToolContext(context=None, tool_call_id="t9")
+        args = json.dumps({"query": "foo"})
+        asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
+        asyncio.run(search_kicad_libraries.on_invoke_tool(ctx, args))
+        assert start_mock.call_count == 2
+        assert _run_mock.call_count == 2
+    kicad_session.started = False
 
