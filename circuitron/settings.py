@@ -15,27 +15,13 @@ import os
 class Settings:
     """Configuration settings loaded from environment variables."""
 
-    planning_model: str = field(
-        default_factory=lambda: os.getenv("PLANNING_MODEL", "o4-mini")
-    )
-    plan_edit_model: str = field(
-        default_factory=lambda: os.getenv("PLAN_EDIT_MODEL", "o4-mini")
-    )
-    part_finder_model: str = field(
-        default_factory=lambda: os.getenv("PART_FINDER_MODEL", "o4-mini")
-    )
-    part_selection_model: str = field(
-        default_factory=lambda: os.getenv("PART_SELECTION_MODEL", "o4-mini")
-    )
-    documentation_model: str = field(
-        default_factory=lambda: os.getenv("DOCUMENTATION_MODEL", "o4-mini")
-    )
-    code_generation_model: str = field(
-        default_factory=lambda: os.getenv("CODE_GENERATION_MODEL", "o4-mini")
-    )
-    code_validation_model: str = field(
-        default_factory=lambda: os.getenv("CODE_VALIDATION_MODEL", "o4-mini")
-    )
+    planning_model: str = field(default="o4-mini")
+    plan_edit_model: str = field(default="o4-mini")
+    part_finder_model: str = field(default="o4-mini")
+    part_selection_model: str = field(default="o4-mini")
+    documentation_model: str = field(default="o4-mini")
+    code_generation_model: str = field(default="o4-mini")
+    code_validation_model: str = field(default="o4-mini")
     calculation_image: str = field(
         default_factory=lambda: os.getenv("CALC_IMAGE", "python:3.12-slim")
     )
