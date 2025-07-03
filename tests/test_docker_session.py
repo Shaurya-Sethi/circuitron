@@ -1,6 +1,8 @@
 import subprocess
 from unittest.mock import patch
 
+import pytest
+
 from circuitron.docker_session import DockerSession
 
 
@@ -32,9 +34,17 @@ def test_start_logs_failure() -> None:
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="boom")
     with patch.object(session, "_run", side_effect=[ps_proc, err]) as run_mock, patch("circuitron.docker_session.logging.error") as log_mock:
-        try:
+        with pytest.raises(RuntimeError):
             session.start()
-        except subprocess.CalledProcessError:
-            pass
         log_mock.assert_called_once()
         assert run_mock.call_count == 2
+
+
+def test_start_error_message() -> None:
+    session = DockerSession("img", "cont")
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="boom")
+    with patch.object(session, "_run", side_effect=[ps_proc, err]), patch("circuitron.docker_session.logging.error"):
+        with pytest.raises(RuntimeError) as info:
+            session.start()
+        assert "Docker" in str(info.value)
