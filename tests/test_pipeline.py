@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from circuitron.models import (
@@ -18,7 +19,7 @@ import circuitron.config as cfg
 cfg.setup_environment()
 
 
-async def fake_pipeline_no_feedback():
+async def fake_pipeline_no_feedback() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -39,7 +40,7 @@ async def fake_pipeline_no_feedback():
     assert result is code_out
 
 
-async def fake_pipeline_edit_plan():
+async def fake_pipeline_edit_plan() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -66,12 +67,12 @@ async def fake_pipeline_edit_plan():
     assert result is code_out
 
 
-def test_pipeline_asyncio():
+def test_pipeline_asyncio() -> None:
     asyncio.run(fake_pipeline_no_feedback())
     asyncio.run(fake_pipeline_edit_plan())
 
 
-def test_parse_args():
+def test_parse_args() -> None:
     from circuitron import pipeline as pl
     args = pl.parse_args(["prompt", "-r", "-d"])
     assert args.prompt == "prompt"
@@ -79,7 +80,7 @@ def test_parse_args():
     assert args.debug is True
 
 
-def test_run_code_validation_calls_erc():
+def test_run_code_validation_calls_erc() -> None:
     import circuitron.pipeline as pl
     code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
     selection = PartSelectionOutput()
@@ -92,10 +93,11 @@ def test_run_code_validation_calls_erc():
             erc_mock.assert_called_once()
     validation, erc = result
     assert validation.status == "pass"
+    assert erc is not None
     assert erc["erc_passed"] is True
 
 
-def test_run_code_validation_no_erc_on_fail():
+def test_run_code_validation_no_erc_on_fail() -> None:
     import circuitron.pipeline as pl
     code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
     selection = PartSelectionOutput()
@@ -111,7 +113,7 @@ def test_run_code_validation_no_erc_on_fail():
     assert erc is None
 
 
-async def fake_pipeline_with_correction():
+async def fake_pipeline_with_correction() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput()
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -135,12 +137,12 @@ async def fake_pipeline_with_correction():
     assert result.complete_skidl_code == "fixed"
 
 
-def test_pipeline_correction_flow():
+def test_pipeline_correction_flow() -> None:
     asyncio.run(fake_pipeline_with_correction())
 
 
 
-async def fake_pipeline_debug_show():
+async def fake_pipeline_debug_show() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=["print(1)"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -159,10 +161,10 @@ async def fake_pipeline_debug_show():
     assert result is code_out
 
 
-def test_pipeline_debug_show_flow():
+def test_pipeline_debug_show_flow() -> None:
     asyncio.run(fake_pipeline_debug_show())
 
-async def fake_pipeline_edit_plan_with_correction():
+async def fake_pipeline_edit_plan_with_correction() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -191,10 +193,10 @@ async def fake_pipeline_edit_plan_with_correction():
     assert result.complete_skidl_code == "fixed"
 
 
-def test_pipeline_edit_plan_with_correction():
+def test_pipeline_edit_plan_with_correction() -> None:
     asyncio.run(fake_pipeline_edit_plan_with_correction())
 
-async def fake_pipeline_regen_with_correction():
+async def fake_pipeline_regen_with_correction() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput()
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
@@ -224,11 +226,11 @@ async def fake_pipeline_regen_with_correction():
     assert result.complete_skidl_code == "fixed"
 
 
-def test_pipeline_regen_with_correction():
+def test_pipeline_regen_with_correction() -> None:
     asyncio.run(fake_pipeline_regen_with_correction())
 
 
-def test_run_code_validation_cleanup(tmp_path):
+def test_run_code_validation_cleanup(tmp_path: Path) -> None:
     import circuitron.pipeline as pl
 
     code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
@@ -250,7 +252,7 @@ def test_run_code_validation_cleanup(tmp_path):
     assert not script_path.exists()
 
 
-def test_run_code_correction_cleanup(tmp_path):
+def test_run_code_correction_cleanup(tmp_path: Path) -> None:
     import circuitron.pipeline as pl
 
     code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")

@@ -1,7 +1,8 @@
 import importlib
+import pytest
 
 
-def test_agent_models_from_env(monkeypatch):
+def test_agent_models_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
@@ -21,7 +22,7 @@ def test_agent_models_from_env(monkeypatch):
     assert mod.code_generator.model == "c-model"
 
 
-def test_partfinder_includes_footprint_tool():
+def test_partfinder_includes_footprint_tool() -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
@@ -31,7 +32,7 @@ def test_partfinder_includes_footprint_tool():
     assert "search_kicad_footprints" in tool_names
 
 
-def test_partselector_includes_pin_tool():
+def test_partselector_includes_pin_tool() -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
@@ -41,7 +42,7 @@ def test_partselector_includes_pin_tool():
     assert "extract_pin_details" in tool_names
 
 
-def test_documentation_agent_has_mcp_tool():
+def test_documentation_agent_has_mcp_tool() -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
@@ -50,7 +51,7 @@ def test_documentation_agent_has_mcp_tool():
     assert any(tool.__class__.__name__ == "HostedMCPTool" for tool in mod.documentation.tools)
 
 
-def test_code_generation_agent_has_mcp_tool():
+def test_code_generation_agent_has_mcp_tool() -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
@@ -59,7 +60,7 @@ def test_code_generation_agent_has_mcp_tool():
     assert any(tool.__class__.__name__ == "HostedMCPTool" for tool in mod.code_generator.tools)
 
 
-def test_code_corrector_configuration():
+def test_code_corrector_configuration() -> None:
     import sys
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg

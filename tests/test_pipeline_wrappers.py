@@ -1,6 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+from typing import cast
+import pytest
 
 import circuitron.pipeline as pl
 from circuitron.models import (
@@ -17,12 +19,12 @@ from circuitron.models import (
 )
 
 
-async def run_wrappers():
+async def run_wrappers() -> None:
     with patch("circuitron.pipeline.run_erc", AsyncMock(return_value="{}")), \
          patch("circuitron.pipeline.Runner.run", AsyncMock()) as run_mock:
         run_mock.return_value = SimpleNamespace(final_output=PlanOutput())
         await pl.run_planner("p")
-        run_mock.assert_awaited_with(pl.planner, "p")
+        run_mock.assert_awaited_with(pl.planner, "p")  # type: ignore[attr-defined]
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=PlanEditorOutput(decision=PlanEditDecision(action="edit_plan", reasoning="x"), updated_plan=PlanOutput()))
@@ -53,13 +55,13 @@ async def run_wrappers():
         await pl.run_code_correction(CodeGenerationOutput(complete_skidl_code="code"), CodeValidationOutput(status="fail", summary="bad"))
 
 
-def test_wrapper_functions():
+def test_wrapper_functions() -> None:
     asyncio.run(run_wrappers())
 
 
-def test_pipeline_main(monkeypatch):
+def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
     args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
     monkeypatch.setattr(pl, "parse_args", lambda argv=None: args)
     monkeypatch.setattr(pl, "pipeline", AsyncMock())
     asyncio.run(pl.main())
-    pl.pipeline.assert_awaited_with("p", show_reasoning=False, debug=False)
+    cast(AsyncMock, pl.pipeline).assert_awaited_with("p", show_reasoning=False, debug=False)
