@@ -62,15 +62,12 @@ Copy `.env.example` to `.env` and fill in the required values:
 OPENAI_API_KEY=<your OpenAI API key>
 # Only required when using --dev for tracing
 LOGFIRE_TOKEN=<your token here>
-PLANNING_MODEL=o4-mini
-PLAN_EDIT_MODEL=o4-mini
-PART_FINDER_MODEL=o4-mini
 MCP_URL=http://localhost:8051
 
 ```
 
 Required variables:
-`OPENAI_API_KEY`, `PLANNING_MODEL`, `PLAN_EDIT_MODEL`, `PART_FINDER_MODEL`, and `MCP_URL`.
+`OPENAI_API_KEY` and `MCP_URL`.
 Optional overrides:
 `CALC_IMAGE` and `KICAD_IMAGE` for custom Docker images.
 
