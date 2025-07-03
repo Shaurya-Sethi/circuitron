@@ -7,12 +7,21 @@ from .models import CodeGenerationOutput
 
 
 async def run_circuitron(
-    prompt: str, show_reasoning: bool = False, debug: bool = False
-) -> CodeGenerationOutput:
-    """Execute the Circuitron workflow using the full pipeline."""
-    from circuitron.pipeline import pipeline
+    prompt: str,
+    show_reasoning: bool = False,
+    debug: bool = False,
+    retries: int = 0,
+) -> CodeGenerationOutput | None:
+    """Execute the Circuitron workflow using the full pipeline with retries."""
 
-    return await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
+    from circuitron.pipeline import run_with_retry
+
+    return await run_with_retry(
+        prompt,
+        show_reasoning=show_reasoning,
+        debug=debug,
+        retries=retries,
+    )
 
 
 def main() -> None:
@@ -25,15 +34,18 @@ def main() -> None:
     prompt = args.prompt or input("Prompt: ")
     show_reasoning = args.reasoning
     debug = args.debug
+    retries = args.retries
 
     code_output: CodeGenerationOutput | None = None
     try:
         try:
             code_output = asyncio.run(
-                run_circuitron(prompt, show_reasoning, debug)
+                run_circuitron(prompt, show_reasoning, debug, retries)
             )
         except KeyboardInterrupt:
             print("\nExecution interrupted by user.")
+        except Exception as exc:
+            print(f"Error during execution: {exc}")
     finally:
         kicad_session.stop()
 
