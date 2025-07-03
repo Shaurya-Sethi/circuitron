@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 from typing import cast
 
 from agents import Runner
@@ -116,20 +117,26 @@ async def run_code_validation(
     """Validate generated code and optionally run ERC."""
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
-    input_msg = format_code_validation_input(script_path, selection, docs)
-    result = await Runner.run(code_validator, input_msg)
-    validation = cast(CodeValidationOutput, result.final_output)
-    pretty_print_validation(validation)
-    erc_result: dict[str, object] | None = None
-    if validation.status == "pass":
-        erc_json = await run_erc(script_path)  # type: ignore[operator]
+    try:
+        input_msg = format_code_validation_input(script_path, selection, docs)
+        result = await Runner.run(code_validator, input_msg)
+        validation = cast(CodeValidationOutput, result.final_output)
+        pretty_print_validation(validation)
+        erc_result: dict[str, object] | None = None
+        if validation.status == "pass":
+            erc_json = await run_erc(script_path)  # type: ignore[operator]
+            try:
+                erc_result = json.loads(erc_json)
+            except Exception:
+                erc_result = {"success": False, "stderr": erc_json}
+            print("\n=== ERC RESULT ===")
+            print(erc_result)
+        return validation, erc_result
+    finally:
         try:
-            erc_result = json.loads(erc_json)
-        except Exception:
-            erc_result = {"success": False, "stderr": erc_json}
-        print("\n=== ERC RESULT ===")
-        print(erc_result)
-    return validation, erc_result
+            os.remove(script_path)
+        except OSError:
+            pass
 
 
 async def run_code_correction(
@@ -140,11 +147,17 @@ async def run_code_correction(
     """Run the Code Correction agent and return updated code."""
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
-    input_msg = format_code_correction_input(script_path, validation, erc_result)
-    result = await Runner.run(code_corrector, input_msg)
-    correction = cast(CodeCorrectionOutput, result.final_output)
-    code_output.complete_skidl_code = correction.corrected_code
-    return code_output
+    try:
+        input_msg = format_code_correction_input(script_path, validation, erc_result)
+        result = await Runner.run(code_corrector, input_msg)
+        correction = cast(CodeCorrectionOutput, result.final_output)
+        code_output.complete_skidl_code = correction.corrected_code
+        return code_output
+    finally:
+        try:
+            os.remove(script_path)
+        except OSError:
+            pass
 
 
 async def pipeline(
