@@ -65,11 +65,20 @@ class DockerSession:
         ]
         try:
             self._run(cmd, check=True)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        except subprocess.CalledProcessError as exc:
             logging.error(
                 "Failed to start container %s: %s",
                 self.container_name,
-                getattr(exc, "stderr", str(exc)).strip(),
+                exc.stderr.strip(),
+            )
+            raise RuntimeError(
+                "Failed to start Docker container. Ensure Docker is installed and that the current user has permission to run containers."
+            ) from exc
+        except subprocess.TimeoutExpired as exc:
+            logging.error(
+                "Failed to start container %s: %s",
+                self.container_name,
+                str(exc).strip(),
             )
             raise
         self.started = True
