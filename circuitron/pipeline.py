@@ -160,6 +160,27 @@ async def run_code_correction(
             pass
 
 
+async def run_with_retry(
+    prompt: str,
+    show_reasoning: bool = False,
+    debug: bool = False,
+    retries: int = 0,
+) -> CodeGenerationOutput | None:
+    """Run :func:`pipeline` with retry and error handling."""
+
+    attempts = 0
+    while True:
+        try:
+            return await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
+        except Exception as exc:
+            attempts += 1
+            print(f"Error during pipeline execution: {exc}")
+            if attempts > retries:
+                print("Maximum retries exceeded. Shutting down gracefully.")
+                return None
+            print(f"Retrying ({attempts}/{retries})...")
+
+
 async def pipeline(
     prompt: str, show_reasoning: bool = False, debug: bool = False
 ) -> CodeGenerationOutput:
@@ -262,7 +283,12 @@ async def main() -> None:
     """CLI entry point for the Circuitron pipeline."""
     args = parse_args()
     prompt = args.prompt or input("Prompt: ")
-    await pipeline(prompt, show_reasoning=args.reasoning, debug=args.debug)
+    await run_with_retry(
+        prompt,
+        show_reasoning=args.reasoning,
+        debug=args.debug,
+        retries=args.retries,
+    )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -275,6 +301,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("prompt", nargs="?", help="Design prompt")
     parser.add_argument("-r", "--reasoning", action="store_true", help="show reasoning summary")
     parser.add_argument("-d", "--debug", action="store_true", help="show debug info")
+    parser.add_argument(
+        "-n",
+        "--retries",
+        type=int,
+        default=0,
+        help="number of retries if the pipeline fails",
+    )
     return parser.parse_args(argv)
 
 
