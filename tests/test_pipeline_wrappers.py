@@ -21,7 +21,7 @@ from circuitron.models import (
 
 async def run_wrappers() -> None:
     with patch("circuitron.pipeline.run_erc", AsyncMock(return_value="{}")), \
-         patch("circuitron.pipeline.Runner.run", AsyncMock()) as run_mock:
+         patch("circuitron.debug.Runner.run", AsyncMock()) as run_mock:
         run_mock.return_value = SimpleNamespace(final_output=PlanOutput())
         await pl.run_planner("p")
         run_mock.assert_awaited_with(pl.planner, "p")  # type: ignore[attr-defined]
@@ -60,13 +60,12 @@ def test_wrapper_functions() -> None:
 
 
 def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, debug=False, retries=1, dev=False)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False)
     monkeypatch.setattr(pl, "parse_args", lambda argv=None: args)
     monkeypatch.setattr(pl, "run_with_retry", AsyncMock())
     asyncio.run(pl.main())
     cast(AsyncMock, pl.run_with_retry).assert_awaited_with(
         "p",
         show_reasoning=False,
-        debug=False,
         retries=1,
     )

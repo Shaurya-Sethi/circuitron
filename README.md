@@ -117,6 +117,7 @@ Enable tracing during development:
 ```bash
 circuitron --dev "Design a voltage divider"
 ```
+Running with `--dev` also prints each agent's intermediate outputs after every run.
 
 ### Try the Interactive Notebook:
 ```bash

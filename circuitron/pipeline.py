@@ -11,7 +11,9 @@ import json
 import os
 from typing import cast
 
-from agents import Runner
+from circuitron.config import settings
+
+from circuitron.debug import run_agent
 
 from circuitron.agents import (
     planner,
@@ -60,7 +62,7 @@ from circuitron.tools import run_erc
 
 async def run_planner(prompt: str) -> RunResult:
     """Run the planning agent and return the run result."""
-    return await Runner.run(planner, prompt)
+    return await run_agent(planner, prompt)
 
 
 async def run_plan_editor(
@@ -68,14 +70,14 @@ async def run_plan_editor(
 ) -> PlanEditorOutput:
     """Run the PlanEditor agent with formatted input."""
     input_msg = format_plan_edit_input(original_prompt, plan, feedback)
-    result = await Runner.run(plan_editor, input_msg)
+    result = await run_agent(plan_editor, input_msg)
     return cast(PlanEditorOutput, result.final_output)
 
 
 async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
     """Search KiCad libraries for components from the plan."""
     query_text = "\n".join(plan.component_search_queries)
-    result = await Runner.run(part_finder, query_text)
+    result = await run_agent(part_finder, query_text)
     return cast(PartFinderOutput, result.final_output)
 
 
@@ -84,7 +86,7 @@ async def run_part_selector(
 ) -> PartSelectionOutput:
     """Select optimal parts using search results."""
     input_msg = format_part_selection_input(plan, part_output)
-    result = await Runner.run(part_selector, input_msg)
+    result = await run_agent(part_selector, input_msg)
     return cast(PartSelectionOutput, result.final_output)
 
 
@@ -93,7 +95,7 @@ async def run_documentation(
 ) -> DocumentationOutput:
     """Gather SKiDL documentation based on plan and selected parts."""
     input_msg = format_documentation_input(plan, selection)
-    result = await Runner.run(documentation, input_msg)
+    result = await run_agent(documentation, input_msg)
     return cast(DocumentationOutput, result.final_output)
 
 
@@ -102,7 +104,7 @@ async def run_code_generation(
 ) -> CodeGenerationOutput:
     """Generate SKiDL code using plan, selected parts, and documentation."""
     input_msg = format_code_generation_input(plan, selection, docs)
-    result = await Runner.run(code_generator, input_msg)
+    result = await run_agent(code_generator, input_msg)
     code_output = cast(CodeGenerationOutput, result.final_output)
     pretty_print_generated_code(code_output)
     validate_code_generation_results(code_output)
@@ -119,7 +121,7 @@ async def run_code_validation(
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
         input_msg = format_code_validation_input(script_path, selection, docs)
-        result = await Runner.run(code_validator, input_msg)
+        result = await run_agent(code_validator, input_msg)
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
@@ -149,7 +151,7 @@ async def run_code_correction(
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
         input_msg = format_code_correction_input(script_path, validation, erc_result)
-        result = await Runner.run(code_corrector, input_msg)
+        result = await run_agent(code_corrector, input_msg)
         correction = cast(CodeCorrectionOutput, result.final_output)
         code_output.complete_skidl_code = correction.corrected_code
         return code_output
@@ -163,7 +165,6 @@ async def run_code_correction(
 async def run_with_retry(
     prompt: str,
     show_reasoning: bool = False,
-    debug: bool = False,
     retries: int = 0,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling."""
@@ -171,7 +172,7 @@ async def run_with_retry(
     attempts = 0
     while True:
         try:
-            return await pipeline(prompt, show_reasoning=show_reasoning, debug=debug)
+            return await pipeline(prompt, show_reasoning=show_reasoning)
         except Exception as exc:
             attempts += 1
             print(f"Error during pipeline execution: {exc}")
@@ -181,15 +182,12 @@ async def run_with_retry(
             print(f"Retrying ({attempts}/{retries})...")
 
 
-async def pipeline(
-    prompt: str, show_reasoning: bool = False, debug: bool = False
-) -> CodeGenerationOutput:
+async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
     Args:
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
-        debug: Print calculation code when ``True``.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -201,7 +199,7 @@ async def pipeline(
     plan = plan_result.final_output
     pretty_print_plan(plan)
 
-    if debug and plan.calculation_codes:
+    if settings.dev_mode and plan.calculation_codes:
         print("\n=== Debug: Calculation Codes ===")
         for i, code in enumerate(plan.calculation_codes, 1):
             print(f"\nCalculation #{i} code:\n{code}")
@@ -289,7 +287,6 @@ async def main() -> None:
     await run_with_retry(
         prompt,
         show_reasoning=args.reasoning,
-        debug=args.debug,
         retries=args.retries,
     )
 
@@ -303,7 +300,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the Circuitron pipeline")
     parser.add_argument("prompt", nargs="?", help="Design prompt")
     parser.add_argument("-r", "--reasoning", action="store_true", help="show reasoning summary")
-    parser.add_argument("-d", "--debug", action="store_true", help="show debug info")
     parser.add_argument("--dev", action="store_true", help="enable tracing with logfire")
     parser.add_argument(
         "-n",

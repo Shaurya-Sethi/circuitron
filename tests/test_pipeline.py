@@ -74,10 +74,10 @@ def test_pipeline_asyncio() -> None:
 
 def test_parse_args() -> None:
     from circuitron import pipeline as pl
-    args = pl.parse_args(["prompt", "-r", "-d", "--dev", "-n", "2"])
+    args = pl.parse_args(["prompt", "-r", "--dev", "-n", "2"])
     assert args.prompt == "prompt"
     assert args.reasoning is True
-    assert args.debug is True
+    assert not hasattr(args, "debug")
     assert args.dev is True
     assert args.retries == 2
 
@@ -88,7 +88,7 @@ def test_run_code_validation_calls_erc() -> None:
     selection = PartSelectionOutput()
     docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     val_out = CodeValidationOutput(status="pass", summary="ok")
-    with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+    with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
         with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')) as erc_mock, \
              patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
@@ -105,7 +105,7 @@ def test_run_code_validation_no_erc_on_fail() -> None:
     selection = PartSelectionOutput()
     docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     val_out = CodeValidationOutput(status="fail", summary="bad")
-    with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+    with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
         with patch("circuitron.pipeline.run_erc", AsyncMock()) as erc_mock, \
              patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
@@ -159,7 +159,9 @@ async def fake_pipeline_debug_show() -> None:
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
-        result = await pl.pipeline("test", show_reasoning=True, debug=True)
+        pl.settings.dev_mode = True
+        result = await pl.pipeline("test", show_reasoning=True)
+        pl.settings.dev_mode = False
     assert result is code_out
 
 
@@ -247,7 +249,7 @@ def test_run_code_validation_cleanup(tmp_path: Path) -> None:
         return str(script_path)
 
     with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
-        with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+        with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
             with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')):
                 asyncio.run(pl.run_code_validation(code_out, selection, docs))
 
@@ -268,7 +270,7 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
         return str(script_path)
 
     with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
-        with patch("circuitron.pipeline.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction_out))):
+        with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction_out))):
             asyncio.run(pl.run_code_correction(code_out, validation))
 
     assert not script_path.exists()
@@ -277,7 +279,7 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
 async def fake_run_with_retry_success() -> None:
     from circuitron import pipeline as pl
 
-    async def maybe_fail(prompt: str, show_reasoning: bool = False, debug: bool = False) -> CodeGenerationOutput:
+    async def maybe_fail(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
         if not hasattr(maybe_fail, "called"):
             setattr(maybe_fail, "called", True)
             raise RuntimeError("boom")
@@ -291,7 +293,7 @@ async def fake_run_with_retry_success() -> None:
 async def fake_run_with_retry_fail() -> None:
     from circuitron import pipeline as pl
 
-    async def always_fail(prompt: str, show_reasoning: bool = False, debug: bool = False) -> CodeGenerationOutput:
+    async def always_fail(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
         raise RuntimeError("x")
 
     with patch.object(pl, "pipeline", AsyncMock(side_effect=always_fail)):

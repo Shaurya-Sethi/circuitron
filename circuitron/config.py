@@ -43,4 +43,5 @@ def setup_environment(dev: bool = False) -> Settings:
 
     new_settings = Settings()
     settings.__dict__.update(vars(new_settings))
+    settings.dev_mode = dev
     return settings
