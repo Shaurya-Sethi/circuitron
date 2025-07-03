@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+import threading
 
 
 @dataclass
@@ -13,6 +14,7 @@ class DockerSession:
     image: str
     container_name: str
     started: bool = False
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     def _run(self, cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.run(cmd, capture_output=True, text=True, **kwargs)
@@ -21,24 +23,27 @@ class DockerSession:
         """Start the container if it isn't already running."""
         if self.started:
             return
-        ps_cmd = [
-            "docker",
-            "ps",
-            "-a",
-            "--filter",
-            f"name={self.container_name}",
-            "--format",
-            "{{.Status}}",
-        ]
-        try:
-            proc = self._run(ps_cmd, check=True)
-        except subprocess.CalledProcessError as exc:  # pragma: no cover - docker error
-            logging.error(
-                "Failed to check for existing container %s: %s",
-                self.container_name,
-                exc.stderr.strip(),
-            )
-            raise
+        with self._lock:
+            if self.started:
+                return
+            ps_cmd = [
+                "docker",
+                "ps",
+                "-a",
+                "--filter",
+                f"name={self.container_name}",
+                "--format",
+                "{{.Status}}",
+            ]
+            try:
+                proc = self._run(ps_cmd, check=True)
+            except subprocess.CalledProcessError as exc:  # pragma: no cover - docker error
+                logging.error(
+                    "Failed to check for existing container %s: %s",
+                    self.container_name,
+                    exc.stderr.strip(),
+                )
+                raise
 
         if proc.stdout.strip():
             status = proc.stdout.strip().lower()

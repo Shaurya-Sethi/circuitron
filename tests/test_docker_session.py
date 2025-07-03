@@ -1,4 +1,5 @@
 import subprocess
+import threading
 from unittest.mock import patch
 
 import pytest
@@ -48,3 +49,18 @@ def test_start_error_message() -> None:
         with pytest.raises(RuntimeError) as info:
             session.start()
         assert "Docker" in str(info.value)
+
+
+def test_concurrent_start() -> None:
+    session = DockerSession("img", "cont")
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock:
+        t1 = threading.Thread(target=session.start)
+        t2 = threading.Thread(target=session.start)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        assert session.started is True
+        assert run_mock.call_count == 2
