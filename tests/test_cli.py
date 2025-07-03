@@ -58,3 +58,15 @@ def test_cli_main_stops_session():
          patch("circuitron.tools.kicad_session.stop") as stop_mock:
         cli.main()
         stop_mock.assert_called_once()
+
+def test_cli_main_handles_keyboardinterrupt(capsys):
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
+    with patch("circuitron.cli.setup_environment"), \
+         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=KeyboardInterrupt)), \
+         patch("circuitron.tools.kicad_session.stop"):
+        cli.main()
+    captured = capsys.readouterr().out
+    assert "interrupted" in captured.lower()
