@@ -28,7 +28,12 @@ def main() -> None:
 
     code_output: CodeGenerationOutput | None = None
     try:
-        code_output = asyncio.run(run_circuitron(prompt, show_reasoning, debug))
+        try:
+            code_output = asyncio.run(
+                run_circuitron(prompt, show_reasoning, debug)
+            )
+        except KeyboardInterrupt:
+            print("\nExecution interrupted by user.")
     finally:
         kicad_session.stop()
 
