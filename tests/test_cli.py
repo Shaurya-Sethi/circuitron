@@ -24,7 +24,7 @@ def test_cli_main_uses_args_and_prints(capsys):
     args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)):
+        patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)):
         cli.main()
     captured = capsys.readouterr().out
     assert "GENERATED SKiDL CODE" in captured
@@ -47,3 +47,14 @@ def test_module_main_called():
     with patch("circuitron.cli.main") as main_mock:
         runpy.run_module("circuitron", run_name="__main__")
         main_mock.assert_called_once()
+
+
+def test_cli_main_stops_session():
+    out = CodeGenerationOutput(complete_skidl_code="123")
+    args = SimpleNamespace(prompt="p", reasoning=False, debug=False)
+    with patch("circuitron.cli.setup_environment"), \
+         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)), \
+         patch("circuitron.tools.kicad_session.stop") as stop_mock:
+        cli.main()
+        stop_mock.assert_called_once()
