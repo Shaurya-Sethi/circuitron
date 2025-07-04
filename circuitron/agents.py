@@ -35,8 +35,8 @@ from .tools import (
     search_kicad_libraries,
     search_kicad_footprints,
     extract_pin_details,
-    create_mcp_documentation_tools,
-    create_mcp_validation_tools,
+    create_mcp_documentation_server,
+    create_mcp_validation_server,
     run_erc_tool,
 )
 
@@ -120,14 +120,12 @@ def create_documentation_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.documentation_model)
     )
 
-    tools: list[Tool] = create_mcp_documentation_tools()
-
     return Agent(
         name="Circuitron-DocSeeker",
         instructions=DOC_AGENT_PROMPT,
         model=settings.documentation_model,
         output_type=DocumentationOutput,
-        tools=tools,
+        mcp_servers=[create_mcp_documentation_server()],
         model_settings=model_settings,
         handoff_description="Gather SKiDL documentation",
     )
@@ -139,14 +137,12 @@ def create_code_generation_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_generation_model)
     )
 
-    tools: list[Tool] = create_mcp_documentation_tools()
-
     return Agent(
         name="Circuitron-Coder",
         instructions=CODE_GENERATION_PROMPT,
         model=settings.code_generation_model,
         output_type=CodeGenerationOutput,
-        tools=tools,
+        mcp_servers=[create_mcp_documentation_server()],
         model_settings=model_settings,
         handoff_description="Generate production-ready SKiDL code",
     )
@@ -158,14 +154,12 @@ def create_code_validation_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
-    tools: list[Tool] = create_mcp_validation_tools()
-
     return Agent(
         name="Circuitron-Validator",
         instructions=CODE_VALIDATION_PROMPT,
         model=settings.code_validation_model,
         output_type=CodeValidationOutput,
-        tools=tools,
+        mcp_servers=[create_mcp_validation_server()],
         model_settings=model_settings,
         handoff_description="Validate SKiDL code",
     )
@@ -177,11 +171,7 @@ def create_code_correction_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
-    tools: list[Tool] = [
-        *create_mcp_documentation_tools(),
-        *create_mcp_validation_tools(),
-        run_erc_tool,
-    ]
+    tools: list[Tool] = [run_erc_tool]
 
     return Agent(
         name="Circuitron-Corrector",
@@ -189,6 +179,10 @@ def create_code_correction_agent() -> Agent:
         model=settings.code_validation_model,
         output_type=CodeCorrectionOutput,
         tools=tools,
+        mcp_servers=[
+            create_mcp_documentation_server(),
+            create_mcp_validation_server(),
+        ],
         model_settings=model_settings,
         handoff_description="Iteratively fix SKiDL code",
     )
@@ -202,6 +196,7 @@ def _log_handoff_to(target: str) -> Callable[[RunContextWrapper[None]], None]:
 
     return _callback
 
+
 # Create agent instances
 planner = create_planning_agent()
 plan_editor = create_plan_edit_agent()
@@ -213,13 +208,33 @@ code_validator = create_code_validation_agent()
 code_corrector = create_code_correction_agent()
 
 # Configure handoffs between agents
-planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"), is_enabled=False)]
+planner.handoffs = [
+    handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"), is_enabled=False)
+]
 plan_editor.handoffs = [
     handoff(planner, on_handoff=_log_handoff_to("Planner"), is_enabled=False),
     handoff(part_finder, on_handoff=_log_handoff_to("PartFinder"), is_enabled=False),
 ]
-part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"), is_enabled=False)]
-part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"), is_enabled=False)]
-documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"), is_enabled=False)]
-code_generator.handoffs = [handoff(code_validator, on_handoff=_log_handoff_to("CodeValidation"), is_enabled=False)]
-code_validator.handoffs = [handoff(code_corrector, on_handoff=_log_handoff_to("CodeCorrection"), is_enabled=False)]
+part_finder.handoffs = [
+    handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"), is_enabled=False)
+]
+part_selector.handoffs = [
+    handoff(
+        documentation, on_handoff=_log_handoff_to("Documentation"), is_enabled=False
+    )
+]
+documentation.handoffs = [
+    handoff(
+        code_generator, on_handoff=_log_handoff_to("CodeGeneration"), is_enabled=False
+    )
+]
+code_generator.handoffs = [
+    handoff(
+        code_validator, on_handoff=_log_handoff_to("CodeValidation"), is_enabled=False
+    )
+]
+code_validator.handoffs = [
+    handoff(
+        code_corrector, on_handoff=_log_handoff_to("CodeCorrection"), is_enabled=False
+    )
+]
