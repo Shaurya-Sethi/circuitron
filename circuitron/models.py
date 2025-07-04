@@ -152,7 +152,7 @@ class PartFinderOutput(BaseModel):
         try:
             data = json.loads(self.found_components_json)
             return sum(len(components) for components in data.values() if components)
-        except:
+        except Exception:
             return 0
     
     def get_successful_searches(self) -> int:
@@ -161,7 +161,7 @@ class PartFinderOutput(BaseModel):
         try:
             data = json.loads(self.found_components_json)
             return sum(1 for components in data.values() if components)
-        except:
+        except Exception:
             return 0
 
 
