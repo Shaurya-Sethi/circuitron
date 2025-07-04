@@ -96,7 +96,7 @@ class DockerSession:
     ) -> subprocess.CompletedProcess[str]:
         """Execute a Python script inside the running container."""
         self.start()
-        cmd = ["docker", "exec", "-i", self.container_name, "python", "-c", script]
+        cmd = ["docker", "exec", "-i", self.container_name, "python3", "-c", script]
         return self._run(cmd, timeout=timeout, check=True)
 
     def exec_erc(
@@ -106,7 +106,7 @@ class DockerSession:
         self.start()
         cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
         self._run(cp_cmd, check=True)
-        cmd = ["docker", "exec", "-i", self.container_name, "python", "-c", wrapper]
+        cmd = ["docker", "exec", "-i", self.container_name, "python3", "-c", wrapper]
         try:
             return self._run(cmd, timeout=timeout, check=True)
         finally:
