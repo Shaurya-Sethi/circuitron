@@ -46,6 +46,7 @@ from circuitron.utils import (
     pretty_print_selected_parts,
     pretty_print_documentation,
     collect_user_feedback,
+    sanitize_text,
     format_plan_edit_input,
     format_part_selection_input,
     format_documentation_input,
@@ -62,14 +63,14 @@ from circuitron.tools import run_erc
 
 async def run_planner(prompt: str) -> RunResult:
     """Run the planning agent and return the run result."""
-    return await run_agent(planner, prompt)
+    return await run_agent(planner, sanitize_text(prompt))
 
 
 async def run_plan_editor(
     original_prompt: str, plan: PlanOutput, feedback: UserFeedback
 ) -> PlanEditorOutput:
     """Run the PlanEditor agent with formatted input."""
-    input_msg = format_plan_edit_input(original_prompt, plan, feedback)
+    input_msg = format_plan_edit_input(sanitize_text(original_prompt), plan, feedback)
     result = await run_agent(plan_editor, input_msg)
     return cast(PlanEditorOutput, result.final_output)
 
@@ -77,7 +78,7 @@ async def run_plan_editor(
 async def run_part_finder(plan: PlanOutput) -> PartFinderOutput:
     """Search KiCad libraries for components from the plan."""
     query_text = "\n".join(plan.component_search_queries)
-    result = await run_agent(part_finder, query_text)
+    result = await run_agent(part_finder, sanitize_text(query_text))
     return cast(PartFinderOutput, result.final_output)
 
 
@@ -86,7 +87,7 @@ async def run_part_selector(
 ) -> PartSelectionOutput:
     """Select optimal parts using search results."""
     input_msg = format_part_selection_input(plan, part_output)
-    result = await run_agent(part_selector, input_msg)
+    result = await run_agent(part_selector, sanitize_text(input_msg))
     return cast(PartSelectionOutput, result.final_output)
 
 
@@ -95,7 +96,7 @@ async def run_documentation(
 ) -> DocumentationOutput:
     """Gather SKiDL documentation based on plan and selected parts."""
     input_msg = format_documentation_input(plan, selection)
-    result = await run_agent(documentation, input_msg)
+    result = await run_agent(documentation, sanitize_text(input_msg))
     return cast(DocumentationOutput, result.final_output)
 
 
@@ -104,7 +105,7 @@ async def run_code_generation(
 ) -> CodeGenerationOutput:
     """Generate SKiDL code using plan, selected parts, and documentation."""
     input_msg = format_code_generation_input(plan, selection, docs)
-    result = await run_agent(code_generator, input_msg)
+    result = await run_agent(code_generator, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
     pretty_print_generated_code(code_output)
     validate_code_generation_results(code_output)
@@ -121,7 +122,7 @@ async def run_code_validation(
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
         input_msg = format_code_validation_input(script_path, selection, docs)
-        result = await run_agent(code_validator, input_msg)
+        result = await run_agent(code_validator, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
@@ -151,7 +152,7 @@ async def run_code_correction(
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
         input_msg = format_code_correction_input(script_path, validation, erc_result)
-        result = await run_agent(code_corrector, input_msg)
+        result = await run_agent(code_corrector, sanitize_text(input_msg))
         correction = cast(CodeCorrectionOutput, result.final_output)
         code_output.complete_skidl_code = correction.corrected_code
         return code_output

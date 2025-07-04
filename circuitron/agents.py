@@ -213,13 +213,13 @@ code_validator = create_code_validation_agent()
 code_corrector = create_code_correction_agent()
 
 # Configure handoffs between agents
-planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"))]
+planner.handoffs = [handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"), is_enabled=False)]
 plan_editor.handoffs = [
-    handoff(planner, on_handoff=_log_handoff_to("Planner")),
-    handoff(part_finder, on_handoff=_log_handoff_to("PartFinder")),
+    handoff(planner, on_handoff=_log_handoff_to("Planner"), is_enabled=False),
+    handoff(part_finder, on_handoff=_log_handoff_to("PartFinder"), is_enabled=False),
 ]
-part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"))]
-part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"))]
-documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"))]
-code_generator.handoffs = [handoff(code_validator, on_handoff=_log_handoff_to("CodeValidation"))]
-code_validator.handoffs = [handoff(code_corrector, on_handoff=_log_handoff_to("CodeCorrection"))]
+part_finder.handoffs = [handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"), is_enabled=False)]
+part_selector.handoffs = [handoff(documentation, on_handoff=_log_handoff_to("Documentation"), is_enabled=False)]
+documentation.handoffs = [handoff(code_generator, on_handoff=_log_handoff_to("CodeGeneration"), is_enabled=False)]
+code_generator.handoffs = [handoff(code_validator, on_handoff=_log_handoff_to("CodeValidation"), is_enabled=False)]
+code_validator.handoffs = [handoff(code_corrector, on_handoff=_log_handoff_to("CodeCorrection"), is_enabled=False)]
