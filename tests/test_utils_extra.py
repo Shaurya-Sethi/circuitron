@@ -94,9 +94,9 @@ def test_format_code_validation_and_correction_input() -> None:
     selection = PartSelectionOutput(selections=[part])
     docs = cast(DocumentationOutput, SimpleNamespace(documentation_findings=["doc"]))
     val = CodeValidationOutput(status="fail", summary="bad", issues=[ValidationIssue(category="err", message="m", line=1)])
-    text = format_code_validation_input("/tmp/s.py", selection, docs)
-    assert "s.py" in text and "U1" in text and "doc" in text
-    corr = format_code_correction_input("/tmp/s.py", val, {"erc_passed": False})
+    text = format_code_validation_input("print('hi')", selection, docs)
+    assert "print('hi')" in text and "U1" in text and "doc" in text
+    corr = format_code_correction_input("print('hi')", val, {"erc_passed": False})
     assert "Validation Summary: bad" in corr
     assert "erc_passed" in corr
 

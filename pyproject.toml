@@ -13,6 +13,7 @@ dependencies = [
     "openai-agents==0.1.0",
     "python-dotenv>=1.1.0",
     "skidl>=2.0.1",
+    "httpx>=0.27.0",
 ]
 
 [project.optional-dependencies]

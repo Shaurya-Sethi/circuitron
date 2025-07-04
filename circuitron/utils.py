@@ -402,14 +402,15 @@ def format_code_generation_input(
 
 
 def format_code_validation_input(
-    script_path: str, selection: PartSelectionOutput, docs: DocumentationOutput
+    script_content: str, selection: PartSelectionOutput, docs: DocumentationOutput
 ) -> str:
     """Format input for the Code Validation agent."""
 
     parts = [
         "CODE VALIDATION CONTEXT",
         "=" * 40,
-        f"Script Path: {script_path}",
+        "Script Content:",
+        script_content,
         "",
     ]
     if selection.selections:
@@ -471,7 +472,7 @@ def pretty_print_validation(result: CodeValidationOutput) -> None:
 
 
 def format_code_correction_input(
-    script_path: str,
+    script_content: str,
     validation: CodeValidationOutput,
     erc_result: dict[str, object] | None = None,
 ) -> str:
@@ -480,7 +481,8 @@ def format_code_correction_input(
     parts = [
         "CODE CORRECTION CONTEXT",
         "=" * 40,
-        f"Script Path: {script_path}",
+        "Script Content:",
+        script_content,
         "",
         f"Validation Summary: {validation.summary}",
     ]
