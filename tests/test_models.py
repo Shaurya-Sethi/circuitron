@@ -16,21 +16,15 @@ from circuitron.models import (
 
 def test_plan_editor_output_edit() -> None:
     plan = PlanOutput()
-    decision = PlanEditDecision(action="edit_plan", reasoning="ok")
+    decision = PlanEditDecision(reasoning="ok")
     result = PlanEditorOutput(decision=decision, updated_plan=plan)
     assert result.updated_plan is plan
 
 
 def test_plan_editor_output_edit_missing_plan() -> None:
-    decision = PlanEditDecision(action="edit_plan", reasoning="bad")
+    decision = PlanEditDecision(reasoning="bad")
     with pytest.raises(ValueError):
         PlanEditorOutput(decision=decision)
-
-
-def test_plan_editor_output_regenerate() -> None:
-    decision = PlanEditDecision(action="regenerate_plan", reasoning="redo")
-    result = PlanEditorOutput(decision=decision, reconstructed_prompt="new")
-    assert result.reconstructed_prompt == "new"
 
 
 def test_documentation_output() -> None:

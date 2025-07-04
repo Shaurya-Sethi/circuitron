@@ -27,7 +27,7 @@ async def run_wrappers() -> None:
         run_mock.assert_awaited_with(pl.planner, "p")  # type: ignore[attr-defined]
         run_mock.reset_mock()
 
-        run_mock.return_value = SimpleNamespace(final_output=PlanEditorOutput(decision=PlanEditDecision(action="edit_plan", reasoning="x"), updated_plan=PlanOutput()))
+        run_mock.return_value = SimpleNamespace(final_output=PlanEditorOutput(decision=PlanEditDecision(reasoning="x"), updated_plan=PlanOutput()))
         await pl.run_plan_editor("p", PlanOutput(), UserFeedback())
         run_mock.reset_mock()
 

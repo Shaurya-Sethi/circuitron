@@ -45,7 +45,7 @@ async def fake_pipeline_edit_plan() -> None:
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
     edit_output = PlanEditorOutput(
-        decision=PlanEditDecision(action="edit_plan", reasoning="ok"),
+        decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
     part_out = PartFinderOutput(found_components_json="[]")

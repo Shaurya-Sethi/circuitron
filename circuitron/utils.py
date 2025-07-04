@@ -254,8 +254,8 @@ def format_plan_edit_input(original_prompt: str, plan: PlanOutput, feedback: Use
     
     input_parts.extend([
         "INSTRUCTIONS:",
-        "Analyze this feedback and determine whether to apply direct edits to the existing plan",
-        "or trigger plan regeneration. Follow your decision framework carefully."
+        "Incorporate all feedback into a revised plan using the PlanOutput structure.",
+        "Recompute affected calculations as needed and provide a concise bullet list of changes."
     ])
     
     return "\n".join(input_parts)
@@ -325,28 +325,6 @@ def pretty_print_edited_plan(edited_output: PlanEditorOutput) -> None:
     print("="*40)
     if edited_output.updated_plan:
         pretty_print_plan(edited_output.updated_plan)
-
-
-def pretty_print_regeneration_prompt(regen_output: PlanEditorOutput) -> None:
-    """Pretty print a regeneration prompt output."""
-    print("\n" + "="*60)
-    print("PLAN REGENERATION REQUIRED")
-    print("=" * 60)
-    
-    print(f"\nAction: {regen_output.decision.action}")
-    print(f"Reasoning: {regen_output.decision.reasoning}")
-    
-    if regen_output.regeneration_guidance:
-        print("\n" + "=" * 40)
-        print("REGENERATION GUIDANCE")
-        print("="*40)
-        for i, guidance in enumerate(regen_output.regeneration_guidance, 1):
-            print(f"{i}. {guidance}")
-    
-    print("\n" + "=" * 40)
-    print("RECONSTRUCTED PROMPT")
-    print("="*40)
-    print(regen_output.reconstructed_prompt)
 
 
 def pretty_print_found_parts(found_json: str) -> None:

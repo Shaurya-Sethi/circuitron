@@ -128,7 +128,7 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
         final_output=None,
         new_items=[
             MessageOutputItem(
-                agent=SimpleNamespace(name="A"),
+                agent=SimpleNamespace(name="A"),  # type: ignore[arg-type]
                 raw_item=ResponseOutputMessage(
                     id="1",
                     content=[ResponseOutputText(annotations=[], text="hello", type="output_text")],

@@ -29,7 +29,6 @@ from circuitron.utils import (
     pretty_print_plan,
     parse_hallucination_report,
     pretty_print_edited_plan,
-    pretty_print_regeneration_prompt,
     pretty_print_found_parts,
     pretty_print_selected_parts,
     pretty_print_documentation,
@@ -116,10 +115,8 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     cap = capsys.readouterr().out
     assert "Design Rationale" in cap
     # edited plan
-    edit = PlanEditorOutput(decision=PlanEditDecision(action="edit_plan", reasoning="r"), updated_plan=plan)
+    edit = PlanEditorOutput(decision=PlanEditDecision(reasoning="r"), updated_plan=plan)
     pretty_print_edited_plan(edit)
-    regen = PlanEditorOutput(decision=PlanEditDecision(action="regenerate_plan", reasoning="r"), reconstructed_prompt="new")
-    pretty_print_regeneration_prompt(regen)
     pretty_print_found_parts("[]")
     selected = PartSelectionOutput(selections=[SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[])])
     pretty_print_selected_parts(selected)
