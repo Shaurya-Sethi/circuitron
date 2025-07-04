@@ -40,7 +40,6 @@ from circuitron.models import (
 from circuitron.utils import (
     pretty_print_plan,
     pretty_print_edited_plan,
-    pretty_print_regeneration_prompt,
     pretty_print_found_parts,
     extract_reasoning_summary,
     pretty_print_selected_parts,
@@ -233,40 +232,17 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
+    pretty_print_edited_plan(edit_result)
+    assert edit_result.updated_plan is not None
+    final_plan = edit_result.updated_plan
 
-    if edit_result.decision.action == "edit_plan":
-        pretty_print_edited_plan(edit_result)
-        assert edit_result.updated_plan is not None
-        final_plan = edit_result.updated_plan
-        part_output = await run_part_finder(final_plan)
-        pretty_print_found_parts(part_output.found_components_json)
-        selection = await run_part_selector(final_plan, part_output)
-        pretty_print_selected_parts(selection)
-        docs = await run_documentation(final_plan, selection)
-        pretty_print_documentation(docs)
-        code_out = await run_code_generation(final_plan, selection, docs)
-        validation, erc_result = await run_code_validation(code_out, selection, docs)
-        attempts = 0
-        while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
-            code_out = await run_code_correction(code_out, validation, erc_result)
-            validation, erc_result = await run_code_validation(code_out, selection, docs)
-            attempts += 1
-            if attempts >= 3:
-                break
-        return code_out
-
-    pretty_print_regeneration_prompt(edit_result)
-    assert edit_result.reconstructed_prompt is not None
-    regen_result = await run_planner(edit_result.reconstructed_prompt)
-    new_plan = regen_result.final_output
-    pretty_print_plan(new_plan)
-    part_output = await run_part_finder(new_plan)
+    part_output = await run_part_finder(final_plan)
     pretty_print_found_parts(part_output.found_components_json)
-    selection = await run_part_selector(new_plan, part_output)
+    selection = await run_part_selector(final_plan, part_output)
     pretty_print_selected_parts(selection)
-    docs = await run_documentation(new_plan, selection)
+    docs = await run_documentation(final_plan, selection)
     pretty_print_documentation(docs)
-    code_out = await run_code_generation(new_plan, selection, docs)
+    code_out = await run_code_generation(final_plan, selection, docs)
     validation, erc_result = await run_code_validation(code_out, selection, docs)
     attempts = 0
     while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):

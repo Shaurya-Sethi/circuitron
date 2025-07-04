@@ -46,7 +46,7 @@ async def fake_pipeline_edit_plan() -> None:
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
     edit_output = PlanEditorOutput(
-        decision=PlanEditDecision(action="edit_plan", reasoning="ok"),
+        decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
     part_out = PartFinderOutput(found_components_json="[]")
@@ -159,9 +159,9 @@ async def fake_pipeline_debug_show() -> None:
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
-        pl.settings.dev_mode = True
+        pl.settings.dev_mode = True  # type: ignore[attr-defined]
         result = await pl.pipeline("test", show_reasoning=True)
-        pl.settings.dev_mode = False
+        pl.settings.dev_mode = False  # type: ignore[attr-defined]
     assert result is code_out
 
 
@@ -174,7 +174,7 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
     edited_plan = PlanOutput(component_search_queries=["C"])
     edit_output = PlanEditorOutput(
-        decision=PlanEditDecision(action="edit_plan", reasoning="ok"),
+        decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
     part_out = PartFinderOutput(found_components_json="[]")
@@ -197,41 +197,9 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
     assert result.complete_skidl_code == "fixed"
 
 
+
 def test_pipeline_edit_plan_with_correction() -> None:
     asyncio.run(fake_pipeline_edit_plan_with_correction())
-
-async def fake_pipeline_regen_with_correction() -> None:
-    from circuitron import pipeline as pl
-    plan = PlanOutput()
-    plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    regen_plan = PlanOutput()
-    regen_result = SimpleNamespace(final_output=regen_plan, new_items=[])
-    edit_output = PlanEditorOutput(
-        decision=PlanEditDecision(action="regenerate_plan", reasoning="r"),
-        reconstructed_prompt="again",
-    )
-    part_out = PartFinderOutput(found_components_json="[]")
-    select_out = PartSelectionOutput()
-    doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
-    code_out = CodeGenerationOutput(complete_skidl_code="init")
-    corrected = CodeGenerationOutput(complete_skidl_code="fixed")
-    val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
-    val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
-    with patch.object(pl, "run_planner", AsyncMock(side_effect=[plan_result, regen_result])), \
-         patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
-         patch.object(pl, "run_plan_editor", AsyncMock(return_value=edit_output)), \
-         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
-         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
-         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
-         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_ok])), \
-         patch.object(pl, "run_code_correction", AsyncMock(return_value=corrected)):
-        result = await pl.pipeline("test")
-    assert result.complete_skidl_code == "fixed"
-
-
-def test_pipeline_regen_with_correction() -> None:
-    asyncio.run(fake_pipeline_regen_with_correction())
 
 
 def test_run_code_validation_cleanup(tmp_path: Path) -> None:

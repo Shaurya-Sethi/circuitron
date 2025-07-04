@@ -76,16 +76,17 @@ class UserFeedback(BaseModel):
 
 
 class PlanEditDecision(BaseModel):
-    """Decision output from the PlanEdit Agent."""
+    """Decision output from the PlanEditor agent."""
+
     model_config = ConfigDict(extra="forbid")
-    
-    action: str = Field(
-        description="Either 'edit_plan' or 'regenerate_plan' based on the scope of required changes."
+
+    action: Literal["edit_plan"] = Field(
+        default="edit_plan",
+        description='Action type. Always "edit_plan".'
     )
     reasoning: str = Field(
-        description="Clear explanation of why this action was chosen and what changes are needed."
+        description="Explanation of the updates applied to the plan.",
     )
-    
 
 class PlanEditorOutput(BaseModel):
     """Unified output from the PlanEditor agent."""
@@ -101,24 +102,11 @@ class PlanEditorOutput(BaseModel):
         default_factory=list,
         description="Summary of modifications made to the original plan.",
     )
-    reconstructed_prompt: str | None = Field(
-        default=None,
-        description="New prompt for the Planner when action is 'regenerate_plan'.",
-    )
-    regeneration_guidance: List[str] = Field(
-        default_factory=list,
-        description="Guidance for the Planner when regenerating a plan.",
-    )
 
     @model_validator(mode="after")
     def validate_fields(self) -> "PlanEditorOutput":
-        action = self.decision.action
-        if action == "edit_plan" and self.updated_plan is None:
-            raise ValueError("updated_plan must be provided when action is 'edit_plan'")
-        if action == "regenerate_plan" and self.reconstructed_prompt is None:
-            raise ValueError(
-                "reconstructed_prompt must be provided when action is 'regenerate_plan'"
-            )
+        if self.updated_plan is None:
+            raise ValueError("updated_plan must be provided")
         return self
 
 
