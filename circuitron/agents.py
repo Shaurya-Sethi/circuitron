@@ -41,6 +41,11 @@ from .tools import (
 )
 
 
+def _tool_choice_for_mcp(model: str) -> str:
+    """Return appropriate tool_choice for MCP tools based on the model."""
+    return "auto" if "mini" in model else "required"
+
+
 def create_planning_agent() -> Agent:
     """Create and configure the Planning Agent."""
     model_settings = ModelSettings(tool_choice="required")
@@ -111,7 +116,9 @@ def create_partselection_agent() -> Agent:
 
 def create_documentation_agent() -> Agent:
     """Create and configure the Documentation Agent."""
-    model_settings = ModelSettings(tool_choice="required")
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.documentation_model)
+    )
 
     tools: list[Tool] = create_mcp_documentation_tools()
 
@@ -128,7 +135,9 @@ def create_documentation_agent() -> Agent:
 
 def create_code_generation_agent() -> Agent:
     """Create and configure the Code Generation Agent."""
-    model_settings = ModelSettings(tool_choice="auto")
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.code_generation_model)
+    )
 
     tools: list[Tool] = create_mcp_documentation_tools()
 
@@ -145,7 +154,9 @@ def create_code_generation_agent() -> Agent:
 
 def create_code_validation_agent() -> Agent:
     """Create and configure the Code Validation Agent."""
-    model_settings = ModelSettings(tool_choice="required")
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
+    )
 
     tools: list[Tool] = create_mcp_validation_tools()
 
@@ -162,7 +173,9 @@ def create_code_validation_agent() -> Agent:
 
 def create_code_correction_agent() -> Agent:
     """Create and configure the Code Correction Agent."""
-    model_settings = ModelSettings(tool_choice="required")
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
+    )
 
     tools: list[Tool] = [
         *create_mcp_documentation_tools(),
