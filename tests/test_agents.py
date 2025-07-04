@@ -69,3 +69,28 @@ def test_code_corrector_configuration() -> None:
     assert mod.code_corrector.model == cfg.settings.code_validation_model
     tool_names = [t.name for t in mod.code_corrector.tools]
     assert "run_erc" in tool_names
+
+
+def test_tool_choice_auto_for_o4mini() -> None:
+    import sys
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    mod = importlib.import_module("circuitron.agents")
+    assert mod.documentation.model_settings.tool_choice == "auto"
+    assert mod.code_validator.model_settings.tool_choice == "auto"
+    assert mod.code_corrector.model_settings.tool_choice == "auto"
+
+
+def test_tool_choice_required_for_full_model() -> None:
+    import sys
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    cfg.settings.documentation_model = "gpt-4o"
+    cfg.settings.code_validation_model = "gpt-4o"
+    cfg.settings.code_generation_model = "gpt-4o"
+    mod = importlib.import_module("circuitron.agents")
+    assert mod.documentation.model_settings.tool_choice == "required"
+    assert mod.code_validator.model_settings.tool_choice == "required"
+    assert mod.code_corrector.model_settings.tool_choice == "required"
