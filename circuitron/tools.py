@@ -5,14 +5,11 @@ Contains calculation tools and other utilities that agents can use.
 """
 
 from agents import function_tool
-from agents.tool import HostedMCPTool, Tool
+from agents.mcp import MCPServerSse
 import asyncio
 import subprocess
 import textwrap
 import json
-import os
-from typing import cast
-from openai.types.responses.tool_param import Mcp
 from .models import CalcResult
 from .config import settings
 from .docker_session import DockerSession
@@ -243,33 +240,30 @@ print(json.dumps(pins))
     return proc.stdout.strip()
 
 
-def create_mcp_tool(server_label: str) -> HostedMCPTool:
-    """Return a HostedMCPTool configured for the given server label.
-
-    Args:
-        server_label: The target label of the MCP server.
+def create_mcp_documentation_server() -> MCPServerSse:
+    """Create MCP server for SKiDL documentation.
 
     Returns:
-        HostedMCPTool configured with the appropriate server URL.
+        MCPServerSse configured for the ``skidl_docs`` server.
     """
-    server_url = os.getenv("MCP_URL", settings.mcp_url)
-    tool_data: dict[str, object] = {
-        "type": "mcp",
-        "server_label": server_label,
-        "server_url": server_url,
-        "require_approval": "never",
-    }
-    return HostedMCPTool(tool_config=cast(Mcp, tool_data))
+    return MCPServerSse(
+        name="skidl_docs",
+        params={"url": "http://localhost:8051/sse"},
+        cache_tools_list=True,
+    )
 
 
-def create_mcp_documentation_tools() -> list[Tool]:
-    """Create MCP tools for documentation lookup."""
-    return [create_mcp_tool("skidl_docs")]
+def create_mcp_validation_server() -> MCPServerSse:
+    """Create MCP server for hallucination validation.
 
-
-def create_mcp_validation_tools() -> list[Tool]:
-    """Create MCP tool for hallucination checks."""
-    return [create_mcp_tool("skidl_validation")]
+    Returns:
+        MCPServerSse configured for the ``skidl_validation`` server.
+    """
+    return MCPServerSse(
+        name="skidl_validation",
+        params={"url": "http://localhost:8051/sse"},
+        cache_tools_list=True,
+    )
 
 
 async def run_erc(script_path: str) -> str:

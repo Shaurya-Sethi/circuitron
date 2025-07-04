@@ -4,8 +4,10 @@ import pytest
 
 def test_agent_models_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     cfg.settings.planning_model = "x-model"
     cfg.settings.plan_edit_model = "y-model"
@@ -24,8 +26,10 @@ def test_agent_models_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_partfinder_includes_footprint_tool() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
     tool_names = [tool.name for tool in mod.part_finder.tools]
@@ -34,36 +38,50 @@ def test_partfinder_includes_footprint_tool() -> None:
 
 def test_partselector_includes_pin_tool() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
     tool_names = [tool.name for tool in mod.part_selector.tools]
     assert "extract_pin_details" in tool_names
 
 
-def test_documentation_agent_has_mcp_tool() -> None:
+def test_documentation_agent_has_mcp_server() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
-    assert any(tool.__class__.__name__ == "HostedMCPTool" for tool in mod.documentation.tools)
+    assert any(
+        server.__class__.__name__ == "MCPServerSse"
+        for server in mod.documentation.mcp_servers
+    )
 
 
-def test_code_generation_agent_has_mcp_tool() -> None:
+def test_code_generation_agent_has_mcp_server() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
-    assert any(tool.__class__.__name__ == "HostedMCPTool" for tool in mod.code_generator.tools)
+    assert any(
+        server.__class__.__name__ == "MCPServerSse"
+        for server in mod.code_generator.mcp_servers
+    )
 
 
 def test_code_corrector_configuration() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
     assert mod.code_corrector.model == cfg.settings.code_validation_model
@@ -73,8 +91,10 @@ def test_code_corrector_configuration() -> None:
 
 def test_tool_choice_auto_for_o4mini() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
     assert mod.documentation.model_settings.tool_choice == "auto"
@@ -84,8 +104,10 @@ def test_tool_choice_auto_for_o4mini() -> None:
 
 def test_tool_choice_required_for_full_model() -> None:
     import sys
+
     sys.modules.pop("circuitron.agents", None)
     import circuitron.config as cfg
+
     cfg.setup_environment()
     cfg.settings.documentation_model = "gpt-4o"
     cfg.settings.code_validation_model = "gpt-4o"
