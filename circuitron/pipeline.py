@@ -3,6 +3,7 @@
 This module wires together the planner, plan editor and part finder agents.
 It also exposes a simple CLI for running the pipeline from the command line.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -12,6 +13,7 @@ import os
 from typing import cast
 
 from circuitron.config import settings
+from .mcp_manager import mcp_manager
 
 from circuitron.debug import run_agent
 
@@ -209,11 +211,13 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         print(extract_reasoning_summary(plan_result))
 
     feedback = collect_user_feedback(plan)
-    if not any([
-        feedback.open_question_answers,
-        feedback.requested_edits,
-        feedback.additional_requirements,
-    ]):
+    if not any(
+        [
+            feedback.open_question_answers,
+            feedback.requested_edits,
+            feedback.additional_requirements,
+        ]
+    ):
         part_output = await run_part_finder(plan)
         pretty_print_found_parts(part_output.found_components_json)
         selection = await run_part_selector(plan, part_output)
@@ -223,9 +227,13 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         code_out = await run_code_generation(plan, selection, docs)
         validation, erc_result = await run_code_validation(code_out, selection, docs)
         attempts = 0
-        while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
+        while validation.status == "fail" or (
+            erc_result and not erc_result.get("erc_passed", False)
+        ):
             code_out = await run_code_correction(code_out, validation, erc_result)
-            validation, erc_result = await run_code_validation(code_out, selection, docs)
+            validation, erc_result = await run_code_validation(
+                code_out, selection, docs
+            )
             attempts += 1
             if attempts >= 3:
                 break
@@ -245,7 +253,9 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     code_out = await run_code_generation(final_plan, selection, docs)
     validation, erc_result = await run_code_validation(code_out, selection, docs)
     attempts = 0
-    while validation.status == "fail" or (erc_result and not erc_result.get("erc_passed", False)):
+    while validation.status == "fail" or (
+        erc_result and not erc_result.get("erc_passed", False)
+    ):
         code_out = await run_code_correction(code_out, validation, erc_result)
         validation, erc_result = await run_code_validation(code_out, selection, docs)
         attempts += 1
@@ -260,12 +270,16 @@ async def main() -> None:
     from circuitron.config import setup_environment
 
     setup_environment(dev=args.dev)
-    prompt = args.prompt or input("Prompt: ")
-    await run_with_retry(
-        prompt,
-        show_reasoning=args.reasoning,
-        retries=args.retries,
-    )
+    await mcp_manager.initialize()
+    try:
+        prompt = args.prompt or input("Prompt: ")
+        await run_with_retry(
+            prompt,
+            show_reasoning=args.reasoning,
+            retries=args.retries,
+        )
+    finally:
+        await mcp_manager.cleanup()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -276,8 +290,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description="Run the Circuitron pipeline")
     parser.add_argument("prompt", nargs="?", help="Design prompt")
-    parser.add_argument("-r", "--reasoning", action="store_true", help="show reasoning summary")
-    parser.add_argument("--dev", action="store_true", help="enable tracing with logfire")
+    parser.add_argument(
+        "-r", "--reasoning", action="store_true", help="show reasoning summary"
+    )
+    parser.add_argument(
+        "--dev", action="store_true", help="enable tracing with logfire"
+    )
     parser.add_argument(
         "-n",
         "--retries",

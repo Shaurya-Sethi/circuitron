@@ -142,7 +142,7 @@ def test_create_mcp_documentation_server() -> None:
     server = create_mcp_documentation_server()
     assert isinstance(server, MCPServerSse)
     assert server.name == "skidl_docs"
-    assert server.params["url"] == "http://localhost:8051/sse"
+    assert server.params["url"] == cfg.settings.mcp_url + "/sse"
 
 
 def test_create_mcp_validation_server() -> None:
@@ -152,7 +152,7 @@ def test_create_mcp_validation_server() -> None:
     server = create_mcp_validation_server()
     assert isinstance(server, MCPServerSse)
     assert server.name == "skidl_validation"
-    assert server.params["url"] == "http://localhost:8051/sse"
+    assert server.params["url"] == cfg.settings.mcp_url + "/sse"
 
 
 def test_run_erc_success() -> None:

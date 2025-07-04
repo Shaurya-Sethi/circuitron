@@ -6,6 +6,16 @@ Contains calculation tools and other utilities that agents can use.
 
 from agents import function_tool
 from agents.mcp import MCPServerSse
+
+__all__ = [
+    "MCPServerSse",
+    "create_mcp_documentation_server",
+    "create_mcp_validation_server",
+    "run_erc_tool",
+    "search_kicad_libraries",
+    "search_kicad_footprints",
+    "extract_pin_details",
+]
 import asyncio
 import subprocess
 import textwrap
@@ -287,9 +297,10 @@ def create_mcp_documentation_server() -> MCPServerSse:
     Returns:
         MCPServerSse configured for the ``skidl_docs`` server.
     """
+    url = f"{settings.mcp_url}/sse"
     return MCPServerSse(
         name="skidl_docs",
-        params={"url": "http://localhost:8051/sse"},
+        params={"url": url},
         cache_tools_list=True,
     )
 
@@ -300,9 +311,10 @@ def create_mcp_validation_server() -> MCPServerSse:
     Returns:
         MCPServerSse configured for the ``skidl_validation`` server.
     """
+    url = f"{settings.mcp_url}/sse"
     return MCPServerSse(
         name="skidl_validation",
-        params={"url": "http://localhost:8051/sse"},
+        params={"url": url},
         cache_tools_list=True,
     )
 
