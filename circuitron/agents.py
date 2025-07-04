@@ -35,10 +35,9 @@ from .tools import (
     search_kicad_libraries,
     search_kicad_footprints,
     extract_pin_details,
-    create_mcp_documentation_server,
-    create_mcp_validation_server,
     run_erc_tool,
 )
+from .mcp_manager import mcp_manager
 
 
 def _tool_choice_for_mcp(model: str) -> str:
@@ -125,7 +124,7 @@ def create_documentation_agent() -> Agent:
         instructions=DOC_AGENT_PROMPT,
         model=settings.documentation_model,
         output_type=DocumentationOutput,
-        mcp_servers=[create_mcp_documentation_server()],
+        mcp_servers=[mcp_manager.get_doc_server()],
         model_settings=model_settings,
         handoff_description="Gather SKiDL documentation",
     )
@@ -142,7 +141,7 @@ def create_code_generation_agent() -> Agent:
         instructions=CODE_GENERATION_PROMPT,
         model=settings.code_generation_model,
         output_type=CodeGenerationOutput,
-        mcp_servers=[create_mcp_documentation_server()],
+        mcp_servers=[mcp_manager.get_doc_server()],
         model_settings=model_settings,
         handoff_description="Generate production-ready SKiDL code",
     )
@@ -159,7 +158,7 @@ def create_code_validation_agent() -> Agent:
         instructions=CODE_VALIDATION_PROMPT,
         model=settings.code_validation_model,
         output_type=CodeValidationOutput,
-        mcp_servers=[create_mcp_validation_server()],
+        mcp_servers=[mcp_manager.get_validation_server()],
         model_settings=model_settings,
         handoff_description="Validate SKiDL code",
     )
@@ -180,8 +179,8 @@ def create_code_correction_agent() -> Agent:
         output_type=CodeCorrectionOutput,
         tools=tools,
         mcp_servers=[
-            create_mcp_documentation_server(),
-            create_mcp_validation_server(),
+            mcp_manager.get_doc_server(),
+            mcp_manager.get_validation_server(),
         ],
         model_settings=model_settings,
         handoff_description="Iteratively fix SKiDL code",

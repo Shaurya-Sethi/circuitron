@@ -6,10 +6,22 @@ import os
 import sys
 import importlib
 from dotenv import load_dotenv
+import urllib.request
 
 from .settings import Settings
 
 settings = Settings()
+
+
+def _check_mcp_health(url: str) -> None:
+    """Warn if the MCP server is unreachable."""
+    if os.getenv("MCP_HEALTHCHECK") not in {"1", "true", "yes"}:
+        return
+    try:
+        with urllib.request.urlopen(url, timeout=3):
+            pass
+    except Exception as exc:  # pragma: no cover - network errors
+        print(f"Warning: MCP server {url} unreachable: {exc}")
 
 
 def setup_environment(dev: bool = False) -> Settings:
@@ -30,6 +42,7 @@ def setup_environment(dev: bool = False) -> Settings:
     if missing:
         msg = ", ".join(missing)
         sys.exit(f"Missing required environment variables: {msg}")
+    _check_mcp_health(os.getenv("MCP_URL", settings.mcp_url))
     if dev:
         try:
             logfire = importlib.import_module("logfire")

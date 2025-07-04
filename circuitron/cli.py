@@ -4,7 +4,7 @@ import asyncio
 from .config import setup_environment
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
-
+from .mcp_manager import mcp_manager
 
 
 async def run_circuitron(
@@ -16,11 +16,15 @@ async def run_circuitron(
 
     from circuitron.pipeline import run_with_retry
 
-    return await run_with_retry(
-        prompt,
-        show_reasoning=show_reasoning,
-        retries=retries,
-    )
+    await mcp_manager.initialize()
+    try:
+        return await run_with_retry(
+            prompt,
+            show_reasoning=show_reasoning,
+            retries=retries,
+        )
+    finally:
+        await mcp_manager.cleanup()
 
 
 def verify_containers() -> bool:
@@ -51,9 +55,7 @@ def main() -> None:
     code_output: CodeGenerationOutput | None = None
     try:
         try:
-            code_output = asyncio.run(
-                run_circuitron(prompt, show_reasoning, retries)
-            )
+            code_output = asyncio.run(run_circuitron(prompt, show_reasoning, retries))
         except KeyboardInterrupt:
             print("\nExecution interrupted by user.")
         except Exception as exc:
