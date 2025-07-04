@@ -84,55 +84,127 @@ async def execute_calculation(
 
 @function_tool
 async def search_kicad_libraries(query: str) -> str:
-    """Search KiCad libraries using skidl.search."""
-    script = textwrap.dedent(f"""
-import json
+    """Search KiCad libraries using ``skidl.search``.
+
+    Args:
+        query: Search string passed to ``skidl.search``.
+
+    Returns:
+        JSON string representing a list of matching parts.
+    """
+    script = textwrap.dedent(
+        f"""
+import json, io, contextlib
 from skidl import *
 set_default_tool(KICAD5)
-parts = search({query!r})
+buf = io.StringIO()
+try:
+    with contextlib.redirect_stdout(buf):
+        search({query!r})
+except Exception as exc:
+    print(json.dumps({{"error": str(exc)}}))
+    raise SystemExit()
+text = buf.getvalue().splitlines()
 results = []
-if parts:
-    for p in parts:
-        results.append({{"name": p.name, "library": getattr(p, "lib", ""), "footprint": getattr(p, "footprint", None), "description": getattr(p, "description", None)}})
+for line in text:
+    line = line.strip()
+    if '.lib:' in line and '(' in line and ')' in line:
+        try:
+            lib_part = line.split('.lib:', 1)
+            library = lib_part[0].strip()
+            part_info = lib_part[1].strip()
+            if '(' in part_info:
+                name_desc = part_info.split('(', 1)
+                name = name_desc[0].strip()
+                description = name_desc[1].rstrip(')') if len(name_desc) > 1 else ''
+                results.append({{"name": name, "library": library, "description": description, "footprint": None}})
+        except Exception:
+            continue
 print(json.dumps(results))
-""")
+"""
+    )
     try:
-        proc = await asyncio.to_thread(
-            kicad_session.exec_python, script, timeout=120
-        )
+        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({"error": "subprocess failed", "details": exc.stderr.strip()})
+        error_details = {
+            "subprocess_stderr": exc.stderr.strip(),
+            "subprocess_stdout": exc.stdout.strip() if hasattr(exc, "stdout") else "",
+            "return_code": exc.returncode,
+        }
+        return json.dumps({"error": "subprocess failed", "details": error_details})
     except Exception as exc:  # pragma: no cover - unexpected errors
-        return json.dumps({"error": str(exc)})
+        return json.dumps(
+            {
+                "error": "unexpected error",
+                "details": str(exc),
+                "type": type(exc).__name__,
+            }
+        )
     return proc.stdout.strip()
 
 
 @function_tool
 async def search_kicad_footprints(query: str) -> str:
-    """Search KiCad footprint libraries using skidl.search_footprints."""
-    script = textwrap.dedent(f"""
-import json
+    """Search KiCad footprint libraries using ``skidl.search_footprints``.
+
+    Args:
+        query: Search string passed to ``skidl.search_footprints``.
+
+    Returns:
+        JSON string representing a list of matching footprints.
+    """
+    script = textwrap.dedent(
+        f"""
+import json, io, contextlib
 from skidl import *
 set_default_tool(KICAD5)
-footprints = search_footprints({query!r})
+buf = io.StringIO()
+try:
+    with contextlib.redirect_stdout(buf):
+        search_footprints({query!r})
+except Exception as exc:
+    print(json.dumps({{"error": str(exc)}}))
+    raise SystemExit()
+text = buf.getvalue().splitlines()
 results = []
-if footprints:
-    for fp in footprints:
-        results.append({{"name": fp.name, "library": getattr(fp, "lib", ""), "description": getattr(fp, "description", None)}})
+for line in text:
+    line = line.strip()
+    if '.pretty:' in line and '(' in line and ')' in line:
+        try:
+            lib_part = line.split('.pretty:', 1)
+            library = lib_part[0].strip()
+            fp_info = lib_part[1].strip()
+            if '(' in fp_info:
+                name_desc = fp_info.split('(', 1)
+                name = name_desc[0].strip()
+                description = name_desc[1].rstrip(')') if len(name_desc) > 1 else ''
+                results.append({{"name": name, "library": library, "description": description}})
+        except Exception:
+            continue
 print(json.dumps(results))
-""")
+"""
+    )
     try:
-        proc = await asyncio.to_thread(
-            kicad_session.exec_python, script, timeout=120
-        )
+        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "footprint search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
-        return json.dumps({"error": "subprocess failed", "details": exc.stderr.strip()})
+        error_details = {
+            "subprocess_stderr": exc.stderr.strip(),
+            "subprocess_stdout": exc.stdout.strip() if hasattr(exc, "stdout") else "",
+            "return_code": exc.returncode,
+        }
+        return json.dumps({"error": "subprocess failed", "details": error_details})
     except Exception as exc:  # pragma: no cover - unexpected errors
-        return json.dumps({"error": str(exc)})
+        return json.dumps(
+            {
+                "error": "unexpected error",
+                "details": str(exc),
+                "type": type(exc).__name__,
+            }
+        )
     return proc.stdout.strip()
 
 
@@ -159,12 +231,9 @@ for line in text:
         if len(parts) >= 4:
             pins.append({{"number": parts[1], "name": parts[2], "function": parts[3]}})
 print(json.dumps(pins))
-"""
-    )
+""")
     try:
-        proc = await asyncio.to_thread(
-            kicad_session.exec_python, script, timeout=120
-        )
+        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "pin extract timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -238,15 +307,24 @@ async def run_erc(script_path: str) -> str:
         """
     )
     try:
-        proc = await asyncio.to_thread(
-            kicad_session.exec_erc, script_path, wrapper
-        )
+        proc = await asyncio.to_thread(kicad_session.exec_erc, script_path, wrapper)
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
+        return json.dumps(
+            {"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)}
+        )
     except subprocess.CalledProcessError as exc:
-        return json.dumps({'success': False, 'erc_passed': False, 'stdout': exc.stdout.strip(), 'stderr': exc.stderr.strip()})
+        return json.dumps(
+            {
+                "success": False,
+                "erc_passed": False,
+                "stdout": exc.stdout.strip(),
+                "stderr": exc.stderr.strip(),
+            }
+        )
     except Exception as exc:  # pragma: no cover
-        return json.dumps({'success': False, 'erc_passed': False, 'stdout': '', 'stderr': str(exc)})
+        return json.dumps(
+            {"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)}
+        )
 
     return proc.stdout.strip()
 
