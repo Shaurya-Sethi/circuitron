@@ -231,17 +231,10 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
     validation = CodeValidationOutput(status="fail", summary="bad")
     correction_out = CodeCorrectionOutput(corrected_code="fixed", validation_notes="")
 
-    script_path = tmp_path / "temp.py"
-
-    def fake_write_temp(code: str) -> str:
-        script_path.write_text(code)
-        return str(script_path)
-
-    with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
+    with patch("circuitron.pipeline.write_temp_skidl_script") as write_mock:
         with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction_out))):
             asyncio.run(pl.run_code_correction(code_out, validation))
-
-    assert not script_path.exists()
+        write_mock.assert_not_called()
 
 
 async def fake_run_with_retry_success() -> None:

@@ -122,7 +122,9 @@ async def run_code_validation(
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
-        input_msg = format_code_validation_input(script_path, selection, docs)
+        input_msg = format_code_validation_input(
+            code_output.complete_skidl_code, selection, docs
+        )
         result = await run_agent(code_validator, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
@@ -149,19 +151,13 @@ async def run_code_correction(
     erc_result: dict[str, object] | None = None,
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
-
-    script_path = write_temp_skidl_script(code_output.complete_skidl_code)
-    try:
-        input_msg = format_code_correction_input(script_path, validation, erc_result)
-        result = await run_agent(code_corrector, sanitize_text(input_msg))
-        correction = cast(CodeCorrectionOutput, result.final_output)
-        code_output.complete_skidl_code = correction.corrected_code
-        return code_output
-    finally:
-        try:
-            os.remove(script_path)
-        except OSError:
-            pass
+    input_msg = format_code_correction_input(
+        code_output.complete_skidl_code, validation, erc_result
+    )
+    result = await run_agent(code_corrector, sanitize_text(input_msg))
+    correction = cast(CodeCorrectionOutput, result.final_output)
+    code_output.complete_skidl_code = correction.corrected_code
+    return code_output
 
 
 async def run_with_retry(
