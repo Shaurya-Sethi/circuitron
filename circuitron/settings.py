@@ -18,7 +18,7 @@ class Settings:
     planning_model: str = field(default="o4-mini")
     plan_edit_model: str = field(default="o4-mini")
     part_finder_model: str = field(default="o4-mini")
-    part_selection_model: str = field(default="o4-mini")
+    part_selection_model: str = field(default="o4-mini")  # Can use longer context models like claude-3-5-haiku-20241022 if needed
     documentation_model: str = field(default="o4-mini")
     code_generation_model: str = field(default="o4-mini")
     code_validation_model: str = field(default="o4-mini")

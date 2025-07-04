@@ -80,20 +80,22 @@ async def execute_calculation(
 
 
 @function_tool
-async def search_kicad_libraries(query: str) -> str:
+async def search_kicad_libraries(query: str, max_results: int = 50) -> str:
     """Search KiCad libraries using ``skidl.search``.
 
     Args:
         query: Search string passed to ``skidl.search``.
+        max_results: Maximum number of results to return (default: 50).
 
     Returns:
-        JSON string representing a list of matching parts.
+        JSON string representing a list of matching parts, ordered by relevance.
     """
     script = textwrap.dedent(
         f"""
 import json, io, contextlib
 from skidl import *
 set_default_tool(KICAD5)
+max_results = {max_results}
 buf = io.StringIO()
 try:
     with contextlib.redirect_stdout(buf):
@@ -117,7 +119,30 @@ for line in text:
                 results.append({{"name": name, "library": library, "description": description, "footprint": None}})
         except Exception:
             continue
-print(json.dumps(results))
+
+# Apply smart filtering and limiting
+filtered_results = []
+basic_components = []
+specific_components = []
+
+# Separate basic components from complex ones
+for result in results:
+    name = result["name"].lower()
+    desc = result["description"].lower() if result["description"] else ""
+    
+    # Identify basic passive components that should be prioritized
+    if (name in ["r", "c", "l", "r_small", "c_small", "l_small"] or 
+        (len(name) <= 3 and any(word in desc for word in ["resistor", "capacitor", "inductor"]) and 
+         not any(word in desc for word in ["network", "array", "pack", "dual", "quad"]))):
+        basic_components.append(result)
+    else:
+        specific_components.append(result)
+
+# Prioritize: basic components first, then specific ones, limit total
+filtered_results = basic_components[:10] + specific_components[:max_results-len(basic_components)]
+filtered_results = filtered_results[:max_results]
+
+print(json.dumps(filtered_results))
 """
     )
     try:
@@ -143,11 +168,12 @@ print(json.dumps(results))
 
 
 @function_tool
-async def search_kicad_footprints(query: str) -> str:
+async def search_kicad_footprints(query: str, max_results: int = 30) -> str:
     """Search KiCad footprint libraries using ``skidl.search_footprints``.
 
     Args:
         query: Search string passed to ``skidl.search_footprints``.
+        max_results: Maximum number of results to return (default: 30).
 
     Returns:
         JSON string representing a list of matching footprints.
@@ -157,6 +183,7 @@ async def search_kicad_footprints(query: str) -> str:
 import json, io, contextlib
 from skidl import *
 set_default_tool(KICAD5)
+max_results = {max_results}
 buf = io.StringIO()
 try:
     with contextlib.redirect_stdout(buf):
@@ -180,6 +207,8 @@ for line in text:
                 results.append({{"name": name, "library": library, "description": description}})
         except Exception:
             continue
+if len(results) >= max_results:
+    results = results[:max_results]
 print(json.dumps(results))
 """
     )
