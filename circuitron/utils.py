@@ -4,8 +4,8 @@ Contains formatting, printing, and other helper utilities.
 """
 
 from typing import List
-import tempfile
 import os
+import tempfile
 from agents.items import ReasoningItem
 from agents.result import RunResult
 from .models import (
@@ -19,6 +19,14 @@ from .models import (
     CodeValidationOutput,
     HallucinationReport,
 )
+
+
+def sanitize_text(text: str, max_length: int = 10000) -> str:
+    """Return a cleaned version of ``text`` limited to ``max_length`` characters."""
+
+    cleaned = "".join(ch for ch in text if ch.isprintable())
+    cleaned = cleaned.replace("```", "'''")
+    return cleaned.strip()[:max_length]
 
 
 def extract_reasoning_summary(run_result: RunResult) -> str:
@@ -105,9 +113,11 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
         
         for i, question in enumerate(plan.design_limitations, 1):
             print(f"\n{i}. {question}")
-            answer = input("   Your answer: ").strip()
+            answer = sanitize_text(input("   Your answer: ").strip())
             if answer:
-                feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
+                feedback.open_question_answers.append(
+                    f"Q{i}: {question}\nA: {answer}"
+                )
     
     # Collect general edits and modifications
     print("\n" + "-" * 50)
@@ -118,7 +128,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
     
     edit_counter = 1
     while True:
-        edit = input(f"Edit #{edit_counter}: ").strip()
+        edit = sanitize_text(input(f"Edit #{edit_counter}: ").strip())
         if not edit:
             break
         feedback.requested_edits.append(edit)
@@ -133,7 +143,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
     
     req_counter = 1
     while True:
-        req = input(f"Additional requirement #{req_counter}: ").strip()
+        req = sanitize_text(input(f"Additional requirement #{req_counter}: ").strip())
         if not req:
             break
         feedback.additional_requirements.append(req)
