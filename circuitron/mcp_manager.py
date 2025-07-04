@@ -1,6 +1,7 @@
 """Manage lifecycle of MCP servers used in Circuitron."""
 
 from __future__ import annotations
+import asyncio
 import logging
 
 from agents.mcp import MCPServer
@@ -16,13 +17,25 @@ class MCPManager:
         self._validation_server = create_mcp_validation_server()
         self._servers: list[MCPServer] = [self._doc_server, self._validation_server]
 
+    async def _connect_server_with_timeout(self, server: MCPServer) -> None:
+        """Attempt to connect to an MCP server with retries."""
+        for attempt in range(3):
+            try:
+                await asyncio.wait_for(server.connect(), timeout=20.0)  # type: ignore[no-untyped-call]
+                logging.info("Successfully connected to MCP server: %s", server.name)
+                return
+            except Exception as exc:  # pragma: no cover - network errors
+                if attempt == 2:
+                    logging.warning(
+                        "Failed to connect MCP server %s: %s", server.name, exc
+                    )
+                else:
+                    await asyncio.sleep(2**attempt)
+
     async def initialize(self) -> None:
         """Connect all managed servers."""
         for server in self._servers:
-            try:
-                await server.connect()  # type: ignore[no-untyped-call]
-            except Exception as exc:  # pragma: no cover - network errors
-                logging.warning("Failed to connect MCP server %s: %s", server.name, exc)
+            await self._connect_server_with_timeout(server)
 
     async def cleanup(self) -> None:
         """Disconnect all managed servers."""

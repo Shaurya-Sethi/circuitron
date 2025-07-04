@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import subprocess
 from typing import Any, Coroutine, cast
 from unittest.mock import patch
@@ -143,6 +144,10 @@ def test_create_mcp_documentation_server() -> None:
     assert isinstance(server, MCPServerSse)
     assert server.name == "skidl_docs"
     assert server.params["url"] == cfg.settings.mcp_url + "/sse"
+    assert "timeout" in server.params
+    assert server.client_session_timeout_seconds == (
+        15.0 if os.getenv("DOCKER_ENV") else 10.0
+    )
 
 
 def test_create_mcp_validation_server() -> None:
@@ -153,6 +158,10 @@ def test_create_mcp_validation_server() -> None:
     assert isinstance(server, MCPServerSse)
     assert server.name == "skidl_validation"
     assert server.params["url"] == cfg.settings.mcp_url + "/sse"
+    assert "timeout" in server.params
+    assert server.client_session_timeout_seconds == (
+        15.0 if os.getenv("DOCKER_ENV") else 10.0
+    )
 
 
 def test_run_erc_success() -> None:

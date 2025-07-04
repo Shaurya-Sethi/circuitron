@@ -17,6 +17,7 @@ __all__ = [
     "extract_pin_details",
 ]
 import asyncio
+import os
 import subprocess
 import textwrap
 import json
@@ -298,10 +299,16 @@ def create_mcp_documentation_server() -> MCPServerSse:
         MCPServerSse configured for the ``skidl_docs`` server.
     """
     url = f"{settings.mcp_url}/sse"
+    timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
     return MCPServerSse(
         name="skidl_docs",
-        params={"url": url},
+        params={
+            "url": url,
+            "timeout": timeout,
+            "sse_read_timeout": timeout * 2,
+        },
         cache_tools_list=True,
+        client_session_timeout_seconds=timeout,
     )
 
 
@@ -312,10 +319,16 @@ def create_mcp_validation_server() -> MCPServerSse:
         MCPServerSse configured for the ``skidl_validation`` server.
     """
     url = f"{settings.mcp_url}/sse"
+    timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
     return MCPServerSse(
         name="skidl_validation",
-        params={"url": url},
+        params={
+            "url": url,
+            "timeout": timeout,
+            "sse_read_timeout": timeout * 2,
+        },
         cache_tools_list=True,
+        client_session_timeout_seconds=timeout,
     )
 
 
