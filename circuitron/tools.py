@@ -38,7 +38,8 @@ __all__ = [
 ]
 
 
-kicad_session = DockerSession(settings.kicad_image, "circuitron-kicad")
+container_name = f"circuitron-kicad-{os.getpid()}"
+kicad_session = DockerSession(settings.kicad_image, container_name)
 
 
 @function_tool

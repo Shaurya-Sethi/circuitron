@@ -2,9 +2,35 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import atexit
 from dataclasses import dataclass, field
 from typing import Any
 import threading
+
+
+def cleanup_stale_containers(prefix: str) -> None:
+    """Remove stopped containers whose names start with ``prefix``."""
+    ps_cmd = [
+        "docker",
+        "ps",
+        "-a",
+        "--filter",
+        f"name={prefix}",
+        "--format",
+        "{{.Names}} {{.Status}}",
+    ]
+    try:
+        proc = subprocess.run(ps_cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError:  # pragma: no cover - docker failure
+        logging.error("Failed to list containers with prefix %s", prefix)
+        return
+    for line in proc.stdout.splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) != 2:
+            continue
+        name, status = parts
+        if not status.lower().startswith("up"):
+            subprocess.run(["docker", "rm", "-f", name], capture_output=True)
 
 
 @dataclass
@@ -14,16 +40,44 @@ class DockerSession:
     image: str
     container_name: str
     started: bool = False
+    base_prefix: str = field(init=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False
     )
 
+    def __post_init__(self) -> None:
+        """Initialize dynamic attributes and register cleanup."""
+        if "-" in self.container_name:
+            self.base_prefix = self.container_name.rsplit("-", 1)[0] + "-"
+        else:
+            self.base_prefix = self.container_name
+        atexit.register(self.stop)
+
     def _run(self, cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+
+    def _health_check(self) -> bool:
+        """Return ``True`` if SKiDL imports successfully inside the container."""
+        try:
+            proc = self._run(
+                [
+                    "docker",
+                    "exec",
+                    self.container_name,
+                    "python3",
+                    "-c",
+                    "import skidl",
+                ],
+                check=True,
+            )
+            return proc.returncode == 0
+        except subprocess.CalledProcessError:
+            return False
 
     def start(self) -> None:
         """Ensure the container is running."""
         with self._lock:
+            cleanup_stale_containers(self.base_prefix)
             ps_cmd = [
                 "docker",
                 "ps",
@@ -52,8 +106,10 @@ class DockerSession:
                     self._run(["docker", "rm", "-f", self.container_name], check=True)
 
             if running:
-                self.started = True
-                return
+                if self._health_check():
+                    self.started = True
+                    return
+                self._run(["docker", "rm", "-f", self.container_name], check=True)
 
             cmd = [
                 "docker",
