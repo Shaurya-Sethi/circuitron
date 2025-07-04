@@ -232,3 +232,8 @@ def test_kicad_session_start_once() -> None:
         assert start_mock.call_count == 2
         assert _run_mock.call_count == 2
     kicad_session.started = False
+
+
+def test_kicad_session_container_name_contains_pid() -> None:
+    from circuitron.tools import kicad_session
+    assert str(os.getpid()) in kicad_session.container_name

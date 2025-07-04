@@ -7,6 +7,14 @@ import pytest
 from circuitron.docker_session import DockerSession
 
 
+@pytest.fixture(autouse=True)
+def _no_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "circuitron.docker_session.cleanup_stale_containers", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr("atexit.register", lambda *_a, **_k: None)
+
+
 def test_reuse_running_container() -> None:
     session = DockerSession("img", "cont")
     proc = subprocess.CompletedProcess(
@@ -15,8 +23,8 @@ def test_reuse_running_container() -> None:
     with patch.object(session, "_run", return_value=proc) as run_mock:
         session.start()
         assert session.started is True
-        run_mock.assert_called_once()
-        assert run_mock.call_args.args[0][:3] == ["docker", "ps", "-a"]
+        assert run_mock.call_count == 2
+        assert run_mock.call_args_list[0].args[0][:3] == ["docker", "ps", "-a"]
 
 
 def test_remove_exited_container() -> None:
@@ -117,4 +125,23 @@ def test_start_no_restart_when_running() -> None:
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Up 2s\n", stderr="")
     with patch.object(session, "_run", return_value=ps_proc) as run_mock:
         session.start()
-        run_mock.assert_called_once()
+        assert run_mock.call_count == 2
+
+
+def test_start_health_check_failure() -> None:
+    session = DockerSession("img", "cont")
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="Up 1s\n", stderr="")
+    health_err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="bad")
+    rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "_run", side_effect=[ps_proc, health_err, rm_proc, run_proc]) as run_mock:
+        session.start()
+        assert session.started is True
+        assert run_mock.call_args_list[2].args[0][:3] == ["docker", "rm", "-f"]
+        assert run_mock.call_args_list[3].args[0][0] == "docker"
+
+
+def test_atexit_registration() -> None:
+    with patch("atexit.register") as reg_mock:
+        session = DockerSession("img", "cont")
+        reg_mock.assert_called_once_with(session.stop)
