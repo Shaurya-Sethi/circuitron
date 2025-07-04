@@ -14,6 +14,18 @@ from .models import CalcResult
 from .config import settings
 from .docker_session import DockerSession
 
+__all__ = [
+    "MCPServerSse",
+    "execute_calculation",
+    "search_kicad_libraries",
+    "search_kicad_footprints",
+    "extract_pin_details",
+    "create_mcp_documentation_server",
+    "create_mcp_validation_server",
+    "run_erc",
+    "run_erc_tool",
+]
+
 
 kicad_session = DockerSession(settings.kicad_image, "circuitron-kicad")
 
