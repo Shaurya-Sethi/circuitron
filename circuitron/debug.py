@@ -43,7 +43,7 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
     Returns:
         The :class:`RunResult` from the agent run.
     """
-    result = await Runner.run(agent, input_data)
+    result = await Runner.run(agent, input_data, max_turns=settings.max_turns)
     if settings.dev_mode:
         display_run_items(result)
     return result
