@@ -12,22 +12,18 @@ from openai.types.responses.response_reasoning_item import ResponseReasoningItem
 from circuitron.models import (
     CodeGenerationOutput,
     PlanOutput,
-    AnalysisMetadata,
     CodeValidationOutput,
     DocumentationOutput,
-    HallucinationReport,
     PartSelectionOutput,
     PinDetail,
     SelectedPart,
     ValidationIssue,
-    ValidationSummary,
 )
 from circuitron.utils import (
     extract_reasoning_summary,
     format_code_validation_input,
     format_code_correction_input,
     pretty_print_plan,
-    parse_hallucination_report,
     pretty_print_edited_plan,
     pretty_print_found_parts,
     pretty_print_selected_parts,
@@ -55,37 +51,6 @@ def test_write_temp_skidl_script(tmp_path: Path) -> None:
     assert "print('hi')" in content
     os.remove(path)
 
-
-def test_parse_hallucination_report_roundtrip() -> None:
-    summary = ValidationSummary(
-        total_validations=1,
-        valid_count=1,
-        invalid_count=0,
-        uncertain_count=0,
-        not_found_count=0,
-        hallucination_rate=0.0,
-    )
-    meta = AnalysisMetadata(
-        total_imports=0,
-        total_classes=0,
-        total_methods=0,
-        total_attributes=0,
-        total_functions=0,
-    )
-    report = HallucinationReport(
-        success=True,
-        script_path="x.py",
-        overall_confidence=0.9,
-        validation_summary=summary,
-        hallucinations_detected=False,
-        recommendations=[],
-        analysis_metadata=meta,
-        libraries_analyzed=["lib"],
-    )
-    text = report.model_dump_json()
-    parsed = parse_hallucination_report(text)
-    assert parsed.script_path == "x.py"
-    assert parsed.validation_summary.valid_count == 1
 
 
 def test_format_code_validation_and_correction_input() -> None:

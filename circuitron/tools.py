@@ -6,13 +6,11 @@ Contains calculation tools and other utilities that agents can use.
 
 from agents import function_tool
 from agents.mcp import MCPServerSse
-import httpx
 
 __all__ = [
     "MCPServerSse",
     "create_mcp_documentation_server",
     "create_mcp_validation_server",
-    "check_ai_script_hallucinations",
     "run_erc_tool",
     "search_kicad_libraries",
     "search_kicad_footprints",
@@ -35,7 +33,6 @@ __all__ = [
     "extract_pin_details",
     "create_mcp_documentation_server",
     "create_mcp_validation_server",
-    "check_ai_script_hallucinations",
     "run_erc",
     "run_erc_tool",
 ]
@@ -295,32 +292,6 @@ print(json.dumps(pins))
         return json.dumps({"error": str(exc)})
     return proc.stdout.strip()
 
-
-@function_tool
-async def check_ai_script_hallucinations(
-    script_content: str,
-    filename: str = "script.py",
-) -> str:
-    """Validate SKiDL script using the MCP HTTP API.
-
-    Args:
-        script_content: The Python script text to validate.
-        filename: Optional filename for reporting purposes.
-
-    Returns:
-        JSON string with validation results from the MCP server.
-    """
-    url = f"{settings.mcp_url}/api/check_script_hallucinations"
-    try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.post(
-                url,
-                json={"script_content": script_content, "filename": filename},
-            )
-            resp.raise_for_status()
-    except Exception as exc:  # pragma: no cover - network errors
-        return json.dumps({"success": False, "error": str(exc)})
-    return resp.text
 
 
 def create_mcp_documentation_server() -> MCPServerSse:

@@ -17,7 +17,6 @@ from .models import (
     DocumentationOutput,
     CodeGenerationOutput,
     CodeValidationOutput,
-    HallucinationReport,
 )
 
 
@@ -451,12 +450,6 @@ def write_temp_skidl_script(code: str) -> str:
     with os.fdopen(fd, "w") as fh:
         fh.write(code)
     return path
-
-
-def parse_hallucination_report(text: str) -> HallucinationReport:
-    """Parse JSON response from check_ai_script_hallucinations."""
-
-    return HallucinationReport.model_validate_json(text)
 
 
 def pretty_print_validation(result: CodeValidationOutput) -> None:

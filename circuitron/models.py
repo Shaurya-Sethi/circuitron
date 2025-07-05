@@ -270,38 +270,27 @@ class ValidationIssue(BaseModel):
     message: str = Field(..., description="Human readable description of the issue")
 
 
-class ValidationSummary(BaseModel):
-    """Summary counts from hallucination checking."""
 
-    total_validations: int
-    valid_count: int
-    invalid_count: int
-    uncertain_count: int
-    not_found_count: int
-    hallucination_rate: float
+class APIValidationResult(BaseModel):
+    """Validation result for a specific API call."""
 
-
-class AnalysisMetadata(BaseModel):
-    """Metadata about script analysis."""
-
-    total_imports: int
-    total_classes: int
-    total_methods: int
-    total_attributes: int
-    total_functions: int
+    api_name: str
+    api_type: Literal["function", "method", "class"]
+    target_class: str | None = None
+    line_number: int | None = None
+    is_valid: bool
+    fix_suggestion: str | None = None
 
 
-class HallucinationReport(BaseModel):
-    """Result from ``check_ai_script_hallucinations``."""
+class KnowledgeGraphValidationReport(BaseModel):
+    """Aggregate results from knowledge graph validation."""
 
-    success: bool
-    script_path: str
-    overall_confidence: float | int
-    validation_summary: ValidationSummary
-    hallucinations_detected: bool
-    recommendations: List[str] = Field(default_factory=list)
-    analysis_metadata: AnalysisMetadata
-    libraries_analyzed: List[str] = Field(default_factory=list)
+    total_apis_checked: int
+    valid_apis: int
+    invalid_apis: int
+    confidence_score: float
+    validation_details: List[APIValidationResult] = Field(default_factory=list)
+    skidl_insights: List[str] = Field(default_factory=list)
 
 
 class CodeValidationOutput(BaseModel):
@@ -312,7 +301,7 @@ class CodeValidationOutput(BaseModel):
     status: Literal["pass", "fail"]
     summary: str = Field(..., description="Overall validation summary")
     issues: List[ValidationIssue] = Field(default_factory=list)
-    hallucination_report: HallucinationReport | None = None
+    kg_validation_report: KnowledgeGraphValidationReport | None = None
 
 
 class CodeCorrectionOutput(BaseModel):
