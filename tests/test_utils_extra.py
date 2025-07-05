@@ -52,6 +52,16 @@ def test_write_temp_skidl_script(tmp_path: Path) -> None:
     os.remove(path)
 
 
+def test_write_temp_skidl_script_unicode(tmp_path: Path) -> None:
+    code = "print('\u03a9')"
+    path = write_temp_skidl_script(code)
+    assert os.path.exists(path)
+    with open(path, encoding="utf-8") as fh:
+        content = fh.read()
+    assert "\u03a9" in content
+    os.remove(path)
+
+
 
 def test_format_code_validation_and_correction_input() -> None:
     pin = PinDetail(number="1", name="VCC", function="pwr")

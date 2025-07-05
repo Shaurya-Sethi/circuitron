@@ -447,7 +447,9 @@ def write_temp_skidl_script(code: str) -> str:
     """Write SKiDL code to a temporary script and return its path."""
 
     fd, path = tempfile.mkstemp(prefix="skidl_", suffix=".py")
-    with os.fdopen(fd, "w") as fh:
+    # Explicitly use UTF-8 so that Unicode characters in prompts or generated
+    # code do not cause cross-platform encoding issues.
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(code)
     return path
 
