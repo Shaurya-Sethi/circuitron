@@ -179,10 +179,7 @@ def create_code_correction_agent() -> Agent:
         model=settings.code_validation_model,
         output_type=CodeCorrectionOutput,
         tools=tools,
-        mcp_servers=[
-            mcp_manager.get_doc_server(),
-            mcp_manager.get_validation_server(),
-        ],
+        mcp_servers=[mcp_manager.get_doc_server()],
         model_settings=model_settings,
         handoff_description="Iteratively fix SKiDL code",
     )
