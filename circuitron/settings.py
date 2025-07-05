@@ -33,4 +33,7 @@ class Settings:
     mcp_url: str = field(
         default_factory=lambda: os.getenv("MCP_URL", "http://localhost:8051")
     )
+    max_turns: int = field(
+        default_factory=lambda: int(os.getenv("CIRCUITRON_MAX_TURNS", "50"))
+    )
     dev_mode: bool = False
