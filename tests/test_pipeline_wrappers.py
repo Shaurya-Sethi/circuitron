@@ -24,7 +24,7 @@ async def run_wrappers() -> None:
          patch("circuitron.debug.Runner.run", AsyncMock()) as run_mock:
         run_mock.return_value = SimpleNamespace(final_output=PlanOutput())
         await pl.run_planner("p")
-        run_mock.assert_awaited_with(pl.planner, "p")  # type: ignore[attr-defined]
+        run_mock.assert_awaited_with(pl.planner, "p", max_turns=pl.settings.max_turns)  # type: ignore[attr-defined]
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=PlanEditorOutput(decision=PlanEditDecision(reasoning="x"), updated_plan=PlanOutput()))

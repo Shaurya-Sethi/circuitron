@@ -9,8 +9,7 @@ from agents.mcp import MCPServerSse
 
 __all__ = [
     "MCPServerSse",
-    "create_mcp_documentation_server",
-    "create_mcp_validation_server",
+    "create_mcp_server",
     "run_erc_tool",
     "search_kicad_libraries",
     "search_kicad_footprints",
@@ -31,8 +30,7 @@ __all__ = [
     "search_kicad_libraries",
     "search_kicad_footprints",
     "extract_pin_details",
-    "create_mcp_documentation_server",
-    "create_mcp_validation_server",
+    "create_mcp_server",
     "run_erc",
     "run_erc_tool",
 ]
@@ -294,8 +292,8 @@ print(json.dumps(pins))
 
 
 
-def create_mcp_documentation_server() -> MCPServerSse:
-    """Create MCP server for SKiDL documentation.
+def create_mcp_server() -> MCPServerSse:
+    """Create MCP server connection used by all agents.
 
     Returns:
         MCPServerSse configured for the ``skidl_docs`` server.
@@ -304,26 +302,6 @@ def create_mcp_documentation_server() -> MCPServerSse:
     timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
     return MCPServerSse(
         name="skidl_docs",
-        params={
-            "url": url,
-            "timeout": timeout,
-            "sse_read_timeout": timeout * 2,
-        },
-        cache_tools_list=True,
-        client_session_timeout_seconds=timeout,
-    )
-
-
-def create_mcp_validation_server() -> MCPServerSse:
-    """Create MCP server for hallucination validation.
-
-    Returns:
-        MCPServerSse configured for the ``skidl_validation`` server.
-    """
-    url = f"{settings.mcp_url}/sse"
-    timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
-    return MCPServerSse(
-        name="skidl_validation",
         params={
             "url": url,
             "timeout": timeout,
