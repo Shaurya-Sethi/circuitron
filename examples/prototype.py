@@ -166,7 +166,8 @@ planner = Agent(
 # ---------- Main execution block ----------
 
 async def run_circuitron(prompt: str) -> RunResult:
-    return await Runner.run(planner, prompt)
+    from circuitron.config import settings
+    return await Runner.run(planner, prompt, max_turns=settings.max_turns)
 
 if __name__ == "__main__":
     prompt = sys.argv[1] if len(sys.argv) > 1 else input("Prompt: ")
