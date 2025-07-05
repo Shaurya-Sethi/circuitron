@@ -136,27 +136,13 @@ def test_extract_pin_details_timeout() -> None:
         assert "error" in result.lower()
 
 
-def test_create_mcp_documentation_server() -> None:
+def test_create_mcp_server() -> None:
     cfg.setup_environment()
-    from circuitron.tools import create_mcp_documentation_server, MCPServerSse
+    from circuitron.tools import create_mcp_server, MCPServerSse
 
-    server = create_mcp_documentation_server()
+    server = create_mcp_server()
     assert isinstance(server, MCPServerSse)
     assert server.name == "skidl_docs"
-    assert server.params["url"] == cfg.settings.mcp_url + "/sse"
-    assert "timeout" in server.params
-    assert server.client_session_timeout_seconds == (
-        15.0 if os.getenv("DOCKER_ENV") else 10.0
-    )
-
-
-def test_create_mcp_validation_server() -> None:
-    cfg.setup_environment()
-    from circuitron.tools import create_mcp_validation_server, MCPServerSse
-
-    server = create_mcp_validation_server()
-    assert isinstance(server, MCPServerSse)
-    assert server.name == "skidl_validation"
     assert server.params["url"] == cfg.settings.mcp_url + "/sse"
     assert "timeout" in server.params
     assert server.client_session_timeout_seconds == (

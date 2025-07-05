@@ -6,23 +6,14 @@ from circuitron.mcp_manager import MCPManager
 
 
 def test_manager_connects_and_cleans_up() -> None:
-    doc_server = SimpleNamespace(connect=AsyncMock(), cleanup=AsyncMock(), name="doc")
-    val_server = SimpleNamespace(connect=AsyncMock(), cleanup=AsyncMock(), name="val")
+    server = SimpleNamespace(connect=AsyncMock(), cleanup=AsyncMock(), name="srv")
 
-    with (
-        patch(
-            "circuitron.mcp_manager.create_mcp_documentation_server",
-            return_value=doc_server,
-        ),
-        patch(
-            "circuitron.mcp_manager.create_mcp_validation_server",
-            return_value=val_server,
-        ),
+    with patch(
+        "circuitron.mcp_manager.create_mcp_server",
+        return_value=server,
     ):
         manager = MCPManager()
         asyncio.run(manager.initialize())
-        doc_server.connect.assert_awaited_once()
-        val_server.connect.assert_awaited_once()
+        server.connect.assert_awaited_once()
         asyncio.run(manager.cleanup())
-        doc_server.cleanup.assert_awaited_once()
-        val_server.cleanup.assert_awaited_once()
+        server.cleanup.assert_awaited_once()
