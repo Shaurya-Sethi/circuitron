@@ -7,9 +7,8 @@ from circuitron.models import (
     DocumentationOutput,
     CodeGenerationOutput,
     ValidationIssue,
-    HallucinationReport,
-    ValidationSummary,
-    AnalysisMetadata,
+    APIValidationResult,
+    KnowledgeGraphValidationReport,
     CodeValidationOutput,
 )
 
@@ -46,36 +45,27 @@ def test_code_generation_output() -> None:
 
 def test_code_validation_output() -> None:
     issue = ValidationIssue(line=1, category="syntax", message="bad")
-    summary = ValidationSummary(
-        total_validations=1,
-        valid_count=1,
-        invalid_count=0,
-        uncertain_count=0,
-        not_found_count=0,
-        hallucination_rate=0.0,
+    api_result = APIValidationResult(
+        api_name="generate_netlist",
+        api_type="function",
+        target_class=None,
+        line_number=1,
+        is_valid=True,
+        fix_suggestion=None,
     )
-    meta = AnalysisMetadata(
-        total_imports=1,
-        total_classes=0,
-        total_methods=0,
-        total_attributes=0,
-        total_functions=0,
-    )
-    report = HallucinationReport(
-        success=True,
-        script_path="x.py",
-        overall_confidence=0.9,
-        validation_summary=summary,
-        hallucinations_detected=False,
-        recommendations=[],
-        analysis_metadata=meta,
-        libraries_analyzed=[],
+    report = KnowledgeGraphValidationReport(
+        total_apis_checked=1,
+        valid_apis=1,
+        invalid_apis=0,
+        confidence_score=1.0,
+        validation_details=[api_result],
+        skidl_insights=[],
     )
     out = CodeValidationOutput(
         status="pass",
         summary="ok",
         issues=[issue],
-        hallucination_report=report,
+        kg_validation_report=report,
     )
     assert out.status == "pass"
     assert out.issues[0].category == "syntax"
