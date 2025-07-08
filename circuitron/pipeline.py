@@ -17,6 +17,7 @@ from .mcp_manager import mcp_manager
 
 from circuitron.debug import run_agent
 
+
 from circuitron.agents import (
     planner,
     plan_editor,
@@ -70,6 +71,31 @@ from circuitron.tools import run_erc as run_erc_cmd
 # This alias calls the same implementation as the ``run_erc`` tool.
 run_erc = run_erc_cmd
 
+
+class PipelineError(RuntimeError):
+    """Raised when the pipeline fails to produce valid SKiDL code."""
+
+
+__all__ = [
+    "run_planner",
+    "run_plan_editor",
+    "run_part_finder",
+    "run_part_selector",
+    "run_documentation",
+    "run_code_generation",
+    "run_code_validation",
+    "run_code_correction",
+    "run_code_correction_validation_only",
+    "run_code_correction_erc_only",
+    "run_with_retry",
+    "pipeline",
+    "main",
+    "parse_args",
+    "CorrectionContext",
+    "PipelineError",
+    "run_erc",
+    "settings",
+]
 
 async def run_planner(prompt: str) -> RunResult:
     """Run the planning agent and return the run result."""
@@ -337,6 +363,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             )
             correction_context.add_validation_attempt(validation, [])
 
+        erc_result: dict[str, object] | None = None
         if validation.status == "pass":
             _, erc_result = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=True
@@ -356,6 +383,17 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 )
                 if erc_result is not None:
                     correction_context.add_erc_attempt(erc_result, [])
+
+        if validation.status != "pass":
+            if settings.dev_mode:
+                pretty_print_generated_code(code_out)
+            raise PipelineError("Validation failed after maximum correction attempts")
+
+        if erc_result and not erc_result.get("erc_passed", False):
+            if settings.dev_mode:
+                pretty_print_generated_code(code_out)
+            raise PipelineError("ERC failed after maximum correction attempts")
+
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -385,6 +423,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         )
         correction_context.add_validation_attempt(validation, [])
 
+    erc_result = None
     if validation.status == "pass":
         _, erc_result = await run_code_validation(
             code_out, selection, docs, run_erc_flag=True
@@ -404,6 +443,17 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             )
             if erc_result is not None:
                 correction_context.add_erc_attempt(erc_result, [])
+
+    if validation.status != "pass":
+        if settings.dev_mode:
+            pretty_print_generated_code(code_out)
+        raise PipelineError("Validation failed after maximum correction attempts")
+
+    if erc_result and not erc_result.get("erc_passed", False):
+        if settings.dev_mode:
+            pretty_print_generated_code(code_out)
+        raise PipelineError("ERC failed after maximum correction attempts")
+
     return code_out
 
 

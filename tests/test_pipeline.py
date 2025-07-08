@@ -2,6 +2,7 @@ import asyncio
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+import pytest
 
 from circuitron.models import (
     PlanOutput,
@@ -191,9 +192,9 @@ async def fake_pipeline_debug_show() -> None:
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
-        pl.settings.dev_mode = True  # type: ignore[attr-defined]
+        pl.settings.dev_mode = True
         result = await pl.pipeline("test", show_reasoning=True)
-        pl.settings.dev_mode = False  # type: ignore[attr-defined]
+        pl.settings.dev_mode = False
     assert result is code_out
 
 
@@ -307,3 +308,104 @@ async def fake_run_with_retry_fail() -> None:
 def test_run_with_retry_behaviour() -> None:
     asyncio.run(fake_run_with_retry_success())
     asyncio.run(fake_run_with_retry_fail())
+
+
+async def fake_pipeline_validation_error() -> None:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput(component_search_queries=["R"])
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
+    code_out = CodeGenerationOutput(complete_skidl_code="bad")
+    val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=val_fail)), \
+         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+        with pytest.raises(pl.PipelineError):
+            await pl.pipeline("test")
+
+
+def test_pipeline_validation_failure() -> None:
+    asyncio.run(fake_pipeline_validation_error())
+
+
+async def fake_pipeline_erc_error() -> None:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput(component_search_queries=["R"])
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
+    code_out = CodeGenerationOutput(complete_skidl_code="code")
+    val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
+    erc_fail: tuple[CodeValidationOutput, dict[str, object]] = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {"erc_passed": False},
+    )
+
+    async def fake_validate(*args: object, **kwargs: object) -> tuple[CodeValidationOutput, dict[str, object] | None]:
+        if not hasattr(fake_validate, "called"):
+            setattr(fake_validate, "called", True)
+            return val_pass
+        return erc_fail
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(side_effect=fake_validate)), \
+         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+        with pytest.raises(pl.PipelineError):
+            await pl.pipeline("test")
+
+
+def test_pipeline_erc_failure() -> None:
+    asyncio.run(fake_pipeline_erc_error())
+
+
+async def fake_pipeline_debug_failure(capsys: pytest.CaptureFixture[str]) -> str:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput(component_search_queries=["R"])
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
+    code_out = CodeGenerationOutput(complete_skidl_code="bad")
+    val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=val_fail)), \
+         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+        pl.settings.dev_mode = True
+        with pytest.raises(pl.PipelineError):
+            await pl.pipeline("test")
+        pl.settings.dev_mode = False
+    return capsys.readouterr().out
+
+
+def test_pipeline_error_shows_code_in_dev_mode(capsys: pytest.CaptureFixture[str]) -> None:
+    out = asyncio.run(fake_pipeline_debug_failure(capsys))
+    assert "GENERATED SKiDL CODE" in out
