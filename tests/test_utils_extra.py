@@ -168,6 +168,30 @@ def test_get_kg_usage_guide() -> None:
     assert "method" in guide and "query_knowledge_graph" in guide
 
 
+def test_get_kg_usage_guide_new_categories() -> None:
+    """Verify workflow, schema, and advanced guides are returned."""
+    from circuitron.tools import get_kg_usage_guide
+    from agents.tool_context import ToolContext
+    import json
+    import asyncio
+    from typing import Any, Coroutine, cast
+
+    ctx = ToolContext(context=None, tool_call_id="kg2")
+    categories = {
+        "workflow": "ESSENTIAL KNOWLEDGE GRAPH WORKFLOW",
+        "schema": "KNOWLEDGE GRAPH SCHEMA",
+        "advanced": "ADVANCED KNOWLEDGE GRAPH PATTERNS",
+    }
+    for name, marker in categories.items():
+        args = json.dumps({"task_type": name})
+        guide = asyncio.run(
+            cast(Coroutine[Any, Any, str], get_kg_usage_guide.on_invoke_tool(ctx, args))
+        )
+        assert marker in guide
+        if name != "schema":
+            assert "query_knowledge_graph" in guide
+
+
 def test_get_erc_info() -> None:
     from circuitron.tools import get_erc_info
     from agents.tool_context import ToolContext
@@ -181,6 +205,23 @@ def test_get_erc_info() -> None:
         cast(Coroutine[Any, Any, str], get_erc_info.on_invoke_tool(ctx, args))
     )
     assert "drive" in info and "POWER" in info
+
+
+def test_get_erc_info_invalid() -> None:
+    """Unsupported categories should return a helpful message."""
+    from circuitron.tools import get_erc_info
+    from agents.tool_context import ToolContext
+    import json
+    import asyncio
+    from typing import Any, Coroutine, cast
+
+    ctx = ToolContext(context=None, tool_call_id="erc2")
+    args = json.dumps({"issue_type": "unknown"})
+    info = asyncio.run(
+        cast(Coroutine[Any, Any, str], get_erc_info.on_invoke_tool(ctx, args))
+    )
+    assert "Issue type not recognized" in info
+    assert "unconnected" in info and "drive" in info
 
 
 def test_sanitize_text_multiline() -> None:
