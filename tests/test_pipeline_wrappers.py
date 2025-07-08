@@ -48,16 +48,33 @@ async def run_wrappers() -> None:
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=CodeValidationOutput(status="pass", summary="ok"))
-        await pl.run_code_validation(CodeGenerationOutput(complete_skidl_code="code"), PartSelectionOutput(), DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"))
+        await pl.run_code_validation(
+            CodeGenerationOutput(complete_skidl_code="code"),
+            PartSelectionOutput(),
+            DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+        )
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes=""))
-        await pl.run_code_correction(
+        await pl.run_code_correction_validation_only(
             CodeGenerationOutput(complete_skidl_code="code"),
             CodeValidationOutput(status="fail", summary="bad"),
             PlanOutput(),
             PartSelectionOutput(),
             DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+        )
+        run_mock.reset_mock()
+
+        run_mock.return_value = SimpleNamespace(
+            final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes="")
+        )
+        await pl.run_code_correction_erc_only(
+            CodeGenerationOutput(complete_skidl_code="code"),
+            CodeValidationOutput(status="pass", summary="ok"),
+            PlanOutput(),
+            PartSelectionOutput(),
+            DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+            {},
         )
 
 

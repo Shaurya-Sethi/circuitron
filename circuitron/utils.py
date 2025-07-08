@@ -619,3 +619,47 @@ def format_code_correction_input(
         "Apply iterative corrections until validation passes and ERC shows zero errors."
     )
     return "\n".join(parts)
+
+
+def format_code_correction_validation_input(
+    script_content: str,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+) -> str:
+    """Format input for validation-only code correction."""
+
+    text = format_code_correction_input(
+        script_content,
+        validation,
+        plan,
+        selection,
+        docs,
+        None,
+    )
+    return text + "\nFocus only on fixing validation issues. Ignore ERC results."
+
+
+def format_code_correction_erc_input(
+    script_content: str,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    erc_result: dict[str, object] | None,
+) -> str:
+    """Format input for ERC-only code correction."""
+
+    text = format_code_correction_input(
+        script_content,
+        validation,
+        plan,
+        selection,
+        docs,
+        erc_result,
+    )
+    return (
+        text
+        + "\nValidation has passed. Use the run_erc_tool as needed and fix ERC violations only."
+    )
