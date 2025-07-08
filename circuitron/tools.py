@@ -16,6 +16,7 @@ import json
 from .models import CalcResult
 from .config import settings
 from .docker_session import DockerSession
+from .utils import write_temp_skidl_script, prepare_output_dir
 
 __all__ = [
     "MCPServerSse",
@@ -26,6 +27,8 @@ __all__ = [
     "create_mcp_server",
     "run_erc",
     "run_erc_tool",
+    "execute_final_script",
+    "execute_final_script_tool",
     "get_kg_usage_guide",
 ]
 
@@ -366,6 +369,52 @@ async def run_erc(script_path: str) -> str:
 # ``run_erc_tool`` is the variable imported by agents but the tool's
 # ``name`` attribute remains "run_erc".
 run_erc_tool = function_tool(run_erc)
+
+
+async def execute_final_script(script_content: str, output_dir: str) -> str:
+    """Execute a SKiDL script fully and return generated file paths as JSON."""
+
+    output_dir = prepare_output_dir(output_dir)
+    session = DockerSession(
+        settings.kicad_image,
+        f"circuitron-final-{os.getpid()}",
+        volumes={output_dir: output_dir},
+    )
+    script_path = write_temp_skidl_script(script_content)
+    try:
+        proc = await asyncio.to_thread(
+            session.exec_full_script, script_path, output_dir
+        )
+        success = proc.returncode == 0
+        files = sorted(os.listdir(output_dir))
+        return json.dumps(
+            {
+                "success": success,
+                "stdout": proc.stdout.strip(),
+                "stderr": proc.stderr.strip(),
+                "files": [os.path.join(output_dir, f) for f in files],
+            }
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps({"success": False, "stderr": str(exc), "files": []})
+    except subprocess.CalledProcessError as exc:
+        return json.dumps(
+            {
+                "success": False,
+                "stdout": exc.stdout.strip(),
+                "stderr": exc.stderr.strip(),
+                "files": [],
+            }
+        )
+    finally:
+        session.stop()
+        try:
+            os.remove(script_path)
+
+        except OSError:
+            pass
+
+execute_final_script_tool = function_tool(execute_final_script)
 
 
 @function_tool

@@ -36,7 +36,8 @@ async def fake_pipeline_no_feedback() -> None:
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
-         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         result = await pl.pipeline("test")
     assert result is code_out
 
@@ -63,7 +64,8 @@ async def fake_pipeline_edit_plan() -> None:
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))):
+         patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         result = await pl.pipeline("test")
     assert result is code_out
 
@@ -91,7 +93,8 @@ def test_run_code_validation_calls_erc() -> None:
     val_out = CodeValidationOutput(status="pass", summary="ok")
     with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
         with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')) as erc_mock, \
-             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"), \
+             patch("circuitron.pipeline.prepare_erc_only_script", return_value="erc"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
             erc_mock.assert_called_once()
     validation, erc = result
@@ -108,7 +111,8 @@ def test_run_code_validation_no_erc_on_fail() -> None:
     val_out = CodeValidationOutput(status="fail", summary="bad")
     with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
         with patch("circuitron.pipeline.run_erc", AsyncMock()) as erc_mock, \
-             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"), \
+             patch("circuitron.pipeline.prepare_erc_only_script", return_value="erc"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs))
             erc_mock.assert_not_called()
     validation, erc = result
@@ -126,7 +130,8 @@ def test_run_code_validation_skip_erc_flag() -> None:
 
     with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
         with patch("circuitron.pipeline.run_erc", AsyncMock()) as erc_mock, \
-             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"), \
+             patch("circuitron.pipeline.prepare_erc_only_script", return_value="erc"):
             result = asyncio.run(pl.run_code_validation(code_out, selection, docs, run_erc_flag=False))
             erc_mock.assert_not_called()
     validation, erc = result
@@ -167,7 +172,8 @@ async def fake_pipeline_with_correction() -> None:
              "run_code_correction_erc_only",
              AsyncMock(return_value=corrected),
          ), \
-         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         result = await pl.pipeline("test")
     assert result.complete_skidl_code == "fixed"
 
@@ -191,7 +197,8 @@ async def fake_pipeline_debug_show() -> None:
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=(CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True}))), \
-         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         pl.settings.dev_mode = True
         result = await pl.pipeline("test", show_reasoning=True)
         pl.settings.dev_mode = False
@@ -227,7 +234,8 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_pass, val_ok])), \
          patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=corrected)), \
-         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=corrected)):
+         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=corrected)), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         result = await pl.pipeline("test")
     assert result.complete_skidl_code == "fixed"
 
@@ -251,10 +259,11 @@ def test_run_code_validation_cleanup(tmp_path: Path) -> None:
         script_path.write_text(code)
         return str(script_path)
 
-    with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp):
-        with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
-            with patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')):
-                asyncio.run(pl.run_code_validation(code_out, selection, docs))
+    with patch("circuitron.pipeline.write_temp_skidl_script", side_effect=fake_write_temp), \
+         patch("circuitron.pipeline.prepare_erc_only_script", return_value="erc"), \
+         patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))), \
+         patch("circuitron.pipeline.run_erc", AsyncMock(return_value='{"erc_passed": true}')):
+        asyncio.run(pl.run_code_validation(code_out, selection, docs))
 
     assert not script_path.exists()
 

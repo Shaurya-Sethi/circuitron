@@ -59,6 +59,8 @@ from circuitron.utils import (
     format_code_correction_validation_input,
     format_code_correction_erc_input,
     write_temp_skidl_script,
+    prepare_erc_only_script,
+    prepare_output_dir,
     pretty_print_validation,
     pretty_print_generated_code,
     validate_code_generation_results,
@@ -66,6 +68,7 @@ from circuitron.utils import (
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
 from circuitron.tools import run_erc as run_erc_cmd
+from circuitron.tools import execute_final_script
 
 # Expose ``run_erc`` for backward compatibility in tests and scripts.
 # This alias calls the same implementation as the ``run_erc`` tool.
@@ -167,7 +170,10 @@ async def run_code_validation(
         results.
     """
 
-    script_path = write_temp_skidl_script(code_output.complete_skidl_code)
+    script_path: str | None = None
+    if run_erc_flag:
+        erc_only_code = prepare_erc_only_script(code_output.complete_skidl_code)
+        script_path = write_temp_skidl_script(erc_only_code)
     try:
         input_msg = format_code_validation_input(
             code_output.complete_skidl_code, selection, docs
@@ -176,7 +182,7 @@ async def run_code_validation(
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
-        if run_erc_flag and validation.status == "pass":
+        if run_erc_flag and validation.status == "pass" and script_path:
             erc_json = await run_erc(script_path)
             try:
                 erc_result = json.loads(erc_json)
@@ -186,10 +192,11 @@ async def run_code_validation(
             print(erc_result)
         return validation, erc_result
     finally:
-        try:
-            os.remove(script_path)
-        except OSError:
-            pass
+        if script_path:
+            try:
+                os.remove(script_path)
+            except OSError:
+                pass
 
 
 async def run_code_correction(
@@ -394,6 +401,10 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 pretty_print_generated_code(code_out)
             raise PipelineError("ERC failed after maximum correction attempts")
 
+        out_dir = prepare_output_dir()
+        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
+        print("\n=== GENERATED FILES ===")
+        print(files_json)
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -454,6 +465,10 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             pretty_print_generated_code(code_out)
         raise PipelineError("ERC failed after maximum correction attempts")
 
+    out_dir = prepare_output_dir()
+    files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
+    print("\n=== GENERATED FILES ===")
+    print(files_json)
     return code_out
 
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import subprocess
 import atexit
+import os
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Dict, List
 import threading
 
 
@@ -41,6 +42,7 @@ class DockerSession:
     container_name: str
     started: bool = False
     base_prefix: str = field(init=False)
+    volumes: Dict[str, str] = field(default_factory=dict)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False
     )
@@ -123,6 +125,10 @@ class DockerSession:
                 "256",
                 "--name",
                 self.container_name,
+            ]
+            for host, container in self.volumes.items():
+                cmd.extend(["-v", f"{host}:{container}"])
+            cmd += [
                 self.image,
                 "sleep",
                 "infinity",
@@ -182,6 +188,67 @@ class DockerSession:
                     "Failed to remove temporary script in container %s",
                     self.container_name,
                 )
+
+    def exec_full_script(
+        self, script_path: str, output_mount_path: str, timeout: int = 180
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute a full SKiDL script inside the container."""
+        self.start()
+        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
+        self._run(cp_cmd, check=True)
+        cmd = [
+            "docker",
+            "exec",
+            "-i",
+            self.container_name,
+            "python3",
+            "/tmp/script.py",
+        ]
+        try:
+            return self._run(cmd, timeout=timeout, check=True)
+        finally:
+            rm_cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "rm",
+                "-f",
+                "/tmp/script.py",
+            ]
+            try:
+                self._run(rm_cmd, check=True)
+            except subprocess.CalledProcessError:  # pragma: no cover - cleanup failure
+                logging.error(
+                    "Failed to remove temporary script in container %s",
+                    self.container_name,
+                )
+
+    def copy_generated_files(self, container_pattern: str, host_dir: str) -> List[str]:
+        """Copy files matching ``container_pattern`` to ``host_dir``."""
+        self.start()
+        ls_cmd = [
+            "docker",
+            "exec",
+            self.container_name,
+            "sh",
+            "-c",
+            f"ls {container_pattern} 2>/dev/null || true",
+        ]
+        proc = self._run(ls_cmd, check=True)
+        files: List[str] = []
+        for line in proc.stdout.splitlines():
+            src = line.strip()
+            if not src:
+                continue
+            dest = os.path.join(host_dir, os.path.basename(src))
+            cp_cmd = ["docker", "cp", f"{self.container_name}:{src}", dest]
+            try:
+                self._run(cp_cmd, check=True)
+                files.append(dest)
+            except subprocess.CalledProcessError:
+                logging.error("Failed to copy %s from container", src)
+        return files
 
     def stop(self) -> None:
         """Stop and remove the container."""
