@@ -14,6 +14,7 @@ __all__ = [
     "search_kicad_libraries",
     "search_kicad_footprints",
     "extract_pin_details",
+    "get_kg_usage_guide",
 ]
 import asyncio
 import os
@@ -33,6 +34,7 @@ __all__ = [
     "create_mcp_server",
     "run_erc",
     "run_erc_tool",
+    "get_kg_usage_guide",
 ]
 
 
@@ -291,7 +293,6 @@ print(json.dumps(pins))
     return proc.stdout.strip()
 
 
-
 def create_mcp_server() -> MCPServerSse:
     """Create MCP server connection used by all agents.
 
@@ -370,3 +371,56 @@ async def run_erc(script_path: str) -> str:
 
 
 run_erc_tool = function_tool(run_erc)
+
+
+@function_tool
+async def get_kg_usage_guide(task_type: str) -> str:
+    """Return knowledge graph query examples for common validation tasks.
+
+    Args:
+        task_type: Category of examples to return. Supported values are
+            ``"class"``, ``"method"``, ``"function"``, ``"import"``,
+            ``"attribute"``, and ``"examples"``.
+
+    Returns:
+        Guidance string containing short ``query_knowledge_graph`` commands.
+
+    Example:
+        >>> get_kg_usage_guide("method")
+        'method <name> <Class>\nmethod <name>'
+    """
+
+    task = task_type.lower()
+    guides = {
+        "class": (
+            'query_knowledge_graph("class <ClassName>")\n'
+            '# Example: query_knowledge_graph("class Part")'
+        ),
+        "method": (
+            'query_knowledge_graph("method <method> <ClassName>")\n'
+            'query_knowledge_graph("method <method>")\n'
+            '# Example: query_knowledge_graph("method generate_schematic Circuit")'
+        ),
+        "function": (
+            "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<func>' "
+            'RETURN f.name, f.params_list, f.return_type")\n'
+            "# Example: query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")"
+        ),
+        "import": (
+            "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<name>' "
+            "RETURN f UNION MATCH (c:Class) WHERE c.name = '<name>' RETURN c\")"
+        ),
+        "attribute": (
+            'query_knowledge_graph("class <ClassName>")\n'
+            "# Check returned attributes for the desired name"
+        ),
+        "examples": (
+            'query_knowledge_graph("repos")\n'
+            'query_knowledge_graph("explore skidl")\n'
+            'query_knowledge_graph("class Part")\n'
+            'query_knowledge_graph("method connect Part")\n'
+            "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")"
+        ),
+    }
+
+    return guides.get(task, "")
