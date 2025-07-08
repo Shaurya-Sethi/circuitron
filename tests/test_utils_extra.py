@@ -166,3 +166,19 @@ def test_get_kg_usage_guide() -> None:
         cast(Coroutine[Any, Any, str], get_kg_usage_guide.on_invoke_tool(ctx, args))
     )
     assert "method" in guide and "query_knowledge_graph" in guide
+
+
+def test_sanitize_text_multiline() -> None:
+    from circuitron.utils import sanitize_text
+
+    text = "hello\nworld\t!\rtest"
+    cleaned = sanitize_text(text)
+    assert cleaned == text
+
+
+def test_sanitize_text_removes_nonprintable() -> None:
+    from circuitron.utils import sanitize_text
+
+    text = "bad\x00text"
+    cleaned = sanitize_text(text)
+    assert "\x00" not in cleaned
