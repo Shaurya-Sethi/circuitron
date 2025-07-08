@@ -370,6 +370,9 @@ async def run_erc(script_path: str) -> str:
     return proc.stdout.strip()
 
 
+# Expose the ERC checker as a FunctionTool named ``run_erc``.
+# ``run_erc_tool`` is the variable imported by agents but the tool's
+# ``name`` attribute remains "run_erc".
 run_erc_tool = function_tool(run_erc)
 
 
