@@ -38,8 +38,9 @@ async def query_knowledge_graph(ctx: Context, command: str) -> str:
    | `classes`                    | List all classes across all repositories (limited to 20).               |
    | `classes <repo_name>`        | List classes in a specific repository.                                  |
    | `class <class_name>`         | Get methods and attributes for a specific class.                        |
-   | `method <method_name>`       | Search for methods by name across all classes.                          |
+   | `method <method_name>`       | Search for methods by name across all classes (limited to 20).          |
    | `method <method_name> <class_name>` | Search for a method within a specific class.                    |
+   | `function <function_name>`   | Search for standalone functions by name (limited to 20).                |
    | `query <cypher_query>`       | Perform a custom Cypher query (graph database query language).          |
 
 4. **Response:**  
@@ -87,7 +88,12 @@ async def query_knowledge_graph(ctx: Context, command: str) -> str:
    result_json = await query_knowledge_graph(ctx, "method run MyClassName")
    ```
 
-6. **Run a custom Cypher query**  
+6. **Search for standalone functions by name**  
+   ```python
+   result_json = await query_knowledge_graph(ctx, "function hello")
+   ```
+
+7. **Run a custom Cypher query**  
    ```python
    cypher = 'MATCH (c:Class)-[:HAS_METHOD]->(m:Method) WHERE m.name = "run" RETURN c.name, m.name LIMIT 5'
    result_json = await query_knowledge_graph(ctx, f"query {cypher}")
@@ -112,12 +118,13 @@ async def query_knowledge_graph(ctx: Context, command: str) -> str:
 | Command Syntax                              | Use Case/What It Returns                                 |
 |---------------------------------------------|----------------------------------------------------------|
 | `repos`                                    | List all repos in the knowledge graph                    |
-| `explore <repo_name>`                      | Stats (files, classes, methods, etc.) for a repo         |
+| `explore <repo_name>`                      | Stats (files, classes, functions, methods) for a repo    |
 | `classes`                                  | List up to 20 classes across all repos                   |
 | `classes <repo_name>`                      | List up to 20 classes in the specified repo              |
 | `class <class_name>`                       | Methods and attributes for a class                       |
-| `method <method_name>`                     | All methods with this name (across all classes)          |
+| `method <method_name>`                     | All methods with this name (across all classes, limit 20)|
 | `method <method_name> <class_name>`        | Method info scoped to a given class                      |
+| `function <function_name>`                 | All standalone functions with this name (limit 20)       |
 | `query <cypher_query>`                     | Run a custom Neo4j Cypher query (max 20 results)         |
 
 ---
