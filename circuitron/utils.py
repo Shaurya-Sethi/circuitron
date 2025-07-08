@@ -24,7 +24,7 @@ from .correction_context import CorrectionContext
 def sanitize_text(text: str, max_length: int = 10000) -> str:
     """Return a cleaned version of ``text`` limited to ``max_length`` characters."""
 
-    cleaned = "".join(ch for ch in text if ch.isprintable())
+    cleaned = "".join(ch for ch in text if ch.isprintable() or ch in "\n\r\t")
     cleaned = cleaned.replace("```", "'''")
     return cleaned.strip()[:max_length]
 
