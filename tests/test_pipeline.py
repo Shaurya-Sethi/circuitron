@@ -115,6 +115,24 @@ def test_run_code_validation_no_erc_on_fail() -> None:
     assert erc is None
 
 
+def test_run_code_validation_skip_erc_flag() -> None:
+    import circuitron.pipeline as pl
+
+    code_out = CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    selection = PartSelectionOutput()
+    docs = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    val_out = CodeValidationOutput(status="pass", summary="ok")
+
+    with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=val_out))):
+        with patch("circuitron.pipeline.run_erc", AsyncMock()) as erc_mock, \
+             patch("circuitron.pipeline.write_temp_skidl_script", return_value="/tmp/x.py"):
+            result = asyncio.run(pl.run_code_validation(code_out, selection, docs, run_erc_flag=False))
+            erc_mock.assert_not_called()
+    validation, erc = result
+    assert validation.status == "pass"
+    assert erc is None
+
+
 async def fake_pipeline_with_correction() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput()
@@ -125,6 +143,7 @@ async def fake_pipeline_with_correction() -> None:
     code_out = CodeGenerationOutput(complete_skidl_code="init")
     corrected = CodeGenerationOutput(complete_skidl_code="fixed")
     val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
+    val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
     val_warn = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": False})
     val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
@@ -132,8 +151,21 @@ async def fake_pipeline_with_correction() -> None:
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_warn, val_ok])), \
-         patch.object(pl, "run_code_correction", AsyncMock(return_value=corrected)), \
+         patch.object(
+             pl,
+             "run_code_validation",
+             AsyncMock(side_effect=[val_fail, val_pass, val_warn, val_ok]),
+         ), \
+         patch.object(
+             pl,
+             "run_code_correction_validation_only",
+             AsyncMock(return_value=corrected),
+         ), \
+         patch.object(
+             pl,
+             "run_code_correction_erc_only",
+             AsyncMock(return_value=corrected),
+         ), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         result = await pl.pipeline("test")
     assert result.complete_skidl_code == "fixed"
@@ -183,6 +215,7 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
     code_out = CodeGenerationOutput(complete_skidl_code="init")
     corrected = CodeGenerationOutput(complete_skidl_code="fixed")
     val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
+    val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
     val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
@@ -191,8 +224,9 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
-         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_ok])), \
-         patch.object(pl, "run_code_correction", AsyncMock(return_value=corrected)):
+         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_pass, val_ok])), \
+         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=corrected)), \
+         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=corrected)):
         result = await pl.pipeline("test")
     assert result.complete_skidl_code == "fixed"
 

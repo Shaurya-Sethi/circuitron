@@ -54,12 +54,17 @@ from circuitron.utils import (
     format_code_generation_input,
     format_code_validation_input,
     format_code_correction_input,
+    format_code_correction_validation_input,
+    format_code_correction_erc_input,
     write_temp_skidl_script,
     pretty_print_validation,
     pretty_print_generated_code,
     validate_code_generation_results,
 )
-from circuitron.tools import run_erc
+from circuitron.tools import run_erc as run_erc_cmd
+
+# Expose run_erc for backward compatibility in tests
+run_erc = run_erc_cmd
 
 
 async def run_planner(prompt: str) -> RunResult:
@@ -117,8 +122,20 @@ async def run_code_validation(
     code_output: CodeGenerationOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
+    run_erc_flag: bool = True,
 ) -> tuple[CodeValidationOutput, dict[str, object] | None]:
-    """Validate generated code and optionally run ERC."""
+    """Validate generated code and optionally run ERC.
+
+    Args:
+        code_output: Generated SKiDL code to validate.
+        selection: Component selections used in the design.
+        docs: Documentation context for the validator.
+        run_erc_flag: When ``True`` run ERC after validation passes.
+
+    Returns:
+        Tuple containing the :class:`CodeValidationOutput` and optional ERC
+        results.
+    """
 
     script_path = write_temp_skidl_script(code_output.complete_skidl_code)
     try:
@@ -129,7 +146,7 @@ async def run_code_validation(
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
-        if validation.status == "pass":
+        if run_erc_flag and validation.status == "pass":
             erc_json = await run_erc(script_path)
             try:
                 erc_result = json.loads(erc_json)
@@ -155,6 +172,75 @@ async def run_code_correction(
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
     input_msg = format_code_correction_input(
+        code_output.complete_skidl_code,
+        validation,
+        plan,
+        selection,
+        docs,
+        erc_result,
+    )
+    result = await run_agent(code_corrector, sanitize_text(input_msg))
+    correction = cast(CodeCorrectionOutput, result.final_output)
+    code_output.complete_skidl_code = correction.corrected_code
+    return code_output
+
+
+async def run_code_correction_validation_only(
+    code_output: CodeGenerationOutput,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+) -> CodeGenerationOutput:
+    """Correct code focusing solely on validation issues.
+
+    Args:
+        code_output: Current code to fix.
+        validation: Validation output describing errors.
+        plan: The original design plan.
+        selection: Chosen components for the design.
+        docs: Documentation context.
+
+    Returns:
+        Updated :class:`CodeGenerationOutput` with attempted fixes applied.
+    """
+
+    input_msg = format_code_correction_validation_input(
+        code_output.complete_skidl_code,
+        validation,
+        plan,
+        selection,
+        docs,
+    )
+    result = await run_agent(code_corrector, sanitize_text(input_msg))
+    correction = cast(CodeCorrectionOutput, result.final_output)
+    code_output.complete_skidl_code = correction.corrected_code
+    return code_output
+
+
+async def run_code_correction_erc_only(
+    code_output: CodeGenerationOutput,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    erc_result: dict[str, object] | None,
+) -> CodeGenerationOutput:
+    """Correct code focusing solely on ERC issues.
+
+    Args:
+        code_output: Current code to fix.
+        validation: Latest validation output (should be ``pass``).
+        plan: The original design plan.
+        selection: Chosen components for the design.
+        docs: Documentation context.
+        erc_result: ERC output describing violations.
+
+    Returns:
+        Updated :class:`CodeGenerationOutput` with attempted fixes applied.
+    """
+
+    input_msg = format_code_correction_erc_input(
         code_output.complete_skidl_code,
         validation,
         plan,
@@ -229,25 +315,37 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         docs = await run_documentation(plan, selection)
         pretty_print_documentation(docs)
         code_out = await run_code_generation(plan, selection, docs)
-        validation, erc_result = await run_code_validation(code_out, selection, docs)
-        attempts = 0
-        while validation.status == "fail" or (
-            erc_result and not erc_result.get("erc_passed", False)
-        ):
-            code_out = await run_code_correction(
-                code_out,
-                validation,
-                plan,
-                selection,
-                docs,
-                erc_result,
+        validation, _ = await run_code_validation(
+            code_out, selection, docs, run_erc_flag=False
+        )
+
+        validation_attempts = 0
+        while validation.status == "fail" and validation_attempts < 3:
+            code_out = await run_code_correction_validation_only(
+                code_out, validation, plan, selection, docs
             )
-            validation, erc_result = await run_code_validation(
-                code_out, selection, docs
+            validation, _ = await run_code_validation(
+                code_out, selection, docs, run_erc_flag=False
             )
-            attempts += 1
-            if attempts >= 3:
-                break
+            validation_attempts += 1
+
+        if validation.status == "pass":
+            _, erc_result = await run_code_validation(
+                code_out, selection, docs, run_erc_flag=True
+            )
+            erc_attempts = 0
+            while (
+                erc_result
+                and not erc_result.get("erc_passed", False)
+                and erc_attempts < 3
+            ):
+                code_out = await run_code_correction_erc_only(
+                    code_out, validation, plan, selection, docs, erc_result
+                )
+                _, erc_result = await run_code_validation(
+                    code_out, selection, docs, run_erc_flag=True
+                )
+                erc_attempts += 1
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -262,23 +360,37 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     docs = await run_documentation(final_plan, selection)
     pretty_print_documentation(docs)
     code_out = await run_code_generation(final_plan, selection, docs)
-    validation, erc_result = await run_code_validation(code_out, selection, docs)
-    attempts = 0
-    while validation.status == "fail" or (
-        erc_result and not erc_result.get("erc_passed", False)
-    ):
-        code_out = await run_code_correction(
-            code_out,
-            validation,
-            final_plan,
-            selection,
-            docs,
-            erc_result,
+    validation, _ = await run_code_validation(
+        code_out, selection, docs, run_erc_flag=False
+    )
+
+    validation_attempts = 0
+    while validation.status == "fail" and validation_attempts < 3:
+        code_out = await run_code_correction_validation_only(
+            code_out, validation, final_plan, selection, docs
         )
-        validation, erc_result = await run_code_validation(code_out, selection, docs)
-        attempts += 1
-        if attempts >= 3:
-            break
+        validation, _ = await run_code_validation(
+            code_out, selection, docs, run_erc_flag=False
+        )
+        validation_attempts += 1
+
+    if validation.status == "pass":
+        _, erc_result = await run_code_validation(
+            code_out, selection, docs, run_erc_flag=True
+        )
+        erc_attempts = 0
+        while (
+            erc_result
+            and not erc_result.get("erc_passed", False)
+            and erc_attempts < 3
+        ):
+            code_out = await run_code_correction_erc_only(
+                code_out, validation, final_plan, selection, docs, erc_result
+            )
+            _, erc_result = await run_code_validation(
+                code_out, selection, docs, run_erc_flag=True
+            )
+            erc_attempts += 1
     return code_out
 
 
