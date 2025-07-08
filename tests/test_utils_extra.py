@@ -168,6 +168,21 @@ def test_get_kg_usage_guide() -> None:
     assert "method" in guide and "query_knowledge_graph" in guide
 
 
+def test_get_erc_info() -> None:
+    from circuitron.tools import get_erc_info
+    from agents.tool_context import ToolContext
+    import json
+    import asyncio
+    from typing import Any, Coroutine, cast
+
+    ctx = ToolContext(context=None, tool_call_id="erc1")
+    args = json.dumps({"issue_type": "drive"})
+    info = asyncio.run(
+        cast(Coroutine[Any, Any, str], get_erc_info.on_invoke_tool(ctx, args))
+    )
+    assert "drive" in info and "POWER" in info
+
+
 def test_sanitize_text_multiline() -> None:
     from circuitron.utils import sanitize_text
 
@@ -190,6 +205,6 @@ def test_prepare_erc_only_script() -> None:
     script = "from skidl import *\ngenerate_netlist()\nERC()\n"
     result = prepare_erc_only_script(script)
     assert "# generate_netlist()" in result
-    lines = [l.strip() for l in result.splitlines() if not l.strip().startswith("#")]
+    lines = [line.strip() for line in result.splitlines() if not line.strip().startswith("#")]
     assert "generate_netlist()" not in lines
     assert "ERC()" in lines

@@ -37,6 +37,7 @@ from .tools import (
     extract_pin_details,
     run_erc_tool,
     get_kg_usage_guide,
+    get_erc_info,
 )
 from .mcp_manager import mcp_manager
 
@@ -174,7 +175,7 @@ def create_code_correction_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
-    tools: list[Tool] = [run_erc_tool, get_kg_usage_guide]
+    tools: list[Tool] = [run_erc_tool, get_kg_usage_guide, get_erc_info]
 
     return Agent(
         name="Circuitron-Corrector",

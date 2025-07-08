@@ -103,6 +103,18 @@ def test_agents_include_kg_guide_tool() -> None:
     assert "get_kg_usage_guide" in corrector_tools
 
 
+def test_corrector_includes_erc_info_tool() -> None:
+    import sys
+
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    mod = importlib.import_module("circuitron.agents")
+    corrector_tools = [t.name for t in mod.code_corrector.tools]
+    assert "get_erc_info" in corrector_tools
+
+
 def test_tool_choice_auto_for_o4mini() -> None:
     import sys
 

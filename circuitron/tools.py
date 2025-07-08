@@ -30,6 +30,7 @@ __all__ = [
     "execute_final_script",
     "execute_final_script_tool",
     "get_kg_usage_guide",
+    "get_erc_info",
 ]
 
 
@@ -521,3 +522,128 @@ async def get_kg_usage_guide(task_type: str) -> str:
     }
 
     return guides.get(task, "Task type not recognized. Available types: class, method, function, import, attribute, workflow, schema, advanced, examples")
+
+
+@function_tool
+async def get_erc_info(issue_type: str) -> str:
+    """Return SKiDL ERC troubleshooting guidance.
+
+    Args:
+        issue_type: Category of ERC information to return. Supported values are
+            ``"unconnected"``, ``"drive"``, ``"footprint"``, ``"suppression"``,
+            ``"workflow"``, ``"examples"``, and ``"all"``.
+
+    Returns:
+        Guidance string with tips and code examples for resolving ERC issues.
+
+    Example:
+        >>> get_erc_info("drive")
+        '... how to set net.drive = POWER ...'
+    """
+
+    topic = issue_type.lower()
+
+    guides = {
+        "unconnected": textwrap.dedent(
+            """
+            # Unconnected Pins
+            - Attach intentionally unused pins to the special `NC` net.
+              Example: `u1[1,3,4] += NC`
+            - To start, connect every pin then remove connections you need:
+              `u1[:] += NC`
+              Later connect used pins to real nets; they will auto-disconnect
+              from `NC`.
+            - Nets with only one pin often trigger warnings. If intentional,
+              disable ERC on that net with `net.do_erc = False`.
+            """
+        ),
+        "drive": textwrap.dedent(
+            """
+            # Drive Levels
+            - Power nets must provide drive: `vcc.drive = POWER` and
+              `gnd.drive = POWER`.
+            - When an output pin powers another device, set its drive level:
+              `regulator[1].drive = POWER`.
+            - Use this when a supply passes through filters (ferrite bead,
+              resistor) so the downstream net is still driven.
+            """
+        ),
+        "footprint": textwrap.dedent(
+            """
+            # Missing Footprints
+            - Assign footprints explicitly: `part.footprint = \"Lib:Footprint\"`.
+            - For generic passives, install an `empty_footprint_handler` to
+              choose defaults (e.g., 0805 for R/C/L).
+            - Call this handler before `generate_netlist()`.
+            """
+        ),
+        "suppression": textwrap.dedent(
+            """
+            # Suppressing ERC Messages
+            - Disable checks carefully using `do_erc = False`.
+              * Individual net: `net.do_erc = False`
+              * Specific pin: `part[5].do_erc = False`
+              * Entire part: `part.do_erc = False`
+            - Use sparingly and only after verifying the circuit is correct.
+            - Custom checks can be added with `erc_assert('<expr>', '<msg>')`.
+            """
+        ),
+        "workflow": textwrap.dedent(
+            """
+            # ERC Troubleshooting Workflow
+            1. Ensure code validates without syntax or API errors.
+            2. Run `ERC()` or the provided `run_erc_tool` to see messages.
+            3. Review the generated `.erc` file for warnings and errors.
+            4. Fix unconnected pins and set drive levels as needed.
+            5. Assign all missing footprints or install an empty footprint
+               handler.
+            6. Suppress unavoidable warnings with `do_erc = False` only after
+               confirming correctness.
+            7. Re-run ERC until **0 errors** remain (warnings acceptable).
+            """
+        ),
+        "examples": textwrap.dedent(
+            """
+            # Common ERC Fix Examples
+            from skidl import *
+            vcc = Net('VCC'); vcc.drive = POWER
+            gnd = Net('GND'); gnd.drive = POWER
+
+            pic = Part('MCU_Microchip_PIC10', 'pic10f220-iot')
+            pic['VDD'] += vcc
+            pic['VSS'] += gnd
+            pic[1,3,4] += NC  # Unused pins
+
+            # Example footprint handler
+            def my_empty_footprint_handler(part):
+                if part.ref_prefix in ('R', 'C', 'L') and len(part.pins) == 2:
+                    part.footprint = 'Resistor_SMD:R_0805_2012Metric'
+                else:
+                    part.footprint = ':'
+
+            import skidl
+            skidl.empty_footprint_handler = my_empty_footprint_handler
+
+            ERC()
+            """
+        ),
+    }
+
+    guides["all"] = "\n\n".join(
+        [
+            guides["workflow"],
+            guides["unconnected"],
+            guides["drive"],
+            guides["footprint"],
+            guides["suppression"],
+            guides["examples"],
+        ]
+    )
+
+    return guides.get(
+        topic,
+        (
+            "Issue type not recognized. Available types: unconnected, drive, "
+            "footprint, suppression, workflow, examples, all"
+        ),
+    )
