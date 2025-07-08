@@ -1,21 +1,13 @@
-"""
-    )
-Tools for the Circuitron agents.
-Contains calculation tools and other utilities that agents can use.
+"""Tools for Circuitron agents.
+
+This module exposes helpers for executing isolated calculations, searching
+KiCad libraries and footprints, extracting pin information, running ERC
+checks, creating MCP server connections, and retrieving knowledge graph
+guidance.
 """
 
 from agents import function_tool
 from agents.mcp import MCPServerSse
-
-__all__ = [
-    "MCPServerSse",
-    "create_mcp_server",
-    "run_erc_tool",
-    "search_kicad_libraries",
-    "search_kicad_footprints",
-    "extract_pin_details",
-    "get_kg_usage_guide",
-]
 import asyncio
 import os
 import subprocess
