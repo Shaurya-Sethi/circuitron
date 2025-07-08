@@ -7,7 +7,10 @@ import pytest
 from agents.items import ReasoningItem
 from agents.agent import Agent
 from agents.result import RunResult
-from openai.types.responses.response_reasoning_item import ResponseReasoningItem, Summary
+from openai.types.responses.response_reasoning_item import (
+    ResponseReasoningItem,
+    Summary,
+)
 
 from circuitron.models import (
     CodeGenerationOutput,
@@ -39,7 +42,9 @@ def test_extract_reasoning_summary() -> None:
     summary = Summary(text="explain", type="summary_text")
     rr = ResponseReasoningItem(id="1", summary=[summary], type="reasoning")
     item = ReasoningItem(agent=cast(Agent[Any], SimpleNamespace()), raw_item=rr)
-    result = extract_reasoning_summary(cast(RunResult, SimpleNamespace(new_items=[item])))
+    result = extract_reasoning_summary(
+        cast(RunResult, SimpleNamespace(new_items=[item]))
+    )
     assert "explain" in result
 
 
@@ -62,21 +67,31 @@ def test_write_temp_skidl_script_unicode(tmp_path: Path) -> None:
     os.remove(path)
 
 
-
 def test_format_code_validation_and_correction_input() -> None:
     pin = PinDetail(number="1", name="VCC", function="pwr")
     part = SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[pin])
     selection = PartSelectionOutput(selections=[part])
     docs = cast(DocumentationOutput, SimpleNamespace(documentation_findings=["doc"]))
-    val = CodeValidationOutput(status="fail", summary="bad", issues=[ValidationIssue(category="err", message="m", line=1)])
+    val = CodeValidationOutput(
+        status="fail",
+        summary="bad",
+        issues=[ValidationIssue(category="err", message="m", line=1)],
+    )
     text = format_code_validation_input("print('hi')", selection, docs)
     assert "print('hi')" in text and "U1" in text and "doc" in text
     corr = format_code_correction_input("print('hi')", val, {"erc_passed": False})
     assert "Validation Summary: bad" in corr
     assert "erc_passed" in corr
 
+
 def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
-    from circuitron.models import PlanEditDecision, PlanEditorOutput, PlanOutput, DocumentationOutput
+    from circuitron.models import (
+        PlanEditDecision,
+        PlanEditorOutput,
+        PlanOutput,
+        DocumentationOutput,
+    )
+
     plan = PlanOutput(
         design_rationale=["why"],
         functional_blocks=["block"],
@@ -93,15 +108,26 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     edit = PlanEditorOutput(decision=PlanEditDecision(reasoning="r"), updated_plan=plan)
     pretty_print_edited_plan(edit)
     pretty_print_found_parts("[]")
-    selected = PartSelectionOutput(selections=[SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[])])
+    selected = PartSelectionOutput(
+        selections=[
+            SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[])
+        ]
+    )
     pretty_print_selected_parts(selected)
-    docs = DocumentationOutput(research_queries=["q"], documentation_findings=["doc"], implementation_readiness="ok")
+    docs = DocumentationOutput(
+        research_queries=["q"],
+        documentation_findings=["doc"],
+        implementation_readiness="ok",
+    )
     pretty_print_documentation(docs)
     val = CodeValidationOutput(status="pass", summary="ok")
-    pretty_print_generated_code(CodeGenerationOutput(complete_skidl_code="from skidl import *"))
+    pretty_print_generated_code(
+        CodeGenerationOutput(complete_skidl_code="from skidl import *")
+    )
     pretty_print_validation(val)
     out = capsys.readouterr().out
     assert "SELECTED COMPONENTS" in out
+
 
 def test_collect_user_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
     plan = PlanOutput(design_limitations=["q"], component_search_queries=[])
@@ -111,3 +137,18 @@ def test_collect_user_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
     assert fb.open_question_answers[0].startswith("Q1:")
     assert fb.requested_edits == ["edit1"]
     assert fb.additional_requirements == ["req1"]
+
+
+def test_get_kg_usage_guide() -> None:
+    from circuitron.tools import get_kg_usage_guide
+    from agents.tool_context import ToolContext
+    import json
+    import asyncio
+    from typing import Any, Coroutine, cast
+
+    ctx = ToolContext(context=None, tool_call_id="kg1")
+    args = json.dumps({"task_type": "method"})
+    guide = asyncio.run(
+        cast(Coroutine[Any, Any, str], get_kg_usage_guide.on_invoke_tool(ctx, args))
+    )
+    assert "method" in guide and "query_knowledge_graph" in guide

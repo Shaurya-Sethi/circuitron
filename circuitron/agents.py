@@ -36,6 +36,7 @@ from .tools import (
     search_kicad_footprints,
     extract_pin_details,
     run_erc_tool,
+    get_kg_usage_guide,
 )
 from .mcp_manager import mcp_manager
 
@@ -153,12 +154,14 @@ def create_code_validation_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
+    tools: list[Tool] = [get_kg_usage_guide]
+
     return Agent(
         name="Circuitron-Validator",
         instructions=CODE_VALIDATION_PROMPT,
         model=settings.code_validation_model,
         output_type=CodeValidationOutput,
-        tools=[],
+        tools=tools,
         mcp_servers=[mcp_manager.get_validation_server()],
         model_settings=model_settings,
         handoff_description="Validate SKiDL code",
@@ -171,7 +174,7 @@ def create_code_correction_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
-    tools: list[Tool] = [run_erc_tool]
+    tools: list[Tool] = [run_erc_tool, get_kg_usage_guide]
 
     return Agent(
         name="Circuitron-Corrector",
