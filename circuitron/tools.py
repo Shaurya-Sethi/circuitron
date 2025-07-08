@@ -424,10 +424,10 @@ async def get_kg_usage_guide(task_type: str) -> str:
     Args:
         task_type: Category of examples to return. Supported values are
             ``"class"``, ``"method"``, ``"function"``, ``"import"``,
-            ``"attribute"``, and ``"examples"``.
+            ``"attribute"``, ``"workflow"``, ``"schema"``, ``"advanced"``, and ``"examples"``.
 
     Returns:
-        Guidance string containing short ``query_knowledge_graph`` commands.
+        Guidance string containing ``query_knowledge_graph`` commands and usage patterns.
 
     Example:
         >>> get_kg_usage_guide("method")
@@ -438,33 +438,86 @@ async def get_kg_usage_guide(task_type: str) -> str:
     guides = {
         "class": (
             'query_knowledge_graph("class <ClassName>")\n'
-            '# Example: query_knowledge_graph("class Part")'
+            '# Example: query_knowledge_graph("class Part")\n'
+            '# Returns: All methods and attributes for the specified class'
         ),
         "method": (
             'query_knowledge_graph("method <method> <ClassName>")\n'
             'query_knowledge_graph("method <method>")\n'
-            '# Example: query_knowledge_graph("method generate_schematic Circuit")'
+            '# Example: query_knowledge_graph("method generate_schematic Circuit")\n'
+            '# Returns: Method details within specific class or across all classes'
         ),
         "function": (
             "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<func>' "
             'RETURN f.name, f.params_list, f.return_type")\n'
-            "# Example: query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")"
+            "# Example: query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")\n"
+            "# Returns: Function signatures and parameter details"
         ),
         "import": (
             "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<name>' "
-            "RETURN f UNION MATCH (c:Class) WHERE c.name = '<name>' RETURN c\")"
+            "RETURN f UNION MATCH (c:Class) WHERE c.name = '<name>' RETURN c\")\n"
+            "# Finds both functions and classes with the given name for import validation"
         ),
         "attribute": (
             'query_knowledge_graph("class <ClassName>")\n'
-            "# Check returned attributes for the desired name"
+            "# Check returned attributes section for the desired attribute name\n"
+            "# Attributes are listed separately from methods in class query results"
+        ),
+        "workflow": (
+            "# ESSENTIAL KNOWLEDGE GRAPH WORKFLOW:\n"
+            "# 1. Always start with repository discovery:\n"
+            'query_knowledge_graph("repos")\n'
+            "\n# 2. Get repository structure and statistics:\n"
+            'query_knowledge_graph("explore skidl")\n'
+            "\n# 3. Explore classes in the repository:\n"
+            'query_knowledge_graph("classes skidl")\n'
+            "\n# 4. Investigate specific classes:\n"
+            'query_knowledge_graph("class Part")\n'
+            'query_knowledge_graph("class Net")\n'
+            "\n# 5. Search for specific methods:\n"
+            'query_knowledge_graph("method connect Part")\n'
+            'query_knowledge_graph("method generate_netlist")\n'
+            "\n# 6. Use custom queries for complex investigations:\n"
+            'query_knowledge_graph("query MATCH (c:Class)-[:HAS_METHOD]->(m:Method) WHERE m.name = \'drive\' RETURN c.name, m.name")'
+        ),
+        "schema": (
+            "# KNOWLEDGE GRAPH SCHEMA:\n"
+            "# Node Types:\n"
+            "# - Repository: {name: string}\n"
+            "# - File: {path: string, module_name: string}\n"
+            "# - Class: {name: string, full_name: string}\n"
+            "# - Method: {name: string, params_list: [string], params_detailed: [string], return_type: string, args: [string]}\n"
+            "# - Function: {name: string, params_list: [string], params_detailed: [string], return_type: string, args: [string]}\n"
+            "# - Attribute: {name: string, type: string}\n"
+            "\n# Relationship Types:\n"
+            "# - (Repository)-[:CONTAINS]->(File)\n"
+            "# - (File)-[:DEFINES]->(Class)\n"
+            "# - (Class)-[:HAS_METHOD]->(Method)\n"
+            "# - (Class)-[:HAS_ATTRIBUTE]->(Attribute)\n"
+            "# - (File)-[:DEFINES]->(Function)\n"
+            "\n# Query limits: All results limited to 20 records for performance"
+        ),
+        "advanced": (
+            "# ADVANCED KNOWLEDGE GRAPH PATTERNS:\n"
+            "\n# Find all classes with specific method:\n"
+            'query_knowledge_graph("query MATCH (c:Class)-[:HAS_METHOD]->(m:Method) WHERE m.name = \'run\' RETURN c.name, m.name LIMIT 10")\n'
+            "\n# Find methods with specific parameter patterns:\n"
+            'query_knowledge_graph("query MATCH (m:Method) WHERE ANY(param IN m.params_list WHERE param CONTAINS \'net\') RETURN m.name, m.params_list LIMIT 10")\n'
+            "\n# Explore class inheritance patterns:\n"
+            'query_knowledge_graph("query MATCH (c:Class) WHERE c.name CONTAINS \'Part\' RETURN c.name, c.full_name LIMIT 10")\n'
+            "\n# Find all functions in a module:\n"
+            'query_knowledge_graph("query MATCH (f:File)-[:DEFINES]->(func:Function) WHERE f.module_name = \'skidl\' RETURN func.name, func.params_list LIMIT 10")'
         ),
         "examples": (
-            'query_knowledge_graph("repos")\n'
-            'query_knowledge_graph("explore skidl")\n'
-            'query_knowledge_graph("class Part")\n'
-            'query_knowledge_graph("method connect Part")\n'
-            "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")"
+            "# COMPLETE KNOWLEDGE GRAPH EXAMPLE WORKFLOW:\n"
+            'query_knowledge_graph("repos")  # Start here - discover available repositories\n'
+            'query_knowledge_graph("explore skidl")  # Get SKiDL repo statistics\n'
+            'query_knowledge_graph("classes skidl")  # List classes in SKiDL\n'
+            'query_knowledge_graph("class Part")  # Investigate Part class\n'
+            'query_knowledge_graph("method connect Part")  # Find connect method in Part\n'
+            'query_knowledge_graph("method generate_netlist")  # Find generate_netlist function\n'
+            'query_knowledge_graph("query MATCH (f:Function) WHERE f.name = \'generate_netlist\' RETURN f")  # Custom query for functions'
         ),
     }
 
-    return guides.get(task, "")
+    return guides.get(task, "Task type not recognized. Available types: class, method, function, import, attribute, workflow, schema, advanced, examples")
