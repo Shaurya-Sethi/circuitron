@@ -62,9 +62,12 @@ from circuitron.utils import (
     pretty_print_generated_code,
     validate_code_generation_results,
 )
+
+# ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
 from circuitron.tools import run_erc as run_erc_cmd
 
-# Expose run_erc for backward compatibility in tests
+# Expose ``run_erc`` for backward compatibility in tests and scripts.
+# This alias calls the same implementation as the ``run_erc`` tool.
 run_erc = run_erc_cmd
 
 
