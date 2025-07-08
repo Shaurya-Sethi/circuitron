@@ -148,11 +148,19 @@ async def run_code_validation(
 async def run_code_correction(
     code_output: CodeGenerationOutput,
     validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
     erc_result: dict[str, object] | None = None,
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
     input_msg = format_code_correction_input(
-        code_output.complete_skidl_code, validation, erc_result
+        code_output.complete_skidl_code,
+        validation,
+        plan,
+        selection,
+        docs,
+        erc_result,
     )
     result = await run_agent(code_corrector, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
@@ -226,7 +234,14 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         while validation.status == "fail" or (
             erc_result and not erc_result.get("erc_passed", False)
         ):
-            code_out = await run_code_correction(code_out, validation, erc_result)
+            code_out = await run_code_correction(
+                code_out,
+                validation,
+                plan,
+                selection,
+                docs,
+                erc_result,
+            )
             validation, erc_result = await run_code_validation(
                 code_out, selection, docs
             )
@@ -252,7 +267,14 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     while validation.status == "fail" or (
         erc_result and not erc_result.get("erc_passed", False)
     ):
-        code_out = await run_code_correction(code_out, validation, erc_result)
+        code_out = await run_code_correction(
+            code_out,
+            validation,
+            final_plan,
+            selection,
+            docs,
+            erc_result,
+        )
         validation, erc_result = await run_code_validation(code_out, selection, docs)
         attempts += 1
         if attempts >= 3:

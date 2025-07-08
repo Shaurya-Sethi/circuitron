@@ -71,7 +71,14 @@ def test_format_code_validation_and_correction_input() -> None:
     pin = PinDetail(number="1", name="VCC", function="pwr")
     part = SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[pin])
     selection = PartSelectionOutput(selections=[part])
-    docs = cast(DocumentationOutput, SimpleNamespace(documentation_findings=["doc"]))
+    docs = cast(
+        DocumentationOutput,
+        SimpleNamespace(
+            research_queries=[],
+            documentation_findings=["doc"],
+            implementation_readiness="ok",
+        ),
+    )
     val = CodeValidationOutput(
         status="fail",
         summary="bad",
@@ -79,7 +86,14 @@ def test_format_code_validation_and_correction_input() -> None:
     )
     text = format_code_validation_input("print('hi')", selection, docs)
     assert "print('hi')" in text and "U1" in text and "doc" in text
-    corr = format_code_correction_input("print('hi')", val, {"erc_passed": False})
+    corr = format_code_correction_input(
+        "print('hi')",
+        val,
+        PlanOutput(),
+        selection,
+        docs,
+        {"erc_passed": False},
+    )
     assert "Validation Summary: bad" in corr
     assert "erc_passed" in corr
 
