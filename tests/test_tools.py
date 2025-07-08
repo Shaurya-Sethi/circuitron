@@ -223,3 +223,28 @@ def test_kicad_session_start_once() -> None:
 def test_kicad_session_container_name_contains_pid() -> None:
     from circuitron.tools import kicad_session
     assert str(os.getpid()) in kicad_session.container_name
+
+
+def test_execute_final_script() -> None:
+    cfg.setup_environment()
+    from circuitron.tools import execute_final_script_tool
+
+    with (
+        patch("circuitron.tools.DockerSession") as sess_cls,
+        patch("circuitron.tools.prepare_output_dir", return_value="/tmp/out"),
+        patch("circuitron.tools.write_temp_skidl_script", return_value="/tmp/s.py"),
+        patch("circuitron.tools.os.listdir", return_value=["file.net"]),
+    ):
+        sess = sess_cls.return_value
+        sess.exec_full_script.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="ok", stderr=""
+        )
+        ctx = ToolContext(context=None, tool_call_id="tf")
+        args = json.dumps({"script_content": "code", "output_dir": "/tmp/out"})
+        result: str = asyncio.run(
+            cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
+        )
+        data = json.loads(result)
+        assert data["success"] is True
+        sess_cls.assert_called_once()
+        sess.exec_full_script.assert_called_once()

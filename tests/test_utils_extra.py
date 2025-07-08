@@ -182,3 +182,14 @@ def test_sanitize_text_removes_nonprintable() -> None:
     text = "bad\x00text"
     cleaned = sanitize_text(text)
     assert "\x00" not in cleaned
+
+
+def test_prepare_erc_only_script() -> None:
+    from circuitron.utils import prepare_erc_only_script
+
+    script = "from skidl import *\ngenerate_netlist()\nERC()\n"
+    result = prepare_erc_only_script(script)
+    assert "# generate_netlist()" in result
+    lines = [l.strip() for l in result.splitlines() if not l.strip().startswith("#")]
+    assert "generate_netlist()" not in lines
+    assert "ERC()" in lines

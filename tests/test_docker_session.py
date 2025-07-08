@@ -145,3 +145,39 @@ def test_atexit_registration() -> None:
     with patch("atexit.register") as reg_mock:
         session = DockerSession("img", "cont")
         reg_mock.assert_called_once_with(session.stop)
+
+
+def test_start_with_volume_mount() -> None:
+    session = DockerSession("img", "cont", volumes={"/host": "/cont"})
+    ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock:
+        session.start()
+        args = run_mock.call_args_list[1].args[0]
+        assert "-v" in args and "/host:/cont" in args
+
+
+def test_exec_full_script() -> None:
+    session = DockerSession("img", "cont")
+    session.started = True
+    cp_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
+    rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "start"), patch.object(session, "_run", side_effect=[cp_proc, run_proc, rm_proc]) as run_mock:
+        result = session.exec_full_script("/tmp/x.py", "/out")
+        assert result.stdout == "ok"
+        assert run_mock.call_args_list[0].args[0][:2] == ["docker", "cp"]
+        assert run_mock.call_args_list[1].args[0][:3] == ["docker", "exec", "-i"]
+        assert run_mock.call_args_list[2].args[0][-3:] == ["rm", "-f", "/tmp/script.py"]
+
+
+def test_copy_generated_files() -> None:
+    session = DockerSession("img", "cont")
+    session.started = True
+    ls_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="/tmp/a\n/tmp/b\n", stderr="")
+    cp1 = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    cp2 = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(session, "start"), patch.object(session, "_run", side_effect=[ls_proc, cp1, cp2]) as run_mock:
+        files = session.copy_generated_files("/tmp/*.net", "/host")
+        assert files == ["/host/a", "/host/b"]
+        assert run_mock.call_count == 3

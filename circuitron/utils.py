@@ -6,6 +6,7 @@ Contains formatting, printing, and other helper utilities.
 from typing import List
 import os
 import tempfile
+import re
 from agents.items import ReasoningItem
 from agents.result import RunResult
 from .models import (
@@ -542,6 +543,54 @@ def write_temp_skidl_script(code: str) -> str:
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(code)
     return path
+
+
+def prepare_erc_only_script(full_script: str) -> str:
+    """Return a modified script that only performs ``ERC()``.
+
+    All ``generate_*`` function calls are commented out so that the script can
+    be executed safely during validation or correction phases.
+
+    Args:
+        full_script: The complete SKiDL script as generated.
+
+    Returns:
+        The script with ``generate_*`` calls commented out.
+    """
+
+    new_lines: list[str] = []
+    for line in full_script.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("#"):
+            new_lines.append(line)
+            continue
+        if re.search(r"\bgenerate_\w+\s*\(", stripped):
+            new_lines.append(f"# {line}")
+        else:
+            new_lines.append(line)
+    return "\n".join(new_lines)
+
+
+def prepare_output_dir(output_dir: str | None = None) -> str:
+    """Ensure ``output_dir`` exists and is empty.
+
+    When ``output_dir`` is ``None`` a new temporary directory is created.
+
+    Args:
+        output_dir: Optional target directory path.
+
+    Returns:
+        The absolute path to the prepared directory.
+    """
+
+    path = output_dir or tempfile.mkdtemp(prefix="circuitron_out_")
+    os.makedirs(path, exist_ok=True)
+    for name in os.listdir(path):
+        try:
+            os.remove(os.path.join(path, name))
+        except OSError:
+            pass
+    return os.path.abspath(path)
 
 
 def pretty_print_validation(result: CodeValidationOutput) -> None:
