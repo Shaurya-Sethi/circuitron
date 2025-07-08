@@ -1,0 +1,199 @@
+Checking for Errors
+Once the parts are wired together, you may do simple electrical rules checking like this:
+
+>>> ERC()                           
+
+2 warnings found during ERC.        
+0 errors found during ERC.          
+Since this is an interactive session, the ERC warnings and errors are stored in the file skidl.erc. (Normally, your SKiDL circuit description is stored as a Python script such as my_circuit.py and the ERC() function will dump its messages to my_circuit.erc.) The ERC messages are:
+
+WARNING: Only one pin (PASSIVE pin 1/~ of R/R1) attached to net VIN.
+WARNING: Only one pin (PASSIVE pin 1/~ of R/R2) attached to net GND.
+These messages are generated because the VIN and GND nets each have only a single pin on them and this usually indicates a problem. But it's OK for this simple example, so the ERC can be turned off for these two nets to prevent the spurious messages:
+
+>>> v_in.do_erc = False
+>>> gnd.do_erc = False
+>>> ERC()
+
+No ERC errors or warnings found.
+
+No Connects
+Sometimes you will use a part, but you won't use every pin. The ERC will complain about those unconnected pins:
+
+>>> pic10 = Part('MCU_Microchip_PIC10', 'pic10f220-iot') 
+>>> ERC()
+ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 1/GP0 of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: POWER-IN pin 2/VSS of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 3/GP1 of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 4/GP2 of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: POWER-IN pin 5/VDD of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: INPUT pin 6/GP3 of PIC10F220-IOT/U1.
+
+6 warnings found during ERC.
+0 errors found during ERC.
+If you have pins that you intentionally want to leave unconnected, then attach them to the special-purpose NC (no-connect) net and the warnings will be supressed:
+
+>>> pic10[1,3,4] += NC
+>>> ERC()
+ERC WARNING: Unconnected pin: POWER-IN pin 2/VSS of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: POWER-IN pin 5/VDD of PIC10F220-IOT/U1.
+ERC WARNING: Unconnected pin: INPUT pin 6/GP3 of PIC10F220-IOT/U1.
+
+3 warnings found during ERC.
+0 errors found during ERC.
+In fact, if you have a part with many pins that are not going to be used, you can start off by attaching all the pins to the NC net. After that, you may attach the pins you're using to normal nets and they will be removed from the NC net:
+
+my_part[:] += NC  # Connect every pin to NC net.
+...
+my_part[5] += Net()  # Pin 5 is no longer unconnected.
+The NC net is the only net for which this happens. For all other nets, connecting two or more nets to the same pin merges those nets and all the pins on them together.
+
+Net and Pin Drive Levels
+Certain parts have power pins that are required to be driven by a power supply net or else ERC warnings ensue. This condition is usually satisfied if the power pins are driven by the output of another part like a voltage regulator. But if the regulator output passes through something like a ferrite bead (to remove noise), then the filtered signal is no longer a supply net and an ERC warning is issued.
+
+In order to satisfy the ERC, the drive strength of a net can be set manually using its drive attribute. As a simple example, consider connecting a net to the power supply input of a processor and then running the ERC:
+
+>>> pic10 = Part('MCU_Microchip_PIC10', 'pic10f220-iot') 
+>>> a = Net()
+>>> pic10['VDD'] += a
+>>> ERC()
+...
+ERC WARNING: Insufficient drive current on net N$1 for pin POWER-IN pin 5/VDD of PIC10F220-IOT/U1
+...
+To fix this issue, change the drive attribute of the net:
+
+>>> pic10 = Part('MCU_Microchip_PIC10', 'pic10f220-iot')
+>>> a = Net()
+>>> pic10['VDD'] += a
+>>> a.drive = POWER
+>>> ERC()
+...
+(Insufficient drive warning is no longer present.)
+...
+You can set the drive attribute at any time to any defined level, but POWER is probably the only setting you'll use. For any net you create that supplies power to devices in your circuit, you should probably set its drive attribute to POWER. This is equivalent to attaching power flags to nets in some ECAD packages like KiCad.
+
+You may also set the drive attribute of part pins to override their default drive level. This can be useful when you are using an output pin of a part to power another part.
+
+>>> pic10_a = Part('MCU_Microchip_PIC10', 'pic10f220-iot')
+>>> pic10_b = Part('MCU_Microchip_PIC10', 'pic10f220-iot')
+>>> pic10_b['VDD'] += pic10_a[1]  # Power pic10_b from output pin of pic10_a.
+>>> ERC()
+ERC WARNING: Insufficient drive current on net N$1 for pin POWER-IN pin 5/VDD of PIC10F220-IOT/U2
+... (additional unconnected pin warnings) ...
+
+>>> pic10_a[1].drive = POWER  # Change drive level of pic10_a output pin.
+>>> ERC()
+... (Insufficient drive warning is gone.) ...
+Pin, Net, Bus Equivalencies
+Pins, nets, and buses can all be connected to one another in a number of ways. In order to make them as interchangeable as possible, some additional functions are defined for each object:
+
+__bool__ and __nonzero__: Each object will return True when used in a boolean operation. This can be useful when trying to select an active connection from a set of candidates using the or operator:
+
+>>> a = Net('A')
+>>> b = Bus('B', 8)
+>>> c = Pin()
+>>> d = a or b or c
+>>> d
+A:
+>>> type(d)
+<class 'skidl.Net.Net'>
+Indexing: Normally, indices can only be used with a Bus object to select one or more bus lines. But Pin and Net objects can also be indexed as long as the index evaluates to zero:
+
+>>> a = Net('A')
+>>> c = Pin()
+>>> a[0] += c[0]
+WARNING: Attaching non-part Pin  to a Net A.
+>>> a[0] += c[1]
+ERROR: Can't use a non-zero index for a pin.
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "C:\devbisme\KiCad\tools\skidl\skidl\Pin.py", line 251, in __getitem__
+    raise Exception
+Exception
+Iterators: In addition to supporting indexing, Pin, Net and Bus objects can be used as iterators.
+
+>>> bus = Bus('bus', 4)
+>>> for line in bus:
+    ...:     print(line)
+    ...:
+bus0:
+bus1:
+bus2:
+bus3:
+Width: Bus, Net, and Pin objects all support the width property. For a Bus object, width returns the number of bus lines it contains. For a Net or Pin object, width always returns 1.
+
+>>> a = Net('A')
+>>> b = Bus('B', 8)
+>>> c = Pin()
+>>> a.width
+1
+>>> b.width
+8
+>>> c.width
+1
+Selectively Supressing ERC Messages
+Sometimes a portion of your circuit throws a lot of ERC warnings or errors even though you know it's correct. SKiDL provides flags that allow you to turn off the ERC for selected nets, pins, and parts like so:
+
+my_net.do_erc = False      # Turns of ERC for this particular net.
+my_part[5].do_erc = False  # Turns off ERC for this pin of this part.
+my_part.do_erc = False     # Turns off ERC for all the pins of this part.
+Customizable ERC Using erc_assert()
+SKiDL's default ERC will find commonplace design errors, but sometimes you'll have special requirements. The erc_assert function is used to check these.
+
+from skidl import *
+import sys
+
+# Function to check the number of inputs on a net.
+def get_fanout(net):
+    fanout = 0
+    for pin in net.get_pins():
+        if pin.func in (Pin.INPUT, Pin.BIDIR):
+            fanout += 1
+    return fanout
+
+net1, net2 = Net('IN1'), Net('IN2')
+
+# Place some assertions on the fanout of each net.
+# Note that the assertions are passed as strings.
+erc_assert('get_fanout(net1) < 5', 'failed on net1')
+erc_assert('get_fanout(net2) < 5', 'failed on net2')
+
+# Attach some pins to the nets.
+net1 += Pin(func=Pin.OUTPUT)
+net2 += Pin(func=Pin.OUTPUT)
+net1 += Pin(func=Pin.INPUT) * 4  # This net passes the assertion.
+net2 += Pin(func=Pin.INPUT) * 5  # This net fails because of too much fanout.
+
+# When the ERC runs, it will also run any erc_assert statements.
+ERC()
+When you run this code, the ERC will output the following:
+
+ERC ERROR: get_fanout(input_net2) < 5 failed on net2 in <ipython-input-114-5b71f80eb001>:16:<module>.
+
+0 warnings found during ERC.
+1 errors found during ERC.
+You might ask: "Why not just use the standard Python assert statement?" The reason is that an assert statement is evaluated as soon as it is encountered and would give incorrect results if the nets or other circuit objects are not yet completely defined. But the statement passed to the erc_assert function isn't evaluated until all the various parts have been connected and ERC() is called (that's why the statement is passed as a string). Note in the code above that when the erc_assert function is called, no pins are even attached to the net1 or net2 nets, yet. The erc_assert function just places the statements to be checked into a queue that gets evaluated when ERC() is run.
+
+Handling Empty Footprints
+When you're creating a new design, it's common to get an error during netlist generation about parts that are missing footprints. (Although, parts will try to use the footprint specified in their library definition, if available.) You can use zyc to find appropriate footprints one-by-one, but sometimes you just want an automatic method to assign footprints that are close enough. This can be done using the empty_footprint_handler function that gets called for any component found missing its footprint. For example, the following function assigns an 0805 footprint to any two-pin RLC component lacking a footprint:
+
+def my_empty_footprint_handler(part):
+    """Function for handling parts with no footprint.
+
+    Args:
+        part (Part): Part with no footprint.
+    """
+    ref_prefix = part.ref_prefix.upper()
+
+    if ref_prefix in ("R", "C", "L") and len(part.pins) == 2:
+        # Resistors, capacitors, inductors default to 0805 SMD footprint.
+        part.footprint = "Resistor_SMD:R_0805_2012Metric"
+
+    else:
+        # Everything else just gets this ridiculous footprint to avoid raising exceptions.
+        part.footprint = ":"
+Then, install the custom footprint handler anywhere before the generate_netlist function is called, like so:
+
+# Install the footprint handler for these tests.
+import skidl
+skidl.empty_footprint_handler = my_empty_footprint_handler
