@@ -39,6 +39,7 @@ from circuitron.models import (
     CodeValidationOutput,
     CodeCorrectionOutput,
 )
+from circuitron.correction_context import CorrectionContext
 from circuitron.utils import (
     pretty_print_plan,
     pretty_print_edited_plan,
@@ -191,6 +192,7 @@ async def run_code_correction_validation_only(
     plan: PlanOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
+    context: CorrectionContext | None = None,
 ) -> CodeGenerationOutput:
     """Correct code focusing solely on validation issues.
 
@@ -211,6 +213,7 @@ async def run_code_correction_validation_only(
         plan,
         selection,
         docs,
+        context,
     )
     result = await run_agent(code_corrector, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
@@ -225,6 +228,7 @@ async def run_code_correction_erc_only(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None,
+    context: CorrectionContext | None = None,
 ) -> CodeGenerationOutput:
     """Correct code focusing solely on ERC issues.
 
@@ -247,6 +251,7 @@ async def run_code_correction_erc_only(
         selection,
         docs,
         erc_result,
+        context,
     )
     result = await run_agent(code_corrector, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
@@ -318,34 +323,36 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         validation, _ = await run_code_validation(
             code_out, selection, docs, run_erc_flag=False
         )
-
-        validation_attempts = 0
-        while validation.status == "fail" and validation_attempts < 3:
+        correction_context = CorrectionContext()
+        correction_context.add_validation_attempt(validation, [])
+        while validation.status == "fail" and correction_context.should_continue_attempts():
             code_out = await run_code_correction_validation_only(
-                code_out, validation, plan, selection, docs
+                code_out, validation, plan, selection, docs, correction_context
             )
             validation, _ = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=False
             )
-            validation_attempts += 1
+            correction_context.add_validation_attempt(validation, [])
 
         if validation.status == "pass":
             _, erc_result = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=True
             )
-            erc_attempts = 0
+            if erc_result is not None:
+                correction_context.add_erc_attempt(erc_result, [])
             while (
                 erc_result
                 and not erc_result.get("erc_passed", False)
-                and erc_attempts < 3
+                and correction_context.should_continue_attempts()
             ):
                 code_out = await run_code_correction_erc_only(
-                    code_out, validation, plan, selection, docs, erc_result
+                    code_out, validation, plan, selection, docs, erc_result, correction_context
                 )
                 _, erc_result = await run_code_validation(
                     code_out, selection, docs, run_erc_flag=True
                 )
-                erc_attempts += 1
+                if erc_result is not None:
+                    correction_context.add_erc_attempt(erc_result, [])
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -364,33 +371,36 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         code_out, selection, docs, run_erc_flag=False
     )
 
-    validation_attempts = 0
-    while validation.status == "fail" and validation_attempts < 3:
+    correction_context = CorrectionContext()
+    correction_context.add_validation_attempt(validation, [])
+    while validation.status == "fail" and correction_context.should_continue_attempts():
         code_out = await run_code_correction_validation_only(
-            code_out, validation, final_plan, selection, docs
+            code_out, validation, final_plan, selection, docs, correction_context
         )
         validation, _ = await run_code_validation(
             code_out, selection, docs, run_erc_flag=False
         )
-        validation_attempts += 1
+        correction_context.add_validation_attempt(validation, [])
 
     if validation.status == "pass":
         _, erc_result = await run_code_validation(
             code_out, selection, docs, run_erc_flag=True
         )
-        erc_attempts = 0
+        if erc_result is not None:
+            correction_context.add_erc_attempt(erc_result, [])
         while (
             erc_result
             and not erc_result.get("erc_passed", False)
-            and erc_attempts < 3
+            and correction_context.should_continue_attempts()
         ):
             code_out = await run_code_correction_erc_only(
-                code_out, validation, final_plan, selection, docs, erc_result
+                code_out, validation, final_plan, selection, docs, erc_result, correction_context
             )
             _, erc_result = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=True
             )
-            erc_attempts += 1
+            if erc_result is not None:
+                correction_context.add_erc_attempt(erc_result, [])
     return code_out
 
 

@@ -18,6 +18,7 @@ from .models import (
     CodeGenerationOutput,
     CodeValidationOutput,
 )
+from .correction_context import CorrectionContext
 
 
 def sanitize_text(text: str, max_length: int = 10000) -> str:
@@ -562,6 +563,7 @@ def format_code_correction_input(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None = None,
+    context: CorrectionContext | None = None,
 ) -> str:
     """Format input for the Code Correction agent.
 
@@ -615,6 +617,11 @@ def format_code_correction_input(
         parts.append(docs_text)
         parts.append("")
 
+    if context is not None:
+        parts.append("PREVIOUS CONTEXT:")
+        parts.append(context.get_context_for_next_attempt())
+        parts.append("")
+
     parts.append(
         "Apply iterative corrections until validation passes and ERC shows zero errors."
     )
@@ -627,6 +634,7 @@ def format_code_correction_validation_input(
     plan: PlanOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
+    context: CorrectionContext | None = None,
 ) -> str:
     """Format input for validation-only code correction."""
 
@@ -637,6 +645,7 @@ def format_code_correction_validation_input(
         selection,
         docs,
         None,
+        context,
     )
     return text + "\nFocus only on fixing validation issues. Ignore ERC results."
 
@@ -648,6 +657,7 @@ def format_code_correction_erc_input(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None,
+    context: CorrectionContext | None = None,
 ) -> str:
     """Format input for ERC-only code correction."""
 
@@ -658,6 +668,7 @@ def format_code_correction_erc_input(
         selection,
         docs,
         erc_result,
+        context,
     )
     return (
         text
