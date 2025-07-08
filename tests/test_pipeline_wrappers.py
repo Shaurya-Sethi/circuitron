@@ -52,7 +52,13 @@ async def run_wrappers() -> None:
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes=""))
-        await pl.run_code_correction(CodeGenerationOutput(complete_skidl_code="code"), CodeValidationOutput(status="fail", summary="bad"))
+        await pl.run_code_correction(
+            CodeGenerationOutput(complete_skidl_code="code"),
+            CodeValidationOutput(status="fail", summary="bad"),
+            PlanOutput(),
+            PartSelectionOutput(),
+            DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+        )
 
 
 def test_wrapper_functions() -> None:

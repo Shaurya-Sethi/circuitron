@@ -233,7 +233,15 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
 
     with patch("circuitron.pipeline.write_temp_skidl_script") as write_mock:
         with patch("circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction_out))):
-            asyncio.run(pl.run_code_correction(code_out, validation))
+            asyncio.run(
+                pl.run_code_correction(
+                    code_out,
+                    validation,
+                    PlanOutput(),
+                    PartSelectionOutput(),
+                    DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+                )
+            )
         write_mock.assert_not_called()
 
 

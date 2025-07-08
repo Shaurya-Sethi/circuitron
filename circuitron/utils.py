@@ -368,6 +368,95 @@ def pretty_print_documentation(docs: DocumentationOutput) -> None:
     print(f"\nImplementation Readiness: {docs.implementation_readiness}")
 
 
+def format_plan_summary(plan: PlanOutput | None) -> str:
+    """Return a concise summary of the design plan.
+
+    Args:
+        plan: The :class:`PlanOutput` with design details or ``None``.
+
+    Returns:
+        Summary text describing design rationale, functional blocks and notes.
+    """
+
+    if plan is None:
+        return ""
+
+    lines: list[str] = []
+    if plan.design_rationale:
+        lines.append("Design Rationale:")
+        lines.extend(f"- {item}" for item in plan.design_rationale)
+    if plan.functional_blocks:
+        lines.append("Functional Blocks:")
+        lines.extend(f"- {blk}" for blk in plan.functional_blocks)
+    if plan.implementation_actions:
+        lines.append("Implementation Steps:")
+        lines.extend(
+            f"{idx + 1}. {step}"
+            for idx, step in enumerate(plan.implementation_actions)
+        )
+    if plan.implementation_notes:
+        lines.append("Implementation Notes:")
+        lines.extend(f"- {note}" for note in plan.implementation_notes)
+    if plan.design_equations:
+        lines.append("Design Equations:")
+        lines.extend(f"- {eq}" for eq in plan.design_equations)
+    return "\n".join(lines)
+
+
+def format_selection_summary(selection: PartSelectionOutput | None) -> str:
+    """Return a summary of selected components.
+
+    Args:
+        selection: The :class:`PartSelectionOutput` with chosen parts.
+
+    Returns:
+        Text describing component choices and pin mappings.
+    """
+
+    if selection is None:
+        return ""
+
+    lines: list[str] = []
+    for part in selection.selections:
+        headline = f"- {part.name} ({part.library})"
+        if part.footprint:
+            headline += f" -> {part.footprint}"
+        lines.append(headline)
+        for pin in part.pin_details:
+            lines.append(
+                f"  pin {pin.number}: {pin.name} / {pin.function}"
+            )
+    if selection.summary:
+        lines.append("Selection Rationale:")
+        lines.extend(f"- {s}" for s in selection.summary)
+    return "\n".join(lines)
+
+
+def format_docs_summary(docs: DocumentationOutput | None) -> str:
+    """Return a concise summary of documentation research.
+
+    Args:
+        docs: The :class:`DocumentationOutput` or ``None``.
+
+    Returns:
+        Short text with research queries and readiness notes.
+    """
+
+    if docs is None:
+        return ""
+
+    lines: list[str] = []
+    if docs.research_queries:
+        lines.append("Research Queries:")
+        lines.extend(f"- {q}" for q in docs.research_queries)
+    if docs.documentation_findings:
+        lines.append("Key Guidance:")
+        for finding in docs.documentation_findings[:5]:
+            lines.append(f"- {finding}")
+    lines.append(f"Implementation Readiness: {docs.implementation_readiness}")
+    return "\n".join(lines)
+
+
 def format_code_generation_input(
     plan: PlanOutput, selection: PartSelectionOutput, docs: DocumentationOutput
 ) -> str:
@@ -469,9 +558,24 @@ def pretty_print_validation(result: CodeValidationOutput) -> None:
 def format_code_correction_input(
     script_content: str,
     validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
     erc_result: dict[str, object] | None = None,
 ) -> str:
-    """Format input for the Code Correction agent."""
+    """Format input for the Code Correction agent.
+
+    Args:
+        script_content: The SKiDL script to fix.
+        validation: Validation output describing issues.
+        plan: The original design plan.
+        selection: Component selections with pin mappings.
+        docs: Documentation research results.
+        erc_result: Optional ERC output from KiCad.
+
+    Returns:
+        A formatted string providing full context for code correction.
+    """
 
     parts = [
         "CODE CORRECTION CONTEXT",
@@ -491,6 +595,26 @@ def format_code_correction_input(
         parts.append("ERC Result:")
         parts.append(str(erc_result))
         parts.append("")
+    parts.append("")
+
+    plan_text = format_plan_summary(plan)
+    if plan_text:
+        parts.append("DESIGN CONTEXT:")
+        parts.append(plan_text)
+        parts.append("")
+
+    selection_text = format_selection_summary(selection)
+    if selection_text:
+        parts.append("COMPONENT CONTEXT:")
+        parts.append(selection_text)
+        parts.append("")
+
+    docs_text = format_docs_summary(docs)
+    if docs_text:
+        parts.append("DOCUMENTATION CONTEXT:")
+        parts.append(docs_text)
+        parts.append("")
+
     parts.append(
         "Apply iterative corrections until validation passes and ERC shows zero errors."
     )
