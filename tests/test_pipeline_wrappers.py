@@ -62,6 +62,7 @@ async def run_wrappers() -> None:
             PlanOutput(),
             PartSelectionOutput(),
             DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+            pl.CorrectionContext(),
         )
         run_mock.reset_mock()
 
@@ -75,6 +76,7 @@ async def run_wrappers() -> None:
             PartSelectionOutput(),
             DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
             {},
+            pl.CorrectionContext(),
         )
 
 
