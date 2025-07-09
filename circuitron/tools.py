@@ -458,10 +458,9 @@ async def get_kg_usage_guide(task_type: str) -> str:
             '# Returns: Method details within specific class or across all classes'
         ),
         "function": (
-            "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<func>' "
-            'RETURN f.name, f.params_list, f.return_type")\n'
-            "# Example: query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = 'generate_netlist' RETURN f\")\n"
-            "# Returns: Function signatures and parameter details"
+            'query_knowledge_graph("function <function_name>")\n'
+            '# Example: query_knowledge_graph("function generate_netlist")\n'
+            '# Returns: Standalone function details including signatures and parameter details (limited to 20 results)'
         ),
         "import": (
             "query_knowledge_graph(\"query MATCH (f:Function) WHERE f.name = '<name>' "
@@ -487,7 +486,9 @@ async def get_kg_usage_guide(task_type: str) -> str:
             "\n# 5. Search for specific methods:\n"
             'query_knowledge_graph("method connect Part")\n'
             'query_knowledge_graph("method generate_netlist")\n'
-            "\n# 6. Use custom queries for complex investigations:\n"
+            "\n# 6. Search for standalone functions:\n"
+            'query_knowledge_graph("function generate_netlist")\n'
+            "\n# 7. Use custom queries for complex investigations:\n"
             'query_knowledge_graph("query MATCH (c:Class)-[:HAS_METHOD]->(m:Method) WHERE m.name = \'drive\' RETURN c.name, m.name")'
         ),
         "schema": (
@@ -525,7 +526,8 @@ async def get_kg_usage_guide(task_type: str) -> str:
             'query_knowledge_graph("classes skidl")  # List classes in SKiDL\n'
             'query_knowledge_graph("class Part")  # Investigate Part class\n'
             'query_knowledge_graph("method connect Part")  # Find connect method in Part\n'
-            'query_knowledge_graph("method generate_netlist")  # Find generate_netlist function\n'
+            'query_knowledge_graph("method generate_netlist")  # Find generate_netlist method\n'
+            'query_knowledge_graph("function generate_netlist")  # Find generate_netlist function\n'
             'query_knowledge_graph("query MATCH (f:Function) WHERE f.name = \'generate_netlist\' RETURN f")  # Custom query for functions'
         ),
     }
