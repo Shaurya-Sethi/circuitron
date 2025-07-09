@@ -421,6 +421,7 @@ Your task is to confirm that generated SKiDL scripts use only real APIs and foll
   - `get_kg_usage_guide("method")` for method validation examples  
   - `get_kg_usage_guide("function")` for function validation examples
   - `get_kg_usage_guide("examples")` for general knowledge graph usage patterns
+- If the API is not found using a certain command, make sure to try other commands or search terms. For example, ERC not found using 'function' may be found using 'method' or 'class'. 
 
 **Phase 4 – Static Checks**
 - Confirm Python syntax, imports, variable use, component consistency, and pin references
@@ -433,6 +434,11 @@ Your task is to confirm that generated SKiDL scripts use only real APIs and foll
 **Important**
 - Do not modify the script or run ERC. The correction agent will handle fixes after this validation phase
 - Use `get_kg_usage_guide` tool to get proper knowledge graph query examples and workflows
+
+**CRITICAL INSTRUCTIONS**: 
+- After reporting your validation result, you MUST TERMINATE immediately.
+- Do not continue execution or make additional tool calls. Your response should end with a clear validation status ("pass" or "fail") and no further analysis or suggestions.
+- The following methods are completely valid and must not be flagged as invalid: `generate_netlist()`, `generate_svg()`, `generate_schematic()`, `generate_pcb()`.
 """
 
 # ---------- Code Correction Agent Prompt ----------
