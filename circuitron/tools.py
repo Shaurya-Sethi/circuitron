@@ -16,7 +16,11 @@ import json
 from .models import CalcResult
 from .config import settings
 from .docker_session import DockerSession
-from .utils import write_temp_skidl_script, prepare_output_dir
+from .utils import (
+    write_temp_skidl_script,
+    prepare_output_dir,
+    convert_windows_path_for_docker,
+)
 
 __all__ = [
     "MCPServerSse",
@@ -376,10 +380,15 @@ async def execute_final_script(script_content: str, output_dir: str) -> str:
     """Execute a SKiDL script fully and return generated file paths as JSON."""
 
     output_dir = prepare_output_dir(output_dir)
+    try:
+        docker_output_dir = convert_windows_path_for_docker(output_dir)
+    except ValueError as exc:
+        return json.dumps({"success": False, "stderr": str(exc), "files": []})
+
     session = DockerSession(
         settings.kicad_image,
         f"circuitron-final-{os.getpid()}",
-        volumes={output_dir: output_dir},
+        volumes={output_dir: docker_output_dir},
     )
     script_path = write_temp_skidl_script(script_content)
     try:
