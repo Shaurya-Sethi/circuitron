@@ -1,5 +1,4 @@
 import argparse
-import time
 from typing import cast
 
 from rich.color import Color
