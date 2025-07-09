@@ -35,6 +35,7 @@ from circuitron.utils import (
     collect_user_feedback,
     pretty_print_validation,
     write_temp_skidl_script,
+    convert_windows_path_for_docker,
 )
 
 
@@ -249,3 +250,11 @@ def test_prepare_erc_only_script() -> None:
     lines = [line.strip() for line in result.splitlines() if not line.strip().startswith("#")]
     assert "generate_netlist()" not in lines
     assert "ERC()" in lines
+
+
+def test_convert_windows_path_for_docker() -> None:
+    path = convert_windows_path_for_docker("C:\\Users\\bob")
+    assert path == "/mnt/c/Users/bob"
+    assert convert_windows_path_for_docker("/mnt/c/Users") == "/mnt/c/Users"
+    with pytest.raises(ValueError):
+        convert_windows_path_for_docker("not/a/windows/path")

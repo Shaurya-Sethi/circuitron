@@ -248,3 +248,34 @@ def test_execute_final_script() -> None:
         assert data["success"] is True
         sess_cls.assert_called_once()
         sess.exec_full_script.assert_called_once()
+
+
+def test_execute_final_script_windows_path() -> None:
+    cfg.setup_environment()
+    from circuitron.tools import execute_final_script_tool
+    from circuitron.config import settings
+
+    with (
+        patch("circuitron.tools.DockerSession") as sess_cls,
+        patch("circuitron.tools.prepare_output_dir", return_value="C:\\out"),
+        patch("circuitron.tools.convert_windows_path_for_docker", return_value="/mnt/c/out"),
+        patch("circuitron.tools.write_temp_skidl_script", return_value="C:\\s.py"),
+        patch("circuitron.tools.os.listdir", return_value=["file.net"]),
+    ):
+        sess = sess_cls.return_value
+        sess.exec_full_script.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="ok", stderr=""
+        )
+        ctx = ToolContext(context=None, tool_call_id="tfw")
+        args = json.dumps({"script_content": "code", "output_dir": "C:\\out"})
+        result: str = asyncio.run(
+            cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
+        )
+        data = json.loads(result)
+        assert data["success"] is True
+        sess_cls.assert_called_once_with(
+            settings.kicad_image,
+            f"circuitron-final-{os.getpid()}",
+            volumes={"C:\\out": "/mnt/c/out"},
+        )
+        sess.exec_full_script.assert_called_once()
