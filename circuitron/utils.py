@@ -30,6 +30,39 @@ def sanitize_text(text: str, max_length: int = 10000) -> str:
     return cleaned.strip()[:max_length]
 
 
+def convert_windows_path_for_docker(windows_path: str) -> str:
+    """Return ``windows_path`` converted for Docker volume mounts.
+
+    On Windows hosts, Docker expects Unix-style paths like ``/mnt/c/...``
+    when mounting volumes into Linux containers. Paths that already look
+    like Unix paths are returned unchanged.
+
+    Args:
+        windows_path: Original path using Windows notation.
+
+    Returns:
+        Unix-style path compatible with Docker volume mounts.
+
+    Raises:
+        ValueError: If ``windows_path`` does not contain a drive letter.
+
+    Example:
+        >>> convert_windows_path_for_docker('C:\\Temp')
+        '/mnt/c/Temp'
+    """
+
+    if windows_path.startswith("/"):
+        return windows_path
+
+    match = re.match(r"^(?P<drive>[A-Za-z]):[\\/]*(?P<rest>.*)$", windows_path)
+    if not match:
+        raise ValueError(f"Invalid Windows path: {windows_path!r}")
+
+    drive = match.group("drive").lower()
+    rest = match.group("rest").replace("\\", "/")
+    return f"/mnt/{drive}/{rest}"
+
+
 def extract_reasoning_summary(run_result: RunResult) -> str:
     """Return the reasoning summary from a run result.
 

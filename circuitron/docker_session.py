@@ -7,6 +7,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import threading
+from .utils import convert_windows_path_for_docker
 
 
 def cleanup_stale_containers(prefix: str) -> None:
@@ -127,7 +128,11 @@ class DockerSession:
                 self.container_name,
             ]
             for host, container in self.volumes.items():
-                cmd.extend(["-v", f"{host}:{container}"])
+                try:
+                    cont_path = convert_windows_path_for_docker(container)
+                except ValueError:
+                    cont_path = container
+                cmd.extend(["-v", f"{host}:{cont_path}"])
             cmd += [
                 self.image,
                 "sleep",
