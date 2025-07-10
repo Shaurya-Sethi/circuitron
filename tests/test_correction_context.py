@@ -22,3 +22,13 @@ def test_context_formatting() -> None:
     ctx.add_validation_attempt(val, [])
     text = ctx.get_context_for_next_attempt()
     assert "validation" in text and "err" in text
+
+
+def test_erc_summary_and_issue_tracking() -> None:
+    ctx = CorrectionContext()
+    erc = {"erc_passed": False, "stdout": "ERC WARNING: w\nERC ERROR: e"}
+    ctx.add_erc_attempt(erc, ["fix1"])
+    summary = ctx.get_erc_summary_for_agent()
+    assert "Attempt 1" in summary
+    assert "WARNING: w" in summary
+    assert ctx.erc_issue_types["WARNING"] == 1
