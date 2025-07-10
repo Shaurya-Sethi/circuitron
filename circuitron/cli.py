@@ -5,6 +5,7 @@ from .config import setup_environment
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
 from .mcp_manager import mcp_manager
+from .network import check_internet_connection
 
 
 async def run_circuitron(
@@ -46,6 +47,9 @@ def main() -> None:
 
     args = parse_args()
     setup_environment(dev=args.dev)
+
+    if not check_internet_connection():
+        return
 
     if not verify_containers():
         return

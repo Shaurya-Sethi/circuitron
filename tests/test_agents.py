@@ -139,7 +139,20 @@ def test_tool_choice_required_for_full_model() -> None:
     cfg.settings.documentation_model = "gpt-4o"
     cfg.settings.code_validation_model = "gpt-4o"
     cfg.settings.code_generation_model = "gpt-4o"
+    cfg.settings.code_correction_model = "gpt-4o"
     mod = importlib.import_module("circuitron.agents")
     assert mod.documentation.model_settings.tool_choice == "required"
     assert mod.code_validator.model_settings.tool_choice == "required"
     assert mod.code_corrector.model_settings.tool_choice == "required"
+
+
+def test_planner_has_pcb_guardrail() -> None:
+    import sys
+
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    mod = importlib.import_module("circuitron.agents")
+    guard_names = [g.guardrail_function.__name__ for g in mod.planner.input_guardrails]
+    assert "pcb_query_guardrail" in guard_names
