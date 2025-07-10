@@ -279,3 +279,41 @@ def test_execute_final_script_windows_path() -> None:
             volumes={"C:\\out": "/mnt/c/out"},
         )
         sess.exec_full_script.assert_called_once()
+
+
+def test_prepare_runtime_check_script() -> None:
+    from circuitron.utils import prepare_runtime_check_script
+
+    script = "from skidl import *\ngenerate_netlist()\nERC()\n"
+    result = prepare_runtime_check_script(script)
+    assert "# generate_netlist()" in result
+    assert "# ERC()" in result
+
+
+def test_run_runtime_check_success() -> None:
+    cfg.setup_environment()
+    from circuitron.tools import run_runtime_check
+
+    output = '{"success": true, "error_details": "", "stdout": "ok", "stderr": ""}'
+    completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=output, stderr="")
+    with patch(
+        "circuitron.tools.kicad_session.exec_erc_with_env", return_value=completed
+    ) as run_mock:
+        result = asyncio.run(run_runtime_check("/tmp/x.py"))
+        data = json.loads(result)
+        assert data["success"] is True
+        run_mock.assert_called_once()
+
+
+def test_run_runtime_check_failure() -> None:
+    cfg.setup_environment()
+    from circuitron.tools import run_runtime_check
+
+    output = '{"success": false, "error_details": "boom", "stdout": "", "stderr": "err"}'
+    completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=output, stderr="")
+    with patch(
+        "circuitron.tools.kicad_session.exec_erc_with_env", return_value=completed
+    ):
+        result = asyncio.run(run_runtime_check("/tmp/x.py"))
+        data = json.loads(result)
+        assert data["success"] is False

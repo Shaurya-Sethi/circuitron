@@ -348,8 +348,10 @@ async def run_runtime_check(script_path: str) -> str:
 
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                runpy.run_path('/tmp/script.py', run_name='__main__')
-                if 'default_circuit' in globals():
+                script_globals = runpy.run_path('/tmp/script.py', run_name='__main__')
+                if 'default_circuit' in script_globals or any(
+                    'Circuit' in str(type(v)) for v in script_globals.values()
+                ):
                     print('Circuit object created successfully')
         except Exception as exc:
             success = False
