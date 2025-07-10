@@ -22,9 +22,9 @@ class Settings:
     documentation_model: str = field(default="o4-mini")
     code_generation_model: str = field(default="gpt-4.1")
     code_validation_model: str = field(default="o4-mini")
-    code_correction_model: str = field(default="gpt-4.1")  # Use a model that supports tool_choice="required"
+    code_correction_model: str = field(default="o4-mini")  # Use a model that supports tool_choice="required"
     erc_handling_model: str = field(default="o4-mini")
-    runtime_correction_model: str = field(default="gpt-4.1")
+    runtime_correction_model: str = field(default="o4-mini")
     calculation_image: str = field(
         default_factory=lambda: os.getenv("CALC_IMAGE", "python:3.12-slim")
     )
