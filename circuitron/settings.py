@@ -20,7 +20,7 @@ class Settings:
     part_finder_model: str = field(default="o4-mini")
     part_selection_model: str = field(default="o4-mini")  
     documentation_model: str = field(default="o4-mini")
-    code_generation_model: str = field(default="o4-mini")
+    code_generation_model: str = field(default="gpt-4.1")
     code_validation_model: str = field(default="o4-mini")
     code_correction_model: str = field(default="gpt-4.1")  # Use a model that supports tool_choice="required"
     erc_handling_model: str = field(default="o4-mini")
