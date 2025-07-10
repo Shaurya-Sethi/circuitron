@@ -1,13 +1,17 @@
-"""
-Agent definitions and configurations for the Circuitron system.
-Contains all specialized agents used in the PCB design pipeline.
+"""Agent definitions and configurations for the Circuitron system.
+
+This module contains all specialized agents used in the PCB design
+pipeline. The agents operate in a deterministic sequential flow where
+each agent performs a specific task and passes its output to the next
+agent via explicit orchestration in the pipeline module.
+
+The system uses a single MCP server connection shared across all agents
+that require documentation and validation capabilities.
 """
 
-from agents import Agent, RunContextWrapper, handoff
+from agents import Agent
 from agents.tool import Tool
-from typing import Callable
 from agents.model_settings import ModelSettings
-import logging
 
 from .config import settings
 from .prompts import (
@@ -61,7 +65,6 @@ def create_planning_agent() -> Agent:
         output_type=PlanOutput,
         tools=tools,
         model_settings=model_settings,
-        handoff_description="Generate initial design plan",
     )
 
 
@@ -78,7 +81,6 @@ def create_plan_edit_agent() -> Agent:
         output_type=PlanEditorOutput,
         tools=tools,
         model_settings=model_settings,
-        handoff_description="Review user feedback and adjust the plan",
     )
 
 
@@ -95,7 +97,6 @@ def create_partfinder_agent() -> Agent:
         output_type=PartFinderOutput,
         tools=tools,
         model_settings=model_settings,
-        handoff_description="Search KiCad libraries for required parts",
     )
 
 
@@ -112,7 +113,6 @@ def create_partselection_agent() -> Agent:
         output_type=PartSelectionOutput,
         tools=tools,
         model_settings=model_settings,
-        handoff_description="Select optimal components and extract pin info",
     )
 
 
@@ -127,9 +127,8 @@ def create_documentation_agent() -> Agent:
         instructions=DOC_AGENT_PROMPT,
         model=settings.documentation_model,
         output_type=DocumentationOutput,
-        mcp_servers=[mcp_manager.get_doc_server()],
+        mcp_servers=[mcp_manager.get_server()],
         model_settings=model_settings,
-        handoff_description="Gather SKiDL documentation",
     )
 
 
@@ -144,9 +143,8 @@ def create_code_generation_agent() -> Agent:
         instructions=CODE_GENERATION_PROMPT,
         model=settings.code_generation_model,
         output_type=CodeGenerationOutput,
-        mcp_servers=[mcp_manager.get_doc_server()],
+        mcp_servers=[mcp_manager.get_server()],
         model_settings=model_settings,
-        handoff_description="Generate production-ready SKiDL code",
     )
 
 
@@ -164,9 +162,8 @@ def create_code_validation_agent() -> Agent:
         model=settings.code_validation_model,
         output_type=CodeValidationOutput,
         tools=tools,
-        mcp_servers=[mcp_manager.get_validation_server()],
+        mcp_servers=[mcp_manager.get_server()],
         model_settings=model_settings,
-        handoff_description="Validate SKiDL code",
     )
 
 
@@ -184,9 +181,8 @@ def create_code_correction_agent() -> Agent:
         model=settings.code_validation_model,
         output_type=CodeCorrectionOutput,
         tools=tools,
-        mcp_servers=[mcp_manager.get_doc_server()],
+        mcp_servers=[mcp_manager.get_server()],
         model_settings=model_settings,
-        handoff_description="Iteratively fix SKiDL code",
     )
 
 
@@ -204,19 +200,9 @@ def create_erc_handling_agent() -> Agent:
         model=settings.erc_handling_model,
         output_type=ERCHandlingOutput,
         tools=tools,
-        mcp_servers=[mcp_manager.get_doc_server()],
+        mcp_servers=[mcp_manager.get_server()],
         model_settings=model_settings,
-        handoff_description="Resolve ERC violations",
     )
-
-
-def _log_handoff_to(target: str) -> Callable[[RunContextWrapper[None]], None]:
-    """Return a callback that logs when a handoff occurs."""
-
-    def _callback(ctx: RunContextWrapper[None]) -> None:
-        logging.info("Handoff to %s", target)
-
-    return _callback
 
 
 # Create agent instances
@@ -229,38 +215,3 @@ code_generator = create_code_generation_agent()
 code_validator = create_code_validation_agent()
 code_corrector = create_code_correction_agent()
 erc_handler = create_erc_handling_agent()
-
-# Configure handoffs between agents
-planner.handoffs = [
-    handoff(plan_editor, on_handoff=_log_handoff_to("PlanEditor"), is_enabled=False)
-]
-plan_editor.handoffs = [
-    handoff(planner, on_handoff=_log_handoff_to("Planner"), is_enabled=False),
-    handoff(part_finder, on_handoff=_log_handoff_to("PartFinder"), is_enabled=False),
-]
-part_finder.handoffs = [
-    handoff(part_selector, on_handoff=_log_handoff_to("PartSelector"), is_enabled=False)
-]
-part_selector.handoffs = [
-    handoff(
-        documentation, on_handoff=_log_handoff_to("Documentation"), is_enabled=False
-    )
-]
-documentation.handoffs = [
-    handoff(
-        code_generator, on_handoff=_log_handoff_to("CodeGeneration"), is_enabled=False
-    )
-]
-code_generator.handoffs = [
-    handoff(
-        code_validator, on_handoff=_log_handoff_to("CodeValidation"), is_enabled=False
-    )
-]
-code_validator.handoffs = [
-    handoff(
-        code_corrector, on_handoff=_log_handoff_to("CodeCorrection"), is_enabled=False
-    )
-]
-code_corrector.handoffs = [
-    handoff(erc_handler, on_handoff=_log_handoff_to("ERCHandler"), is_enabled=False)
-]
