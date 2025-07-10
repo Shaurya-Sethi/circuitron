@@ -18,7 +18,7 @@ def test_search_kicad_libraries() -> None:
         args=[], returncode=0, stdout=fake_output, stderr=""
     )
     with patch(
-        "circuitron.tools.kicad_session.exec_python", return_value=completed
+        "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t1")
         args = json.dumps({"query": "opamp lm324"})
@@ -38,7 +38,7 @@ def test_search_kicad_libraries_timeout() -> None:
     from circuitron.tools import search_kicad_libraries
 
     with patch(
-        "circuitron.tools.kicad_session.exec_python",
+        "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t2")
@@ -61,7 +61,7 @@ def test_search_kicad_footprints() -> None:
         args=[], returncode=0, stdout=fake_output, stderr=""
     )
     with patch(
-        "circuitron.tools.kicad_session.exec_python", return_value=completed
+        "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t3")
         args = json.dumps({"query": "SOIC-8"})
@@ -81,7 +81,7 @@ def test_search_kicad_footprints_timeout() -> None:
     from circuitron.tools import search_kicad_footprints
 
     with patch(
-        "circuitron.tools.kicad_session.exec_python",
+        "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t4")
@@ -104,7 +104,7 @@ def test_extract_pin_details() -> None:
         args=[], returncode=0, stdout=fake_output, stderr=""
     )
     with patch(
-        "circuitron.tools.kicad_session.exec_python", return_value=completed
+        "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t5")
         args = json.dumps({"library": "linear", "part_name": "lm386"})
@@ -123,7 +123,7 @@ def test_extract_pin_details_timeout() -> None:
     from circuitron.tools import extract_pin_details
 
     with patch(
-        "circuitron.tools.kicad_session.exec_python",
+        "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
         ctx = ToolContext(context=None, tool_call_id="t6")
@@ -158,7 +158,7 @@ def test_run_erc_success() -> None:
         args=[], returncode=0, stdout="{}", stderr=""
     )
     with patch(
-        "circuitron.tools.kicad_session.exec_erc", return_value=completed
+        "circuitron.tools.kicad_session.exec_erc_with_env", return_value=completed
     ) as run_mock:
         ctx = ToolContext(context=None, tool_call_id="t7")
         args = json.dumps({"script_path": "/tmp/a.py"})
@@ -174,7 +174,7 @@ def test_run_erc_timeout() -> None:
     from circuitron.tools import run_erc_tool
 
     with patch(
-        "circuitron.tools.kicad_session.exec_erc",
+        "circuitron.tools.kicad_session.exec_erc_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=60),
     ):
         ctx = ToolContext(context=None, tool_call_id="t8")
@@ -216,7 +216,7 @@ def test_kicad_session_start_once() -> None:
             )
         )
         assert start_mock.call_count == 2
-        assert _run_mock.call_count == 2
+        assert _run_mock.call_count == 6
     kicad_session.started = False
 
 
@@ -236,7 +236,7 @@ def test_execute_final_script() -> None:
         patch("circuitron.tools.os.listdir", return_value=["file.net"]),
     ):
         sess = sess_cls.return_value
-        sess.exec_full_script.return_value = subprocess.CompletedProcess(
+        sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="ok", stderr=""
         )
         ctx = ToolContext(context=None, tool_call_id="tf")
@@ -247,7 +247,7 @@ def test_execute_final_script() -> None:
         data = json.loads(result)
         assert data["success"] is True
         sess_cls.assert_called_once()
-        sess.exec_full_script.assert_called_once()
+        sess.exec_full_script_with_env.assert_called_once()
 
 
 def test_execute_final_script_windows_path() -> None:
@@ -263,7 +263,7 @@ def test_execute_final_script_windows_path() -> None:
         patch("circuitron.tools.os.listdir", return_value=["file.net"]),
     ):
         sess = sess_cls.return_value
-        sess.exec_full_script.return_value = subprocess.CompletedProcess(
+        sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="ok", stderr=""
         )
         ctx = ToolContext(context=None, tool_call_id="tfw")
@@ -278,7 +278,7 @@ def test_execute_final_script_windows_path() -> None:
             f"circuitron-final-{os.getpid()}",
             volumes={"C:\\out": "/mnt/c/out"},
         )
-        sess.exec_full_script.assert_called_once()
+        sess.exec_full_script_with_env.assert_called_once()
 
 
 def test_prepare_runtime_check_script() -> None:
