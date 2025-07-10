@@ -5,10 +5,24 @@ import subprocess
 import atexit
 import os
 import tempfile
+import platform
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import threading
 from .utils import convert_windows_path_for_docker
+
+
+def ensure_windows_tmp_directory() -> None:
+    """Ensure C:\tmp exists on Windows to prevent Docker Desktop issues."""
+    if platform.system() == "Windows":
+        tmp_dir = r"C:\tmp"
+        if not os.path.exists(tmp_dir):
+            try:
+                os.makedirs(tmp_dir, exist_ok=True)
+                logging.info("Created Windows tmp directory: %s", tmp_dir)
+            except OSError as e:
+                logging.warning("Could not create Windows tmp directory %s: %s", tmp_dir, e)
 
 
 def cleanup_stale_containers(prefix: str) -> None:
@@ -56,6 +70,8 @@ class DockerSession:
         else:
             self.base_prefix = self.container_name
         atexit.register(self.stop)
+        # Ensure Windows tmp directory exists to prevent Docker Desktop issues
+        ensure_windows_tmp_directory()
 
     def _run(self, cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.run(cmd, capture_output=True, text=True, **kwargs)
@@ -180,13 +196,13 @@ class DockerSession:
         
         try:
             # Copy the script to the container
-            cp_cmd = ["docker", "cp", tmp_file_path, f"{self.container_name}:/tmp/temp_script.py"]
-            self._run(cp_cmd, check=True)
+            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:/tmp/temp_script.py")
             
             # Set up KiCad environment variables and execute the script
             env_setup = """
 export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
 export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+export KISYSMOD=/usr/share/kicad/modules
 """
             
             cmd = [
@@ -225,8 +241,7 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
     ) -> subprocess.CompletedProcess[str]:
         """Copy a script and run ERC inside the container."""
         self.start()
-        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
-        self._run(cp_cmd, check=True)
+        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:/tmp/script.py")
         cmd = ["docker", "exec", "-i", self.container_name, "python3", "-c", wrapper]
         try:
             return self._run(cmd, timeout=timeout, check=True)
@@ -253,8 +268,7 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
     ) -> subprocess.CompletedProcess[str]:
         """Execute a full SKiDL script inside the container."""
         self.start()
-        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
-        self._run(cp_cmd, check=True)
+        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:/tmp/script.py")
         cmd = [
             "docker",
             "exec",
@@ -288,13 +302,13 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
     ) -> subprocess.CompletedProcess[str]:
         """Execute a full SKiDL script inside the container with KiCad environment variables."""
         self.start()
-        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
-        self._run(cp_cmd, check=True)
+        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:/tmp/script.py")
 
         # Set up KiCad environment variables for symbol library access
         env_setup = """
 export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
 export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+export KISYSMOD=/usr/share/kicad/modules
 """
 
         cmd = [
@@ -331,8 +345,7 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
     ) -> subprocess.CompletedProcess[str]:
         """Copy a script and run ERC inside the container with KiCad environment variables."""
         self.start()
-        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
-        self._run(cp_cmd, check=True)
+        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:/tmp/script.py")
 
         # Write wrapper script to a temporary file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp_file:
@@ -341,13 +354,13 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
         
         try:
             # Copy the wrapper script to the container
-            cp_wrapper_cmd = ["docker", "cp", tmp_file_path, f"{self.container_name}:/tmp/wrapper.py"]
-            self._run(cp_wrapper_cmd, check=True)
+            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:/tmp/wrapper.py")
             
             # Set up KiCad environment variables and execute the wrapper
             env_setup = """
 export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
 export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+export KISYSMOD=/usr/share/kicad/modules
 """
             
             cmd = [
@@ -386,7 +399,11 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
                 )
 
     def copy_generated_files(self, container_pattern: str, host_dir: str) -> List[str]:
-        """Copy files matching ``container_pattern`` to ``host_dir``."""
+        """Copy files matching ``container_pattern`` to ``host_dir``.
+        
+        Returns:
+            List of successfully copied file paths (host paths).
+        """
         self.start()
         ls_cmd = [
             "docker",
@@ -398,17 +415,32 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
         ]
         proc = self._run(ls_cmd, check=True)
         files: List[str] = []
-        for line in proc.stdout.splitlines():
-            src = line.strip()
-            if not src:
-                continue
+        copy_failures: List[str] = []
+        
+        available_files = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+        
+        if not available_files:
+            logging.info("No files found matching pattern: %s", container_pattern)
+            return files
+        
+        logging.info("Found %d file(s) to copy: %s", len(available_files), available_files)
+        
+        for src in available_files:
             dest = os.path.join(host_dir, os.path.basename(src))
-            cp_cmd = ["docker", "cp", f"{self.container_name}:{src}", dest]
             try:
-                self._run(cp_cmd, check=True)
+                self._run_docker_cp_with_retry(f"{self.container_name}:{src}", dest)
                 files.append(dest)
-            except subprocess.CalledProcessError:
-                logging.error("Failed to copy %s from container", src)
+                logging.info("Successfully copied: %s -> %s", src, dest)
+            except subprocess.CalledProcessError as e:
+                error_msg = f"Failed to copy {src} from container: {e}"
+                logging.error(error_msg)
+                copy_failures.append(error_msg)
+        
+        if copy_failures:
+            logging.warning("File copy summary: %d succeeded, %d failed", len(files), len(copy_failures))
+        else:
+            logging.info("Successfully copied all %d file(s)", len(files))
+            
         return files
 
     def stop(self) -> None:
@@ -417,3 +449,37 @@ export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
             return
         subprocess.run(["docker", "rm", "-f", self.container_name], capture_output=True)
         self.started = False
+
+    def _run_docker_cp_with_retry(self, src: str, dest: str, max_retries: int = 3) -> None:
+        """Run docker cp command with retry logic for Windows Docker Desktop issues.
+        
+        Args:
+            src: Source path (can be local file or container:path)
+            dest: Destination path (can be local file or container:path)
+            max_retries: Maximum number of retry attempts
+            
+        Raises:
+            subprocess.CalledProcessError: If all retries fail
+        """
+        cp_cmd = ["docker", "cp", src, dest]
+        
+        for attempt in range(max_retries):
+            try:
+                proc = self._run(cp_cmd, check=True)
+                return  # Success, exit the retry loop
+            except subprocess.CalledProcessError as e:
+                error_msg = e.stderr.strip() if e.stderr else ""
+                
+                # Check for the specific Windows Docker Desktop error
+                if "CreateFile C:\\tmp" in error_msg and attempt < max_retries - 1:
+                    logging.warning(
+                        "Docker cp failed with Windows tmp error (attempt %d/%d): %s", 
+                        attempt + 1, max_retries, error_msg
+                    )
+                    # Ensure the Windows tmp directory exists and retry
+                    ensure_windows_tmp_directory()
+                    time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                    continue
+                else:
+                    # Re-raise the error if it's not the tmp error or we've exhausted retries
+                    raise
