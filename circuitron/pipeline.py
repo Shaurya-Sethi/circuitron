@@ -287,13 +287,14 @@ async def run_with_retry(
     prompt: str,
     show_reasoning: bool = False,
     retries: int = 0,
+    output_dir: str | None = None,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling."""
 
     attempts = 0
     while True:
         try:
-            return await pipeline(prompt, show_reasoning=show_reasoning)
+            return await pipeline(prompt, show_reasoning=show_reasoning, output_dir=output_dir)
         except Exception as exc:
             attempts += 1
             print(f"Error during pipeline execution: {exc}")
@@ -303,12 +304,13 @@ async def run_with_retry(
             print(f"Retrying ({attempts}/{retries})...")
 
 
-async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
+async def pipeline(prompt: str, show_reasoning: bool = False, output_dir: str | None = None) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
     Args:
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
+        output_dir: Directory to save generated files. If None, uses current directory.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -316,6 +318,11 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     Example:
         >>> asyncio.run(pipeline("buck converter"))
     """
+    # Show where files will be saved at the start
+    final_output_dir = output_dir or os.path.join(os.getcwd(), "circuitron_output")
+    print(f"📁 Generated files will be saved to: {os.path.abspath(final_output_dir)}")
+    print()
+    
     plan_result = await run_planner(prompt)
     plan = plan_result.final_output
     pretty_print_plan(plan)
@@ -423,10 +430,11 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 pretty_print_generated_code(code_out)
             raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
 
-        out_dir = prepare_output_dir()
+        out_dir = prepare_output_dir(output_dir)
         files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
         print("\n=== GENERATED FILES ===")
         print(files_json)
+        print(f"\n📁 Files saved to: {out_dir}")
         return code_out
 
     edit_result = await run_plan_editor(prompt, plan, feedback)
@@ -521,10 +529,11 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             pretty_print_generated_code(code_out)
         raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
 
-    out_dir = prepare_output_dir()
+    out_dir = prepare_output_dir(output_dir)
     files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
     print("\n=== GENERATED FILES ===")
     print(files_json)
+    print(f"\n📁 Files saved to: {out_dir}")
     return code_out
 
 
@@ -541,6 +550,7 @@ async def main() -> None:
             prompt,
             show_reasoning=args.reasoning,
             retries=args.retries,
+            output_dir=args.output_dir,
         )
     finally:
         await mcp_manager.cleanup()
@@ -566,6 +576,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=0,
         help="number of retries if the pipeline fails",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=str,
+        default=None,
+        help="directory to save generated files (default: ./circuitron_output)",
     )
     return parser.parse_args(argv)
 
