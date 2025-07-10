@@ -400,7 +400,8 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                     else:
                         correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
                 
-                # Check if agent approved warnings as acceptable - break loop if so
+                # If the ERC Handling agent explicitly approved remaining warnings
+                # as acceptable, exit the loop to avoid further attempts.
                 if correction_context.agent_approved_warnings():
                     print("\n=== ERC HANDLER DECISION ===")
                     print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
@@ -497,7 +498,8 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 else:
                     correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
                 
-            # Check if agent approved warnings as acceptable - break loop if so
+            # If the ERC Handling agent explicitly approved remaining warnings
+            # as acceptable, exit the loop to avoid further attempts.
             if correction_context.agent_approved_warnings():
                 print("\n=== ERC HANDLER DECISION ===")
                 print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
