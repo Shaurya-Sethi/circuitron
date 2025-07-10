@@ -4,6 +4,7 @@ import logging
 import subprocess
 import atexit
 import os
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import threading
@@ -166,6 +167,59 @@ class DockerSession:
         cmd = ["docker", "exec", "-i", self.container_name, "python3", "-c", script]
         return self._run(cmd, timeout=timeout, check=True)
 
+    def exec_python_with_env(
+        self, script: str, timeout: int = 120
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute a Python script inside the running container with KiCad environment variables."""
+        self.start()
+        
+        # Write script to a temporary file in the container
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp_file:
+            tmp_file.write(script)
+            tmp_file_path = tmp_file.name
+        
+        try:
+            # Copy the script to the container
+            cp_cmd = ["docker", "cp", tmp_file_path, f"{self.container_name}:/tmp/temp_script.py"]
+            self._run(cp_cmd, check=True)
+            
+            # Set up KiCad environment variables and execute the script
+            env_setup = """
+export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
+export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+"""
+            
+            cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "bash",
+                "-c",
+                f"{env_setup}python3 /tmp/temp_script.py",
+            ]
+            return self._run(cmd, timeout=timeout, check=True)
+        finally:
+            # Clean up temporary files
+            try:
+                os.remove(tmp_file_path)
+            except OSError:
+                pass
+            # Remove script from container
+            rm_cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "rm",
+                "-f",
+                "/tmp/temp_script.py",
+            ]
+            try:
+                self._run(rm_cmd, check=True)
+            except subprocess.CalledProcessError:
+                pass
+
     def exec_erc(
         self, script_path: str, wrapper: str, timeout: int = 60
     ) -> subprocess.CompletedProcess[str]:
@@ -220,6 +274,108 @@ class DockerSession:
                 "rm",
                 "-f",
                 "/tmp/script.py",
+            ]
+            try:
+                self._run(rm_cmd, check=True)
+            except subprocess.CalledProcessError:  # pragma: no cover - cleanup failure
+                logging.error(
+                    "Failed to remove temporary script in container %s",
+                    self.container_name,
+                )
+
+    def exec_full_script_with_env(
+        self, script_path: str, timeout: int = 180
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute a full SKiDL script inside the container with KiCad environment variables."""
+        self.start()
+        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
+        self._run(cp_cmd, check=True)
+
+        # Set up KiCad environment variables for symbol library access
+        env_setup = """
+export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
+export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+"""
+
+        cmd = [
+            "docker",
+            "exec",
+            "-i",
+            self.container_name,
+            "bash",
+            "-c",
+            f"{env_setup}python3 /tmp/script.py",
+        ]
+        try:
+            return self._run(cmd, timeout=timeout, check=True)
+        finally:
+            rm_cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "rm",
+                "-f",
+                "/tmp/script.py",
+            ]
+            try:
+                self._run(rm_cmd, check=True)
+            except subprocess.CalledProcessError:  # pragma: no cover - cleanup failure
+                logging.error(
+                    "Failed to remove temporary script in container %s",
+                    self.container_name,
+                )
+
+    def exec_erc_with_env(
+        self, script_path: str, wrapper: str, timeout: int = 60
+    ) -> subprocess.CompletedProcess[str]:
+        """Copy a script and run ERC inside the container with KiCad environment variables."""
+        self.start()
+        cp_cmd = ["docker", "cp", script_path, f"{self.container_name}:/tmp/script.py"]
+        self._run(cp_cmd, check=True)
+
+        # Write wrapper script to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp_file:
+            tmp_file.write(wrapper)
+            tmp_file_path = tmp_file.name
+        
+        try:
+            # Copy the wrapper script to the container
+            cp_wrapper_cmd = ["docker", "cp", tmp_file_path, f"{self.container_name}:/tmp/wrapper.py"]
+            self._run(cp_wrapper_cmd, check=True)
+            
+            # Set up KiCad environment variables and execute the wrapper
+            env_setup = """
+export KICAD5_SYMBOL_DIR=/usr/share/kicad/library
+export KICAD5_FOOTPRINT_DIR=/usr/share/kicad/modules
+"""
+            
+            cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "bash",
+                "-c",
+                f"{env_setup}python3 /tmp/wrapper.py",
+            ]
+            return self._run(cmd, timeout=timeout, check=True)
+        finally:
+            # Clean up temporary files
+            try:
+                os.remove(tmp_file_path)
+            except OSError:
+                pass
+            # Remove scripts from container
+            rm_cmd = [
+                "docker",
+                "exec",
+                "-i",
+                self.container_name,
+                "rm",
+                "-f",
+                "/tmp/script.py",
+                "/tmp/wrapper.py",
             ]
             try:
                 self._run(rm_cmd, check=True)
