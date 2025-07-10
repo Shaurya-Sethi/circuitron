@@ -270,32 +270,31 @@ print(json.dumps(results))
 
 @function_tool
 async def extract_pin_details(library: str, part_name: str) -> str:
-    """Return pin details using skidl.show()."""
+    """Return pin details by creating Part object and accessing pins directly."""
     script = textwrap.dedent(f"""
 import os
-import json, io, contextlib
+import json
 from skidl import *
 
 # Set up KiCad environment variables
 os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
 
 set_default_tool(KICAD5)
-buf = io.StringIO()
 try:
-    with contextlib.redirect_stdout(buf):
-        show({library!r}, {part_name!r})
+    part = Part({library!r}, {part_name!r})
+    pins = []
+    for pin in part.pins:
+        # Convert pin_types enum to string and clean up
+        func_str = str(pin.func).replace('pin_types.', '')
+        pin_data = {{
+            "number": str(pin.num),
+            "name": str(pin.name),
+            "function": func_str
+        }}
+        pins.append(pin_data)
+    print(json.dumps(pins))
 except Exception as exc:
     print(json.dumps({{"error": str(exc)}}))
-    raise SystemExit()
-text = buf.getvalue().splitlines()
-pins = []
-for line in text:
-    line = line.strip()
-    if line.startswith("Pin "):
-        parts = line.split("/")
-        if len(parts) >= 4:
-            pins.append({{"number": parts[1], "name": parts[2], "function": parts[3]}})
-print(json.dumps(pins))
 """)
     try:
         proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
