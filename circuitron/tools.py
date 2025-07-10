@@ -121,6 +121,8 @@ from skidl import *
 
 # Set up KiCad environment variables
 os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
 set_default_tool(KICAD5)
 max_results = {max_results}
@@ -215,6 +217,7 @@ from skidl import *
 # Set up KiCad environment variables
 os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
 os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
 set_default_tool(KICAD5)
 max_results = {max_results}
@@ -278,6 +281,8 @@ from skidl import *
 
 # Set up KiCad environment variables
 os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
 set_default_tool(KICAD5)
 try:
@@ -338,6 +343,8 @@ async def run_runtime_check(script_path: str) -> str:
 
         # Set up KiCad environment
         os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+        os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+        os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
         set_default_tool(KICAD5)
         out = io.StringIO()
@@ -424,6 +431,8 @@ async def run_erc(script_path: str) -> str:
         
         # Set up KiCad environment variables
         os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+        os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+        os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
         
         set_default_tool(KICAD5)
         out = io.StringIO()
@@ -499,6 +508,7 @@ from skidl import *
 # Set up KiCad environment variables
 os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
 os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
 # Set KiCad as the default tool
 set_default_tool(KICAD5)
@@ -514,31 +524,74 @@ set_default_tool(KICAD5)
         )
         success = proc.returncode == 0
         
-        # Copy generated files from container to host directory
-        if success:
+        # Always attempt to copy generated files, regardless of script success
+        # This ensures we capture any files that were generated before a failure
+        copied_files = []
+        copy_errors = []
+        
+        try:
             # Copy all files from the container's working directory to the output directory
-            session.copy_generated_files("/workspace/*", output_dir)
-            files = sorted(os.listdir(output_dir))
-        else:
+            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            # Get relative filenames for the response
+            files = [os.path.basename(f) for f in copied_files]
+        except Exception as e:
+            copy_errors.append(f"File copy error: {str(e)}")
             files = []
+        
+        # Enhanced error reporting
+        stderr_output = proc.stderr.strip()
+        if copy_errors:
+            stderr_output += "\n" + "\n".join(copy_errors) if stderr_output else "\n".join(copy_errors)
+        
+        # Add informative messages about file generation status
+        if not success and files:
+            stderr_output += f"\nNote: Script failed but {len(files)} file(s) were still generated and copied."
+        elif not success and not files:
+            stderr_output += "\nNote: Script failed and no files were generated."
+        elif success and not files:
+            stderr_output += "\nWarning: Script succeeded but no files were found to copy."
         
         return json.dumps(
             {
                 "success": success,
                 "stdout": proc.stdout.strip(),
-                "stderr": proc.stderr.strip(),
+                "stderr": stderr_output,
                 "files": [os.path.join(output_dir, f) for f in files],
             }
         )
     except subprocess.TimeoutExpired as exc:
-        return json.dumps({"success": False, "stderr": str(exc), "files": []})
+        # Even if timeout occurred, try to copy any files that might have been generated
+        copied_files = []
+        try:
+            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            files = [os.path.basename(f) for f in copied_files]
+        except Exception:
+            files = []
+        
+        timeout_msg = f"Script execution timeout: {str(exc)}"
+        if files:
+            timeout_msg += f"\nNote: Timeout occurred but {len(files)} file(s) were still recovered."
+        
+        return json.dumps({"success": False, "stderr": timeout_msg, "files": [os.path.join(output_dir, f) for f in files]})
     except subprocess.CalledProcessError as exc:
+        # Even if the process failed, try to copy any files that might have been generated
+        copied_files = []
+        try:
+            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            files = [os.path.basename(f) for f in copied_files]
+        except Exception:
+            files = []
+        
+        stderr_output = exc.stderr.strip() if exc.stderr else ""
+        if files:
+            stderr_output += f"\nNote: Process failed but {len(files)} file(s) were still recovered." if stderr_output else f"Process failed but {len(files)} file(s) were still recovered."
+        
         return json.dumps(
             {
                 "success": False,
-                "stdout": exc.stdout.strip(),
-                "stderr": exc.stderr.strip(),
-                "files": [],
+                "stdout": exc.stdout.strip() if exc.stdout else "",
+                "stderr": stderr_output,
+                "files": [os.path.join(output_dir, f) for f in files],
             }
         )
     finally:
