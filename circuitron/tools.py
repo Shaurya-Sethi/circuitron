@@ -318,15 +318,22 @@ async def run_erc(script_path: str) -> str:
 
     Returns:
         JSON string with ``success`` flag, ``erc_passed`` status, stdout, and stderr.
+        
+    Note:
+        SKiDL's ERC() function prints messages to stdout like:
+        "2 warnings found during ERC."
+        "0 errors found during ERC."
+        It doesn't return a numeric error count. We parse the stdout to determine
+        if ERC passed (0 errors) or failed (>0 errors).
 
     Example:
         >>> await run_erc("/tmp/test.py")
-        '{"success": true, "erc_passed": true, "stdout": "", "stderr": ""}'
+        '{"success": true, "erc_passed": true, "stdout": "0 errors found during ERC.\\n0 warnings found during ERC.\\n", "stderr": ""}'
     """
 
     wrapper = textwrap.dedent(
         """
-        import json, runpy, io, contextlib
+        import json, runpy, io, contextlib, re
         from skidl import *
         set_default_tool(KICAD5)
         out = io.StringIO()
@@ -336,8 +343,14 @@ async def run_erc(script_path: str) -> str:
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 runpy.run_path('/tmp/script.py', run_name='__main__')
-                result = ERC()
-                erc_passed = not bool(result)
+                ERC()  # ERC() prints messages to stdout, doesn't return error count
+                
+            # Parse ERC output to determine if it passed
+            erc_output = out.getvalue()
+            error_match = re.search(r'(\d+) errors found during ERC', erc_output)
+            error_count = int(error_match.group(1)) if error_match else 0
+            erc_passed = error_count == 0
+            
         except Exception as exc:
             success = False
             err.write(str(exc))
