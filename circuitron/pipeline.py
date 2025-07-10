@@ -59,7 +59,6 @@ from circuitron.utils import (
     format_code_validation_input,
     format_code_correction_input,
     format_code_correction_validation_input,
-    format_code_correction_erc_input,
     format_erc_handling_input,
     write_temp_skidl_script,
     prepare_erc_only_script,
@@ -91,8 +90,7 @@ __all__ = [
     "run_code_generation",
     "run_code_validation",
     "run_code_correction",
-    "run_code_correction_validation_only",
-    "run_code_correction_erc_only",
+    "run_validation_correction",
     "run_erc_handling",
     "run_with_retry",
     "pipeline",
@@ -226,7 +224,7 @@ async def run_code_correction(
     return code_output
 
 
-async def run_code_correction_validation_only(
+async def run_validation_correction(
     code_output: CodeGenerationOutput,
     validation: CodeValidationOutput,
     plan: PlanOutput,
@@ -234,7 +232,7 @@ async def run_code_correction_validation_only(
     docs: DocumentationOutput,
     context: CorrectionContext | None = None,
 ) -> CodeGenerationOutput:
-    """Correct code focusing solely on validation issues.
+    """Run code correction to address validation errors only.
 
     Args:
         code_output: Current code to fix.
@@ -260,40 +258,6 @@ async def run_code_correction_validation_only(
     code_output.complete_skidl_code = correction.corrected_code
     return code_output
 
-
-async def run_code_correction_erc_only(
-    code_output: CodeGenerationOutput,
-    validation: CodeValidationOutput,
-    plan: PlanOutput,
-    selection: PartSelectionOutput,
-    docs: DocumentationOutput,
-    erc_result: dict[str, object] | None,
-    context: CorrectionContext | None = None,
-) -> CodeGenerationOutput:
-    """Correct code focusing solely on ERC issues.
-
-    Args:
-        code_output: Current code to fix.
-        validation: Latest validation output (should be ``pass``).
-        plan: The original design plan.
-        selection: Chosen components for the design.
-        docs: Documentation context.
-        erc_result: ERC output describing violations.
-
-    Returns:
-        Updated :class:`CodeGenerationOutput` with attempted fixes applied.
-    """
-
-    updated_code, _ = await run_erc_handling(
-        code_output,
-        validation,
-        plan,
-        selection,
-        docs,
-        erc_result,
-        context,
-    )
-    return updated_code
 
 
 async def run_erc_handling(
@@ -389,7 +353,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         correction_context = CorrectionContext()
         correction_context.add_validation_attempt(validation, [])
         while validation.status == "fail" and correction_context.should_continue_attempts():
-            code_out = await run_code_correction_validation_only(
+            code_out = await run_validation_correction(
                 code_out, validation, plan, selection, docs, correction_context
             )
             validation, _ = await run_code_validation(
@@ -459,7 +423,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     correction_context = CorrectionContext()
     correction_context.add_validation_attempt(validation, [])
     while validation.status == "fail" and correction_context.should_continue_attempts():
-        code_out = await run_code_correction_validation_only(
+        code_out = await run_validation_correction(
             code_out, validation, final_plan, selection, docs, correction_context
         )
         validation, _ = await run_code_validation(
