@@ -195,7 +195,7 @@ class DockerSession:
                 )
 
     def exec_full_script(
-        self, script_path: str, output_mount_path: str, timeout: int = 180
+        self, script_path: str, timeout: int = 180
     ) -> subprocess.CompletedProcess[str]:
         """Execute a full SKiDL script inside the container."""
         self.start()

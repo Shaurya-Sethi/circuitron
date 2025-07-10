@@ -383,7 +383,7 @@ async def fake_pipeline_erc_error() -> None:
         {"erc_passed": False},
     )
 
-    async def fake_validate(*args: object, **kwargs: object) -> tuple[CodeValidationOutput, dict[str, object] | None]:
+    async def fake_validate(*args: object, **_kwargs: object) -> tuple[CodeValidationOutput, dict[str, object] | None]:
         if not hasattr(fake_validate, "called"):
             setattr(fake_validate, "called", True)
             return val_pass

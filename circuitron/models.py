@@ -112,17 +112,6 @@ class PlanEditorOutput(BaseModel):
 
 # ========== Part Search Agent Models ==========
 
-class PartSearchOutput(BaseModel):
-    """Complete output from the Part Search Agent."""
-    model_config = ConfigDict(extra="forbid", strict=True)
-    
-    # Search plans as formatted strings
-    search_plans: List[str] = Field(default_factory=list, description="Search plans for each component with ranked queries and rationales")
-    
-    # Search results as formatted strings  
-    search_results: List[str] = Field(default_factory=list, description="Found parts with name, library, description, footprint, and specifications")
-
-
 
 class FoundPart(BaseModel):
     """Structure for a component found in KiCad libraries."""
@@ -190,13 +179,6 @@ class PartSelectionOutput(BaseModel):
     selections: List[SelectedPart] = Field(default_factory=list, description="Chosen parts with rationale and pin info")
     summary: List[str] = Field(default_factory=list, description="Overall selection rationale")
 
-
-class PriorityLevel(str, Enum):
-    """Priority levels for documentation queries."""
-
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
 
 
 class DocumentationOutput(BaseModel):
