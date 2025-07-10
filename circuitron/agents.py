@@ -19,6 +19,7 @@ from .prompts import (
     CODE_GENERATION_PROMPT,
     CODE_VALIDATION_PROMPT,
     CODE_CORRECTION_PROMPT,
+    ERC_HANDLING_PROMPT,
 )
 from .models import (
     PlanOutput,
@@ -29,6 +30,7 @@ from .models import (
     CodeGenerationOutput,
     CodeValidationOutput,
     CodeCorrectionOutput,
+    ERCHandlingOutput,
 )
 from .tools import (
     execute_calculation,
@@ -37,7 +39,6 @@ from .tools import (
     extract_pin_details,
     run_erc_tool,
     get_kg_usage_guide,
-    get_erc_info,
 )
 from .mcp_manager import mcp_manager
 
@@ -175,7 +176,7 @@ def create_code_correction_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
     )
 
-    tools: list[Tool] = [run_erc_tool, get_kg_usage_guide, get_erc_info]
+    tools: list[Tool] = [get_kg_usage_guide]
 
     return Agent(
         name="Circuitron-Corrector",
@@ -186,6 +187,26 @@ def create_code_correction_agent() -> Agent:
         mcp_servers=[mcp_manager.get_doc_server()],
         model_settings=model_settings,
         handoff_description="Iteratively fix SKiDL code",
+    )
+
+
+def create_erc_handling_agent() -> Agent:
+    """Create and configure the ERC Handling Agent."""
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.erc_handling_model)
+    )
+
+    tools: list[Tool] = [run_erc_tool]
+
+    return Agent(
+        name="Circuitron-ERCHandler",
+        instructions=ERC_HANDLING_PROMPT,
+        model=settings.erc_handling_model,
+        output_type=ERCHandlingOutput,
+        tools=tools,
+        mcp_servers=[mcp_manager.get_doc_server()],
+        model_settings=model_settings,
+        handoff_description="Resolve ERC violations",
     )
 
 
@@ -207,6 +228,7 @@ documentation = create_documentation_agent()
 code_generator = create_code_generation_agent()
 code_validator = create_code_validation_agent()
 code_corrector = create_code_correction_agent()
+erc_handler = create_erc_handling_agent()
 
 # Configure handoffs between agents
 planner.handoffs = [
@@ -238,4 +260,7 @@ code_validator.handoffs = [
     handoff(
         code_corrector, on_handoff=_log_handoff_to("CodeCorrection"), is_enabled=False
     )
+]
+code_corrector.handoffs = [
+    handoff(erc_handler, on_handoff=_log_handoff_to("ERCHandler"), is_enabled=False)
 ]

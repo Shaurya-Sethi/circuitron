@@ -325,3 +325,31 @@ class CodeCorrectionOutput(BaseModel):
     validation_notes: str = Field(
         ..., description="Notes about the validation and correction process"
     )
+
+
+class ERCHandlingOutput(BaseModel):
+    """Output from the ERC Handling Agent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    erc_issues_identified: List[str] = Field(
+        default_factory=list,
+        description="All ERC issues found with detailed descriptions and locations",
+    )
+    corrections_applied: List[str] = Field(
+        default_factory=list,
+        description="ERC-specific corrections made with electrical rationale",
+    )
+    erc_validation_status: Literal["pass", "fail", "warnings_only"] = Field(
+        description="Final ERC status after corrections",
+    )
+    remaining_warnings: List[str] = Field(
+        default_factory=list,
+        description="Acceptable ERC warnings that don't require fixes",
+    )
+    resolution_strategy: str = Field(
+        description="Explanation of the approach used to resolve ERC issues",
+    )
+    final_code: str = Field(
+        description="Final SKiDL code with all ERC issues resolved",
+    )

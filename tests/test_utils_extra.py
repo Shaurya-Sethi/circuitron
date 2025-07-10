@@ -193,36 +193,6 @@ def test_get_kg_usage_guide_new_categories() -> None:
             assert "query_knowledge_graph" in guide
 
 
-def test_get_erc_info() -> None:
-    from circuitron.tools import get_erc_info
-    from agents.tool_context import ToolContext
-    import json
-    import asyncio
-    from typing import Any, Coroutine, cast
-
-    ctx = ToolContext(context=None, tool_call_id="erc1")
-    args = json.dumps({"issue_type": "drive"})
-    info = asyncio.run(
-        cast(Coroutine[Any, Any, str], get_erc_info.on_invoke_tool(ctx, args))
-    )
-    assert "drive" in info and "POWER" in info
-
-
-def test_get_erc_info_invalid() -> None:
-    """Unsupported categories should return a helpful message."""
-    from circuitron.tools import get_erc_info
-    from agents.tool_context import ToolContext
-    import json
-    import asyncio
-    from typing import Any, Coroutine, cast
-
-    ctx = ToolContext(context=None, tool_call_id="erc2")
-    args = json.dumps({"issue_type": "unknown"})
-    info = asyncio.run(
-        cast(Coroutine[Any, Any, str], get_erc_info.on_invoke_tool(ctx, args))
-    )
-    assert "Issue type not recognized" in info
-    assert "unconnected" in info and "drive" in info
 
 
 def test_sanitize_text_multiline() -> None:
