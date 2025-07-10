@@ -11,6 +11,7 @@ async def run_circuitron(
     prompt: str,
     show_reasoning: bool = False,
     retries: int = 0,
+    output_dir: str | None = None,
 ) -> CodeGenerationOutput | None:
     """Execute the Circuitron workflow using the full pipeline with retries."""
 
@@ -22,6 +23,7 @@ async def run_circuitron(
             prompt,
             show_reasoning=show_reasoning,
             retries=retries,
+            output_dir=output_dir,
         )
     finally:
         await mcp_manager.cleanup()
@@ -51,11 +53,12 @@ def main() -> None:
     prompt = args.prompt or input("Prompt: ")
     show_reasoning = args.reasoning
     retries = args.retries
+    output_dir = args.output_dir
 
     code_output: CodeGenerationOutput | None = None
     try:
         try:
-            code_output = asyncio.run(run_circuitron(prompt, show_reasoning, retries))
+            code_output = asyncio.run(run_circuitron(prompt, show_reasoning, retries, output_dir))
         except KeyboardInterrupt:
             print("\nExecution interrupted by user.")
         except Exception as exc:
@@ -66,6 +69,10 @@ def main() -> None:
     if code_output:
         print("\n=== GENERATED SKiDL CODE ===\n")
         print(code_output.complete_skidl_code)
+        print("\n" + "=" * 60)
+        print("📁 Generated files have been saved to the output directory.")
+        print("💡 Use --output-dir to specify a custom location.")
+        print("💡 Default location: ./circuitron_output")
 
 
 if __name__ == "__main__":
