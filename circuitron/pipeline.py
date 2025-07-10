@@ -375,6 +375,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 and (not erc_result.get("erc_passed", False) or _has_erc_warnings(erc_result))
                 and correction_context.should_continue_attempts()
                 and not correction_context.has_no_issues()  # Stop if no errors and no warnings
+                and not correction_context.agent_approved_warnings()
             ):
                 erc_loop_count += 1
                 if erc_loop_count > 10:  # Safety net to prevent infinite loops
@@ -400,8 +401,8 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                         correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
                 
                 # Check if agent approved warnings as acceptable - break loop if so
-                if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
-                    print(f"\n=== ERC HANDLER DECISION ===")
+                if correction_context.agent_approved_warnings():
+                    print("\n=== ERC HANDLER DECISION ===")
                     print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
                     if erc_out.remaining_warnings:
                         print("Remaining acceptable warnings:")
@@ -471,6 +472,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             and (not erc_result.get("erc_passed", False) or _has_erc_warnings(erc_result))
             and correction_context.should_continue_attempts()
             and not correction_context.has_no_issues()  # Stop if no errors and no warnings
+            and not correction_context.agent_approved_warnings()
         ):
             erc_loop_count += 1
             if erc_loop_count > 10:  # Safety net to prevent infinite loops
@@ -496,8 +498,8 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                     correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
                 
             # Check if agent approved warnings as acceptable - break loop if so
-            if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
-                print(f"\n=== ERC HANDLER DECISION ===")
+            if correction_context.agent_approved_warnings():
+                print("\n=== ERC HANDLER DECISION ===")
                 print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
                 if erc_out.remaining_warnings:
                     print("Remaining acceptable warnings:")

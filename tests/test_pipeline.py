@@ -275,6 +275,56 @@ def test_pipeline_edit_plan_with_correction() -> None:
     asyncio.run(fake_pipeline_edit_plan_with_correction())
 
 
+async def fake_pipeline_warning_approval() -> None:
+    from circuitron import pipeline as pl
+
+    plan = PlanOutput()
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
+    code_out = CodeGenerationOutput(complete_skidl_code="init")
+
+    val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
+    erc_start = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {"erc_passed": False, "stdout": "ERROR: e\nWARNING: w\n1 errors found during ERC\n1 warnings found during ERC"},
+    )
+    erc_final = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {"erc_passed": True, "stdout": "WARNING: w\n0 errors found during ERC\n1 warnings found during ERC"},
+    )
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+         patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+         patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+         patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+         patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_pass, erc_start, erc_final])), \
+         patch.object(
+             pl,
+             "run_erc_handling",
+             AsyncMock(return_value=(code_out, pl.ERCHandlingOutput(
+                 final_code="init",
+                 erc_issues_identified=[],
+                 corrections_applied=["warnings are acceptable"],
+                 erc_validation_status="pass",
+                 remaining_warnings=["WARNING: w"],
+                 resolution_strategy="approve warnings",
+             ))),
+         ) as erc_mock, \
+         patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
+         patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
+        result = await pl.pipeline("test")
+
+    assert result.complete_skidl_code == "init"
+    assert erc_mock.await_count == 1
+
+
+def test_pipeline_warning_approval_flow() -> None:
+    asyncio.run(fake_pipeline_warning_approval())
+
+
 def test_run_code_validation_cleanup(tmp_path: Path) -> None:
     import circuitron.pipeline as pl
 

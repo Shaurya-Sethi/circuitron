@@ -4,7 +4,6 @@ Defines all BaseModels required for getting structured outputs from agents.
 """
 
 from typing import List, Literal
-from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
