@@ -24,7 +24,7 @@ class Settings:
     code_validation_model: str = field(default="o4-mini")
     code_correction_model: str = field(default="gpt-4.1")  # Use a model that supports tool_choice="required"
     erc_handling_model: str = field(default="o4-mini")
-    runtime_correction_model: str = field(default="gpt-4o-mini")
+    runtime_correction_model: str = field(default="gpt-4.1")
     calculation_image: str = field(
         default_factory=lambda: os.getenv("CALC_IMAGE", "python:3.12-slim")
     )
