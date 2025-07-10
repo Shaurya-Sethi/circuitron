@@ -170,7 +170,7 @@ def create_code_validation_agent() -> Agent:
 def create_code_correction_agent() -> Agent:
     """Create and configure the Code Correction Agent."""
     model_settings = ModelSettings(
-        tool_choice=_tool_choice_for_mcp(settings.code_validation_model)
+        tool_choice=_tool_choice_for_mcp(settings.code_correction_model)
     )
 
     tools: list[Tool] = [get_kg_usage_guide]
@@ -178,7 +178,7 @@ def create_code_correction_agent() -> Agent:
     return Agent(
         name="Circuitron-Corrector",
         instructions=CODE_CORRECTION_PROMPT,
-        model=settings.code_validation_model,
+        model=settings.code_correction_model,
         output_type=CodeCorrectionOutput,
         tools=tools,
         mcp_servers=[mcp_manager.get_server()],
