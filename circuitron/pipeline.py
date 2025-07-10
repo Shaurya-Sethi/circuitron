@@ -571,9 +571,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _has_erc_warnings(erc_result: dict[str, object]) -> bool:
-    """Check if ERC result contains warnings."""
+    """Return ``True`` if the ERC output reports any warnings."""
     stdout = str(erc_result.get("stdout", ""))
-    warning_match = re.search(r'(\d+) warnings found during ERC', stdout)
+    warning_match = re.search(r"(\d+) warning[s]? found during ERC", stdout)
     warning_count = int(warning_match.group(1)) if warning_match else 0
     return warning_count > 0
 
