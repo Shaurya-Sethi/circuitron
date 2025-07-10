@@ -92,7 +92,7 @@ def test_wrapper_functions() -> None:
 
 
 def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None)
     monkeypatch.setattr(pl, "parse_args", lambda _=None: args)
     monkeypatch.setattr(pl, "run_with_retry", AsyncMock())
     asyncio.run(pl.main())
@@ -100,4 +100,5 @@ def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
         "p",
         show_reasoning=False,
         retries=1,
+        output_dir=None,
     )

@@ -12,6 +12,7 @@ import json
 import os
 import re
 from typing import cast
+from collections.abc import Mapping
 
 from circuitron.config import settings
 from .mcp_manager import mcp_manager
@@ -103,6 +104,15 @@ __all__ = [
     "PipelineError",
     "run_erc",
     "RuntimeErrorCorrectionOutput",
+    "PlanOutput",
+    "PlanEditorOutput",
+    "PartFinderOutput",
+    "PartSelectionOutput",
+    "DocumentationOutput",
+    "CodeGenerationOutput",
+    "CodeValidationOutput",
+    "CodeCorrectionOutput",
+    "ERCHandlingOutput",
     "settings",
 ]
 
@@ -688,7 +698,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _has_erc_warnings(erc_result: dict[str, object]) -> bool:
+
+
+def _has_erc_warnings(erc_result: Mapping[str, object]) -> bool:
     """Return ``True`` if the ERC output reports any warnings."""
     stdout = str(erc_result.get("stdout", ""))
     warning_match = re.search(r"(\d+) warning[s]? found during ERC", stdout)

@@ -843,7 +843,7 @@ def format_erc_handling_input(
 
 def format_runtime_correction_input(
     code: str,
-    runtime_result: dict,
+    runtime_result: dict[str, object],
     plan: PlanOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,

@@ -84,7 +84,7 @@ def test_code_corrector_configuration() -> None:
 
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
-    assert mod.code_corrector.model == cfg.settings.code_validation_model
+    assert mod.code_corrector.model == cfg.settings.code_correction_model
     tool_names = [t.name for t in mod.code_corrector.tools]
     assert "get_kg_usage_guide" in tool_names
 
@@ -122,6 +122,7 @@ def test_tool_choice_auto_for_o4mini() -> None:
     import circuitron.config as cfg
 
     cfg.setup_environment()
+    cfg.settings.code_correction_model = "o4-mini"
     mod = importlib.import_module("circuitron.agents")
     assert mod.documentation.model_settings.tool_choice == "auto"
     assert mod.code_validator.model_settings.tool_choice == "auto"

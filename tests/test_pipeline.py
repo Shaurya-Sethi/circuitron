@@ -21,6 +21,7 @@ from circuitron.models import (
 )
 from circuitron.correction_context import CorrectionContext
 import circuitron.config as cfg
+import circuitron.pipeline as pl
 cfg.setup_environment()
 
 
@@ -279,7 +280,7 @@ def test_pipeline_edit_plan_with_correction() -> None:
     asyncio.run(fake_pipeline_edit_plan_with_correction())
 
 
-async def fake_pipeline_warning_approval() -> None:
+async def fake_pipeline_warning_approval_flow() -> None:
     from circuitron import pipeline as pl
 
     plan = PlanOutput()
@@ -326,7 +327,7 @@ async def fake_pipeline_warning_approval() -> None:
 
 
 def test_pipeline_warning_approval_flow(capsys: pytest.CaptureFixture[str]) -> None:
-    asyncio.run(fake_pipeline_warning_approval(capsys))
+    asyncio.run(fake_pipeline_warning_approval_flow())
 
 
 def test_run_code_validation_cleanup(tmp_path: Path) -> None:
@@ -376,7 +377,7 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
 async def fake_run_with_retry_success() -> None:
     from circuitron import pipeline as pl
 
-    async def maybe_fail(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
+    async def maybe_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None) -> CodeGenerationOutput:
         if not hasattr(maybe_fail, "called"):
             setattr(maybe_fail, "called", True)
             raise RuntimeError("boom")
@@ -390,7 +391,7 @@ async def fake_run_with_retry_success() -> None:
 async def fake_run_with_retry_fail() -> None:
     from circuitron import pipeline as pl
 
-    async def always_fail(prompt: str, show_reasoning: bool = False) -> CodeGenerationOutput:
+    async def always_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None) -> CodeGenerationOutput:
         raise RuntimeError("x")
 
     with patch.object(pl, "pipeline", AsyncMock(side_effect=always_fail)):

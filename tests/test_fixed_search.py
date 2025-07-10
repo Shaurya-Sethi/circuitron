@@ -48,7 +48,7 @@ def test_search_kicad_libraries_parses_stdout() -> None:
     from circuitron.tools import search_kicad_libraries
 
     with patch(
-        "circuitron.tools.kicad_session.exec_python",
+        "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=lambda script, timeout=120: _fake_exec_python_search(script, timeout),
     ):
         ctx = ToolContext(context=None, tool_call_id="t_fixed1")
@@ -67,7 +67,7 @@ def test_search_kicad_footprints_parses_stdout() -> None:
     from circuitron.tools import search_kicad_footprints
 
     with patch(
-        "circuitron.tools.kicad_session.exec_python",
+        "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=lambda script, timeout=120: _fake_exec_python_footprints(script, timeout),
     ):
         ctx = ToolContext(context=None, tool_call_id="t_fixed2")
