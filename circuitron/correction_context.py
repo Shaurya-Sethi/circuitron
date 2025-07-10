@@ -28,6 +28,8 @@ class CorrectionContext:
     successful_strategies: List[str] = field(default_factory=list)
     current_phase: Literal["validation", "erc"] = "validation"
     max_attempts: int = 3
+    runtime_attempts: int = 0
+    runtime_issues_history: List[Dict[str, Any]] = field(default_factory=list)
 
     def _parse_erc_messages(
         self, erc_result: Dict[str, Any]
@@ -126,6 +128,46 @@ class CorrectionContext:
                 
         if erc_result.get("erc_passed", False):
             self.mark_issue_resolved("erc")
+
+    def add_runtime_attempt(
+        self, error_info: Dict[str, Any], corrections: List[str]
+    ) -> None:
+        """Record a runtime error correction attempt."""
+
+        self.runtime_attempts += 1
+        self.runtime_issues_history.append(
+            {
+                "attempt": self.runtime_attempts,
+                "error_info": error_info,
+                "corrections": corrections,
+            }
+        )
+
+    def should_continue_runtime_attempts(self) -> bool:
+        """Decide whether to continue runtime correction attempts."""
+
+        if self.runtime_attempts >= self.max_attempts:
+            return False
+        if len(self.runtime_issues_history) >= 2:
+            prev = self.runtime_issues_history[-2]["error_info"].get("error_details")
+            last = self.runtime_issues_history[-1]["error_info"].get("error_details")
+            if prev and last and prev.strip() == last.strip():
+                return False
+        return True
+
+    def get_runtime_context_for_agent(self) -> str:
+        """Return formatted context for runtime error correction."""
+
+        lines: list[str] = []
+        lines.append(f"Runtime attempts: {self.runtime_attempts}")
+        if self.runtime_issues_history:
+            last = self.runtime_issues_history[-1]
+            lines.append("Latest runtime result:")
+            lines.append(str(last.get("error_info")))
+            if last.get("corrections"):
+                lines.append("Corrections applied:")
+                lines.extend(f"- {c}" for c in last["corrections"])
+        return "\n".join(lines)
 
     def get_context_for_next_attempt(self) -> str:
         """Return formatted context for the next correction attempt."""

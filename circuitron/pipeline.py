@@ -28,6 +28,7 @@ from circuitron.agents import (
     code_generator,
     code_validator,
     code_corrector,
+    runtime_error_corrector,
     erc_handler,
 )
 from agents.result import RunResult
@@ -42,6 +43,7 @@ from circuitron.models import (
     CodeValidationOutput,
     CodeCorrectionOutput,
     ERCHandlingOutput,
+    RuntimeErrorCorrectionOutput,
 )
 from circuitron.correction_context import CorrectionContext
 from circuitron.utils import (
@@ -61,8 +63,10 @@ from circuitron.utils import (
     format_code_correction_input,
     format_code_correction_validation_input,
     format_erc_handling_input,
+    format_runtime_correction_input,
     write_temp_skidl_script,
     prepare_erc_only_script,
+    prepare_runtime_check_script,
     prepare_output_dir,
     pretty_print_validation,
     pretty_print_generated_code,
@@ -72,6 +76,7 @@ from circuitron.utils import (
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
 from circuitron.tools import run_erc
 from circuitron.tools import execute_final_script
+from circuitron.tools import run_runtime_check
 
 
 class PipelineError(RuntimeError):
@@ -88,6 +93,7 @@ __all__ = [
     "run_code_validation",
     "run_code_correction",
     "run_validation_correction",
+    "run_runtime_check_and_correction",
     "run_erc_handling",
     "run_with_retry",
     "pipeline",
@@ -96,6 +102,7 @@ __all__ = [
     "CorrectionContext",
     "PipelineError",
     "run_erc",
+    "RuntimeErrorCorrectionOutput",
     "settings",
 ]
 
@@ -283,6 +290,46 @@ async def run_erc_handling(
     return code_output, erc_out
 
 
+async def run_runtime_check_and_correction(
+    code_output: CodeGenerationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    context: CorrectionContext,
+) -> tuple[CodeGenerationOutput, bool]:
+    """Check for runtime errors and correct them if needed."""
+
+    runtime_check_script = prepare_runtime_check_script(code_output.complete_skidl_code)
+    script_path = write_temp_skidl_script(runtime_check_script)
+
+    try:
+        runtime_result_json = await run_runtime_check(script_path)
+        runtime_result = json.loads(runtime_result_json)
+
+        if runtime_result.get("success", False):
+            return code_output, True
+
+        input_msg = format_runtime_correction_input(
+            code_output.complete_skidl_code,
+            runtime_result,
+            plan,
+            selection,
+            docs,
+            context,
+        )
+        result = await run_agent(runtime_error_corrector, sanitize_text(input_msg))
+        correction = cast(RuntimeErrorCorrectionOutput, result.final_output)
+        code_output.complete_skidl_code = correction.corrected_code
+        context.add_runtime_attempt(runtime_result, correction.corrections_applied)
+        return code_output, correction.execution_status == "success"
+
+    finally:
+        try:
+            os.remove(script_path)
+        except OSError:
+            pass
+
+
 async def run_with_retry(
     prompt: str,
     show_reasoning: bool = False,
@@ -368,6 +415,21 @@ async def pipeline(prompt: str, show_reasoning: bool = False, output_dir: str | 
                 code_out, selection, docs, run_erc_flag=False
             )
             correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
+
+        runtime_success = False
+        runtime_loop_count = 0
+        while validation.status == "pass" and not runtime_success and correction_context.should_continue_runtime_attempts():
+            runtime_loop_count += 1
+            if runtime_loop_count > 5:
+                raise PipelineError("Runtime error correction loop exceeded maximum iterations")
+            code_out, runtime_success = await run_runtime_check_and_correction(
+                code_out, plan, selection, docs, correction_context
+            )
+
+        if validation.status == "pass" and not runtime_success:
+            if settings.dev_mode:
+                pretty_print_generated_code(code_out)
+            raise PipelineError("Runtime errors persist after maximum correction attempts")
 
         erc_result: dict[str, object] | None = None
         if validation.status == "pass":
@@ -467,6 +529,21 @@ async def pipeline(prompt: str, show_reasoning: bool = False, output_dir: str | 
             code_out, selection, docs, run_erc_flag=False
         )
         correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
+
+    runtime_success = False
+    runtime_loop_count = 0
+    while validation.status == "pass" and not runtime_success and correction_context.should_continue_runtime_attempts():
+        runtime_loop_count += 1
+        if runtime_loop_count > 5:
+            raise PipelineError("Runtime error correction loop exceeded maximum iterations")
+        code_out, runtime_success = await run_runtime_check_and_correction(
+            code_out, final_plan, selection, docs, correction_context
+        )
+
+    if validation.status == "pass" and not runtime_success:
+        if settings.dev_mode:
+            pretty_print_generated_code(code_out)
+        raise PipelineError("Runtime errors persist after maximum correction attempts")
 
     erc_result = None
     if validation.status == "pass":

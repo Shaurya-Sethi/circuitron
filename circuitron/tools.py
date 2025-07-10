@@ -31,6 +31,8 @@ __all__ = [
     "create_mcp_server",
     "run_erc",
     "run_erc_tool",
+    "run_runtime_check",
+    "run_runtime_check_tool",
     "execute_final_script",
     "execute_final_script_tool",
     "get_kg_usage_guide",
@@ -324,6 +326,72 @@ def create_mcp_server() -> MCPServerSse:
         cache_tools_list=True,
         client_session_timeout_seconds=timeout,
     )
+
+
+async def run_runtime_check(script_path: str) -> str:
+    """Execute a SKiDL script and capture runtime errors."""
+
+    wrapper = textwrap.dedent(
+        """
+        import os
+        import json, runpy, io, contextlib, traceback
+        from skidl import *
+
+        # Set up KiCad environment
+        os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+
+        set_default_tool(KICAD5)
+        out = io.StringIO()
+        err = io.StringIO()
+        success = True
+        error_details = ""
+
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                runpy.run_path('/tmp/script.py', run_name='__main__')
+                if 'default_circuit' in globals():
+                    print('Circuit object created successfully')
+        except Exception as exc:
+            success = False
+            error_details = traceback.format_exc()
+            err.write(str(exc))
+
+        result = {
+            'success': success,
+            'error_details': error_details,
+            'stdout': out.getvalue(),
+            'stderr': err.getvalue(),
+        }
+        print(json.dumps(result))
+        """
+    )
+    try:
+        proc = await asyncio.to_thread(
+            kicad_session.exec_erc_with_env, script_path, wrapper
+        )
+    except subprocess.TimeoutExpired as exc:
+        return json.dumps(
+            {"success": False, "error_details": str(exc), "stdout": "", "stderr": str(exc)}
+        )
+    except subprocess.CalledProcessError as exc:
+        return json.dumps(
+            {
+                "success": False,
+                "error_details": exc.stderr.strip(),
+                "stdout": exc.stdout.strip(),
+                "stderr": exc.stderr.strip(),
+            }
+        )
+    except Exception as exc:  # pragma: no cover - unexpected errors
+        return json.dumps(
+            {"success": False, "error_details": str(exc), "stdout": "", "stderr": ""}
+        )
+
+    return proc.stdout.strip()
+
+
+# Expose the runtime checker as a FunctionTool named ``run_runtime_check``.
+run_runtime_check_tool = function_tool(run_runtime_check)
 
 
 async def run_erc(script_path: str) -> str:
