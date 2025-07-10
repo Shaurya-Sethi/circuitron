@@ -35,3 +35,13 @@ def test_erc_summary_and_issue_tracking() -> None:
     assert "Attempt 1" in summary
     assert "WARNING: w" in summary
     assert ctx.erc_issue_types["WARNING"] == 1
+
+
+def test_runtime_attempt_handling() -> None:
+    ctx = CorrectionContext(max_attempts=2)
+    err = {"success": False, "error_details": "boom"}
+    ctx.add_runtime_attempt(err, ["fix1"])
+    assert ctx.runtime_attempts == 1
+    assert ctx.should_continue_runtime_attempts()
+    ctx.add_runtime_attempt(err, ["fix2"])
+    assert not ctx.should_continue_runtime_attempts()

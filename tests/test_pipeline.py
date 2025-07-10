@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+import json
 import pytest
 
 from circuitron.models import (
@@ -589,4 +592,66 @@ def test_has_erc_warnings() -> None:
     assert _has_erc_warnings(plural)
     assert _has_erc_warnings(singular)
     assert not _has_erc_warnings(none)
+
+
+async def _runtime_flow() -> tuple[pl.CodeGenerationOutput, bool, pl.CorrectionContext]:
+    from types import SimpleNamespace
+    import circuitron.pipeline as pl
+
+    code_out = pl.CodeGenerationOutput(complete_skidl_code="bad")
+    runtime_result = {"success": False, "error_details": "boom", "stdout": "", "stderr": ""}
+    correction = pl.RuntimeErrorCorrectionOutput(
+        runtime_issues_identified=["boom"],
+        corrections_applied=["fix"],
+        execution_status="success",
+        error_details="",
+        corrected_code="fixed",
+        execution_output="",
+    )
+    ctx = pl.CorrectionContext()
+    with patch.object(pl, "run_runtime_check", AsyncMock(return_value=json.dumps(runtime_result))), patch(
+        "circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=correction))
+    ):
+        out, success = await pl.run_runtime_check_and_correction(
+            code_out,
+            pl.PlanOutput(),
+            pl.PartSelectionOutput(),
+            pl.DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+            ctx,
+        )
+    return out, success, ctx
+
+
+def test_run_runtime_check_and_correction() -> None:
+    out, success, ctx = asyncio.run(_runtime_flow())
+    assert success is True
+    assert out.complete_skidl_code == "fixed"
+    assert ctx.runtime_attempts == 1
+
+
+async def _runtime_agent_failure() -> pl.CorrectionContext:
+    from types import SimpleNamespace
+    import circuitron.pipeline as pl
+
+    code_out = pl.CodeGenerationOutput(complete_skidl_code="bad")
+    runtime_result = {"success": False, "error_details": "boom", "stdout": "", "stderr": ""}
+    ctx = pl.CorrectionContext()
+    with patch.object(pl, "run_runtime_check", AsyncMock(return_value=json.dumps(runtime_result))), patch(
+        "circuitron.debug.Runner.run", AsyncMock(return_value=SimpleNamespace(final_output=None))
+    ):
+        out, success = await pl.run_runtime_check_and_correction(
+            code_out,
+            pl.PlanOutput(),
+            pl.PartSelectionOutput(),
+            pl.DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"),
+            ctx,
+        )
+    assert success
+    assert out.complete_skidl_code == "bad"
+    return ctx
+
+
+def test_runtime_agent_failure_handled() -> None:
+    ctx = asyncio.run(_runtime_agent_failure())
+    assert ctx.runtime_attempts == 1
 
