@@ -401,7 +401,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 
                 # Check if agent approved warnings as acceptable - break loop if so
                 if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
-                    print(f"\n=== ERC HANDLER DECISION ===")
+                    print("\n=== ERC HANDLER DECISION ===")
                     print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
                     if erc_out.remaining_warnings:
                         print("Remaining acceptable warnings:")
@@ -497,7 +497,7 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 
             # Check if agent approved warnings as acceptable - break loop if so
             if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
-                print(f"\n=== ERC HANDLER DECISION ===")
+                print("\n=== ERC HANDLER DECISION ===")
                 print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
                 if erc_out.remaining_warnings:
                     print("Remaining acceptable warnings:")
