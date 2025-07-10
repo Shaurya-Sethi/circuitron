@@ -184,8 +184,8 @@ async def run_code_validation(
             erc_json = await run_erc(script_path)
             try:
                 erc_result = json.loads(erc_json)
-            except Exception:
-                erc_result = {"success": False, "stderr": erc_json}
+            except (json.JSONDecodeError, TypeError) as e:
+                erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
             print("\n=== ERC RESULT ===")
             print(erc_result)
         return validation, erc_result
@@ -347,15 +347,19 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             code_out, selection, docs, run_erc_flag=False
         )
         correction_context = CorrectionContext()
-        correction_context.add_validation_attempt(validation, [])
+        correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
+        validation_loop_count = 0
         while validation.status == "fail" and correction_context.should_continue_attempts():
+            validation_loop_count += 1
+            if validation_loop_count > 10:  # Safety net to prevent infinite loops
+                raise PipelineError("Validation correction loop exceeded maximum iterations")
             code_out = await run_validation_correction(
                 code_out, validation, plan, selection, docs, correction_context
             )
             validation, _ = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=False
             )
-            correction_context.add_validation_attempt(validation, [])
+            correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
 
         erc_result: dict[str, object] | None = None
         if validation.status == "pass":
@@ -364,11 +368,17 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             )
             if erc_result is not None:
                 correction_context.add_erc_attempt(erc_result, [])
+            erc_loop_count = 0
+            # Run ERC handler if there are errors OR warnings (errors block, warnings should be addressed)
             while (
                 erc_result
-                and not erc_result.get("erc_passed", False)
+                and (not erc_result.get("erc_passed", False) or _has_erc_warnings(erc_result))
                 and correction_context.should_continue_attempts()
+                and not correction_context.has_no_issues()  # Stop if no errors and no warnings
             ):
+                erc_loop_count += 1
+                if erc_loop_count > 10:  # Safety net to prevent infinite loops
+                    raise PipelineError("ERC correction loop exceeded maximum iterations")
                 code_out, erc_out = await run_erc_handling(
                     code_out,
                     validation,
@@ -382,17 +392,33 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                     code_out, selection, docs, run_erc_flag=True
                 )
                 if erc_result is not None:
-                    correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
+                    # Add special marker for warnings approval if agent approved them
+                    if erc_out.erc_validation_status == "warnings_only" and erc_result.get("erc_passed", False):
+                        corrections_with_approval = erc_out.corrections_applied + ["warnings approved by agent"]
+                        correction_context.add_erc_attempt(erc_result, corrections_with_approval)
+                    else:
+                        correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
+                
+                # Check if agent approved warnings as acceptable - break loop if so
+                if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
+                    print(f"\n=== ERC HANDLER DECISION ===")
+                    print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
+                    if erc_out.remaining_warnings:
+                        print("Remaining acceptable warnings:")
+                        for warning in erc_out.remaining_warnings:
+                            print(f"  - {warning}")
+                    break
 
         if validation.status != "pass":
             if settings.dev_mode:
                 pretty_print_generated_code(code_out)
             raise PipelineError("Validation failed after maximum correction attempts")
 
+        # Final check - only fail if there are actual errors (not warnings)
         if erc_result and not erc_result.get("erc_passed", False):
             if settings.dev_mode:
                 pretty_print_generated_code(code_out)
-            raise PipelineError("ERC failed after maximum correction attempts")
+            raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
 
         out_dir = prepare_output_dir()
         files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
@@ -417,15 +443,19 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
     )
 
     correction_context = CorrectionContext()
-    correction_context.add_validation_attempt(validation, [])
+    correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
+    validation_loop_count = 0
     while validation.status == "fail" and correction_context.should_continue_attempts():
+        validation_loop_count += 1
+        if validation_loop_count > 10:  # Safety net to prevent infinite loops
+            raise PipelineError("Validation correction loop exceeded maximum iterations")
         code_out = await run_validation_correction(
             code_out, validation, final_plan, selection, docs, correction_context
         )
         validation, _ = await run_code_validation(
             code_out, selection, docs, run_erc_flag=False
         )
-        correction_context.add_validation_attempt(validation, [])
+        correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
 
     erc_result = None
     if validation.status == "pass":
@@ -434,11 +464,17 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
         )
         if erc_result is not None:
             correction_context.add_erc_attempt(erc_result, [])
+        erc_loop_count = 0
+        # Run ERC handler if there are errors OR warnings (errors block, warnings should be addressed)
         while (
             erc_result
-            and not erc_result.get("erc_passed", False)
+            and (not erc_result.get("erc_passed", False) or _has_erc_warnings(erc_result))
             and correction_context.should_continue_attempts()
+            and not correction_context.has_no_issues()  # Stop if no errors and no warnings
         ):
+            erc_loop_count += 1
+            if erc_loop_count > 10:  # Safety net to prevent infinite loops
+                raise PipelineError("ERC correction loop exceeded maximum iterations")
             code_out, erc_out = await run_erc_handling(
                 code_out,
                 validation,
@@ -452,17 +488,33 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 code_out, selection, docs, run_erc_flag=True
             )
             if erc_result is not None:
-                correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
+                # Add special marker for warnings approval if agent approved them
+                if erc_out.erc_validation_status == "warnings_only" and erc_result.get("erc_passed", False):
+                    corrections_with_approval = erc_out.corrections_applied + ["warnings approved by agent"]
+                    correction_context.add_erc_attempt(erc_result, corrections_with_approval)
+                else:
+                    correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
+                
+            # Check if agent approved warnings as acceptable - break loop if so
+            if erc_out.erc_validation_status == "warnings_only" and erc_result and erc_result.get("erc_passed", False):
+                print(f"\n=== ERC HANDLER DECISION ===")
+                print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
+                if erc_out.remaining_warnings:
+                    print("Remaining acceptable warnings:")
+                    for warning in erc_out.remaining_warnings:
+                        print(f"  - {warning}")
+                break
 
     if validation.status != "pass":
         if settings.dev_mode:
             pretty_print_generated_code(code_out)
         raise PipelineError("Validation failed after maximum correction attempts")
 
+    # Final check - only fail if there are actual errors (not warnings)
     if erc_result and not erc_result.get("erc_passed", False):
         if settings.dev_mode:
             pretty_print_generated_code(code_out)
-        raise PipelineError("ERC failed after maximum correction attempts")
+        raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
 
     out_dir = prepare_output_dir()
     files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
@@ -511,6 +563,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="number of retries if the pipeline fails",
     )
     return parser.parse_args(argv)
+
+
+def _has_erc_warnings(erc_result: dict[str, object]) -> bool:
+    """Check if ERC result contains warnings."""
+    import re
+    stdout = str(erc_result.get("stdout", ""))
+    warning_match = re.search(r'(\d+) warnings found during ERC', stdout)
+    warning_count = int(warning_match.group(1)) if warning_match else 0
+    return warning_count > 0
 
 
 if __name__ == "__main__":
