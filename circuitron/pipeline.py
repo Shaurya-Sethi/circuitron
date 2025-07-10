@@ -18,6 +18,7 @@ from circuitron.config import settings
 from .mcp_manager import mcp_manager
 
 from circuitron.debug import run_agent
+from .network import check_internet_connection
 
 
 from circuitron.agents import (
@@ -654,6 +655,8 @@ async def main() -> None:
     from circuitron.config import setup_environment
 
     setup_environment(dev=args.dev)
+    if not check_internet_connection():
+        return
     await mcp_manager.initialize()
     try:
         prompt = args.prompt or input("Prompt: ")

@@ -48,6 +48,7 @@ from .tools import (
     get_kg_usage_guide,
 )
 from .mcp_manager import mcp_manager
+from .guardrails import pcb_query_guardrail
 
 
 def _tool_choice_for_mcp(model: str) -> str:
@@ -67,6 +68,7 @@ def create_planning_agent() -> Agent:
         model=settings.planning_model,
         output_type=PlanOutput,
         tools=tools,
+        input_guardrails=[pcb_query_guardrail],
         model_settings=model_settings,
     )
 

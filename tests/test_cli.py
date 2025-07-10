@@ -118,6 +118,19 @@ def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch
         run_mock.assert_not_called()
 
 
+def test_cli_main_checks_internet(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    with patch("circuitron.cli.setup_environment"), \
+         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.cli.check_internet_connection", return_value=False), \
+         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.tools.kicad_session.stop") as stop_mock, \
+         patch("circuitron.cli.run_circuitron", AsyncMock()) as run_mock:
+        cli.main()
+        run_mock.assert_not_called()
+        stop_mock.assert_not_called()
+
+
 def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> None:
     from circuitron import debug as dbg
     import circuitron.config as cfg

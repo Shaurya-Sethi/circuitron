@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
+import openai
+from agents.exceptions import InputGuardrailTripwireTriggered
+
 from agents import Runner
 from agents.items import MessageOutputItem, ToolCallOutputItem
 from agents.result import RunResult
@@ -43,7 +47,16 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
     Returns:
         The :class:`RunResult` from the agent run.
     """
-    result = await Runner.run(agent, input_data, max_turns=settings.max_turns)
+    try:
+        result = await Runner.run(agent, input_data, max_turns=settings.max_turns)
+    except InputGuardrailTripwireTriggered:
+        message = "Sorry, I can only assist with PCB design questions."
+        print(message)
+        raise RuntimeError(message)
+    except (httpx.HTTPError, openai.OpenAIError) as exc:
+        print(f"Network error: {exc}")
+        raise RuntimeError("Network connection issue") from exc
+
     if settings.dev_mode:
         display_run_items(result)
     return result
