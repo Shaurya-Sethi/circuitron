@@ -32,21 +32,39 @@ class CorrectionContext:
     def _parse_erc_messages(
         self, erc_result: Dict[str, Any]
     ) -> tuple[list[str], list[str]]:
-        """Extract warning and error lines from ERC output."""
+        """Extract warning and error lines from ERC output.
+        
+        SKiDL ERC output format:
+        - "X warnings found during ERC."
+        - "X errors found during ERC."
+        - Individual warning/error messages with "WARNING:" or "ERROR:" prefixes
+        """
 
         warnings: list[str] = []
         errors: list[str] = []
         stdout = str(erc_result.get("stdout", ""))
+        
         for line in stdout.splitlines():
-            uline = line.upper()
-            if "WARNING" in uline:
-                warnings.append(line.strip())
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Skip summary lines, focus on actual messages
+            if "warnings found during ERC" in line.lower():
+                continue
+            if "errors found during ERC" in line.lower():
+                continue
+                
+            # Capture actual warning/error messages that start with the prefix
+            if line.startswith("WARNING:"):
+                warnings.append(line)
                 self.erc_issue_types["WARNING"] = (
                     self.erc_issue_types.get("WARNING", 0) + 1
                 )
-            if "ERROR" in uline:
-                errors.append(line.strip())
+            elif line.startswith("ERROR:"):
+                errors.append(line)
                 self.erc_issue_types["ERROR"] = self.erc_issue_types.get("ERROR", 0) + 1
+                
         return warnings, errors
 
     def add_validation_attempt(
@@ -54,6 +72,7 @@ class CorrectionContext:
     ) -> None:
         """Record a validation attempt and its issues."""
 
+        self.current_phase = "validation"
         self.validation_attempts += 1
         issues = [issue.model_dump() for issue in validation.issues]
         self.validation_issues_history.append(
@@ -83,8 +102,28 @@ class CorrectionContext:
                 "corrections": corrections,
             }
         )
-        if not warnings and not errors and corrections:
-            self.successful_strategies.extend(corrections)
+        # Mark strategies as successful if errors are reduced or warnings are reduced
+        if corrections:
+            # Previous attempt comparison
+            if len(self.erc_issues_history) > 1:
+                prev_entry = self.erc_issues_history[-2]
+                prev_errors = len(prev_entry.get("errors", []))
+                prev_warnings = len(prev_entry.get("warnings", []))
+                current_errors = len(errors)
+                current_warnings = len(warnings)
+                
+                # Strategy is successful if errors decreased or warnings decreased
+                if current_errors < prev_errors or current_warnings < prev_warnings:
+                    self.successful_strategies.extend(corrections)
+            elif not errors:  # First attempt and no errors
+                self.successful_strategies.extend(corrections)
+        
+        # Special handling for warnings-only status
+        if not errors and warnings:
+            # Check if agent explicitly approved warnings (this will be set by pipeline)
+            if any("warnings approved" in str(c).lower() for c in corrections):
+                self.mark_issue_resolved("erc_warnings")
+                
         if erc_result.get("erc_passed", False):
             self.mark_issue_resolved("erc")
 
@@ -130,19 +169,62 @@ class CorrectionContext:
             if self.validation_attempts >= self.max_attempts:
                 return False
             if len(self.validation_issues_history) >= 2:
-                prev = self.validation_issues_history[-2]["issues"]
-                last = self.validation_issues_history[-1]["issues"]
-                if prev == last:
+                prev_issues = self.validation_issues_history[-2]["issues"]
+                last_issues = self.validation_issues_history[-1]["issues"]
+                # Compare issue contents, not object references
+                if self._issues_are_identical(prev_issues, last_issues):
                     return False
             return True
         if self.erc_attempts >= self.max_attempts:
             return False
         if len(self.erc_issues_history) >= 2:
-            prev = self.erc_issues_history[-2]["erc_result"]
-            last = self.erc_issues_history[-1]["erc_result"]
-            if prev == last:
+            prev_result = self.erc_issues_history[-2]["erc_result"]
+            last_result = self.erc_issues_history[-1]["erc_result"]
+            # Compare ERC result contents, not object references
+            if self._erc_results_are_identical(prev_result, last_result):
                 return False
         return True
+
+    def _issues_are_identical(self, issues1: List[Dict[str, Any]], issues2: List[Dict[str, Any]]) -> bool:
+        """Compare two lists of validation issues for equality."""
+        if len(issues1) != len(issues2):
+            return False
+        for i1, i2 in zip(issues1, issues2):
+            if (i1.get("line") != i2.get("line") or 
+                i1.get("category") != i2.get("category") or 
+                i1.get("message") != i2.get("message")):
+                return False
+        return True
+
+    def _erc_results_are_identical(self, result1: Dict[str, Any], result2: Dict[str, Any]) -> bool:
+        """Compare two ERC results for equality."""
+        # Compare key fields that indicate if the same errors/warnings persist
+        # Now we care about both errors and warnings since we try to fix warnings
+        stdout1 = result1.get("stdout", "")
+        stdout2 = result2.get("stdout", "")
+        
+        # Extract error and warning counts from stdout for comparison
+        import re
+        error_pattern = r'(\d+) errors found during ERC'
+        warning_pattern = r'(\d+) warnings found during ERC'
+        
+        error1 = re.search(error_pattern, stdout1)
+        error2 = re.search(error_pattern, stdout2)
+        warning1 = re.search(warning_pattern, stdout1)
+        warning2 = re.search(warning_pattern, stdout2)
+        
+        error_count1 = int(error1.group(1)) if error1 else 0
+        error_count2 = int(error2.group(1)) if error2 else 0
+        warning_count1 = int(warning1.group(1)) if warning1 else 0
+        warning_count2 = int(warning2.group(1)) if warning2 else 0
+        
+        # Compare success status, ERC pass status, error counts, and warning counts
+        # Now we compare warning counts too since we try to address warnings
+        return (result1.get("success") == result2.get("success") and
+                result1.get("erc_passed") == result2.get("erc_passed") and
+                error_count1 == error_count2 and
+                warning_count1 == warning_count2 and
+                result1.get("stderr") == result2.get("stderr"))
 
     def mark_issue_resolved(self, issue: str) -> None:
         """Mark an issue as resolved."""
@@ -179,3 +261,35 @@ class CorrectionContext:
             lines.append("Successful strategies:")
             lines.extend(f"- {s}" for s in self.successful_strategies)
         return "\n".join(lines)
+
+    def has_no_issues(self) -> bool:
+        """Check if the latest ERC attempt has no errors or warnings."""
+        if not self.erc_issues_history:
+            return False
+        
+        last_erc = self.erc_issues_history[-1]
+        errors = last_erc.get("errors", [])
+        warnings = last_erc.get("warnings", [])
+        
+        return len(errors) == 0 and len(warnings) == 0
+
+    def agent_approved_warnings(self) -> bool:
+        """Check if the latest ERC attempt has agent-approved warnings."""
+        if not self.erc_issues_history:
+            return False
+        
+        last_erc = self.erc_issues_history[-1]
+        corrections = last_erc.get("corrections", [])
+        
+        # Check if any correction indicates warnings are acceptable
+        for correction in corrections:
+            if any(phrase in correction.lower() for phrase in [
+                "warnings are acceptable",
+                "warnings can be ignored", 
+                "warnings are intentional",
+                "suppress warnings",
+                "do_erc = false",
+                "warnings only"
+            ]):
+                return True
+        return False
