@@ -16,6 +16,7 @@ from circuitron.models import (
     CodeValidationOutput,
     CodeCorrectionOutput,
 )
+from circuitron.correction_context import CorrectionContext
 import circuitron.config as cfg
 cfg.setup_environment()
 
@@ -509,3 +510,72 @@ async def fake_pipeline_debug_failure(capsys: pytest.CaptureFixture[str]) -> str
 def test_pipeline_error_shows_code_in_dev_mode(capsys: pytest.CaptureFixture[str]) -> None:
     out = asyncio.run(fake_pipeline_debug_failure(capsys))
     assert "GENERATED SKiDL CODE" in out
+
+async def fake_pipeline_warning_approval(capsys: pytest.CaptureFixture[str]) -> tuple[CodeGenerationOutput, CorrectionContext | None, int, int, str]:
+    from circuitron import pipeline as pl
+
+    class CaptureContext(CorrectionContext):
+        instance: "CaptureContext | None" = None
+
+        def __init__(self) -> None:
+            super().__init__()
+            CaptureContext.instance = self
+
+    plan = PlanOutput()
+    plan_result = SimpleNamespace(final_output=plan, new_items=[])
+    part_out = PartFinderOutput(found_components_json="[]")
+    select_out = PartSelectionOutput()
+    doc_out = DocumentationOutput(
+        research_queries=[], documentation_findings=[], implementation_readiness="ok"
+    )
+    code_out = CodeGenerationOutput(complete_skidl_code="code")
+
+    erc_warn = {
+        "erc_passed": True,
+        "stdout": "WARNING: w\n0 errors found during ERC\n1 warnings found during ERC",
+    }
+
+    val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
+    val_warn = (CodeValidationOutput(status="pass", summary="ok"), erc_warn)
+
+    with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
+        patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
+        patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
+        patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
+        patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
+        patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_pass, val_warn, val_warn])) as val_mock, \
+        patch.object(
+            pl,
+            "run_erc_handling",
+            AsyncMock(return_value=(
+                code_out,
+                pl.ERCHandlingOutput(
+                    final_code="code",
+                    erc_issues_identified=[],
+                    corrections_applied=["ack"],
+                    erc_validation_status="warnings_only",
+                    remaining_warnings=["WARNING: w"],
+                    resolution_strategy="accept warnings",
+                ),
+            )),
+        ) as erc_mock, \
+        patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
+        patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")), \
+        patch.object(pl, "CorrectionContext", CaptureContext):
+        result = await pl.pipeline("test")
+        context = CaptureContext.instance
+    out = capsys.readouterr().out
+    return result, context, val_mock.await_count, erc_mock.await_count, out
+
+
+def test_erc_warning_approval_breaks_loop(capsys: pytest.CaptureFixture[str]) -> None:
+    result, ctx, val_calls, erc_calls, out = asyncio.run(
+        fake_pipeline_warning_approval(capsys)
+    )
+    assert result.complete_skidl_code == "code"
+    assert erc_calls == 1
+    assert val_calls == 3
+    assert "Agent approved warnings as acceptable" in out
+    assert ctx is not None
+    assert ctx.erc_issues_history[-1]["warnings"]
+
