@@ -150,8 +150,17 @@ async def fake_pipeline_with_correction() -> None:
     corrected = CodeGenerationOutput(complete_skidl_code="fixed")
     val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
     val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
-    val_warn = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": False})
-    val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
+    val_warn = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {
+            "erc_passed": False,
+            "stdout": "ERROR: e\n1 errors found during ERC\n1 warnings found during ERC",
+        },
+    )
+    val_ok = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {"erc_passed": True, "stdout": "0 errors found during ERC\n0 warnings found during ERC"},
+    )
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "run_part_finder", AsyncMock(return_value=part_out)), \
          patch.object(pl, "run_part_selector", AsyncMock(return_value=select_out)), \
@@ -231,7 +240,10 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
     corrected = CodeGenerationOutput(complete_skidl_code="fixed")
     val_fail = (CodeValidationOutput(status="fail", summary="bad"), None)
     val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
-    val_ok = (CodeValidationOutput(status="pass", summary="ok"), {"erc_passed": True})
+    val_ok = (
+        CodeValidationOutput(status="pass", summary="ok"),
+        {"erc_passed": True, "stdout": "0 errors found during ERC\n0 warnings found during ERC"},
+    )
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback(requested_edits=["x"])), \
          patch.object(pl, "run_plan_editor", AsyncMock(return_value=edit_output)), \
