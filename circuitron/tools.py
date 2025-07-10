@@ -347,7 +347,7 @@ async def run_erc(script_path: str) -> str:
                 
             # Parse ERC output to determine if it passed
             erc_output = out.getvalue()
-            error_match = re.search(r'(\d+) errors found during ERC', erc_output)
+            error_match = re.search(r'(\\d+) errors found during ERC', erc_output)
             error_count = int(error_match.group(1)) if error_match else 0
             erc_passed = error_count == 0
             
