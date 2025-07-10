@@ -86,7 +86,7 @@ def test_code_corrector_configuration() -> None:
     mod = importlib.import_module("circuitron.agents")
     assert mod.code_corrector.model == cfg.settings.code_validation_model
     tool_names = [t.name for t in mod.code_corrector.tools]
-    assert "run_erc" in tool_names
+    assert "get_kg_usage_guide" in tool_names
 
 
 def test_agents_include_kg_guide_tool() -> None:
@@ -103,7 +103,7 @@ def test_agents_include_kg_guide_tool() -> None:
     assert "get_kg_usage_guide" in corrector_tools
 
 
-def test_corrector_includes_erc_info_tool() -> None:
+def test_erc_handler_configuration() -> None:
     import sys
 
     sys.modules.pop("circuitron.agents", None)
@@ -111,8 +111,8 @@ def test_corrector_includes_erc_info_tool() -> None:
 
     cfg.setup_environment()
     mod = importlib.import_module("circuitron.agents")
-    corrector_tools = [t.name for t in mod.code_corrector.tools]
-    assert "get_erc_info" in corrector_tools
+    handler_tools = [t.name for t in mod.erc_handler.tools]
+    assert "run_erc" in handler_tools
 
 
 def test_tool_choice_auto_for_o4mini() -> None:

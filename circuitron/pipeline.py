@@ -27,6 +27,7 @@ from circuitron.agents import (
     code_generator,
     code_validator,
     code_corrector,
+    erc_handler,
 )
 from agents.result import RunResult
 from circuitron.models import (
@@ -39,6 +40,7 @@ from circuitron.models import (
     CodeGenerationOutput,
     CodeValidationOutput,
     CodeCorrectionOutput,
+    ERCHandlingOutput,
 )
 from circuitron.correction_context import CorrectionContext
 from circuitron.utils import (
@@ -58,6 +60,7 @@ from circuitron.utils import (
     format_code_correction_input,
     format_code_correction_validation_input,
     format_code_correction_erc_input,
+    format_erc_handling_input,
     write_temp_skidl_script,
     prepare_erc_only_script,
     prepare_output_dir,
@@ -90,6 +93,7 @@ __all__ = [
     "run_code_correction",
     "run_code_correction_validation_only",
     "run_code_correction_erc_only",
+    "run_erc_handling",
     "run_with_retry",
     "pipeline",
     "main",
@@ -280,7 +284,30 @@ async def run_code_correction_erc_only(
         Updated :class:`CodeGenerationOutput` with attempted fixes applied.
     """
 
-    input_msg = format_code_correction_erc_input(
+    updated_code, _ = await run_erc_handling(
+        code_output,
+        validation,
+        plan,
+        selection,
+        docs,
+        erc_result,
+        context,
+    )
+    return updated_code
+
+
+async def run_erc_handling(
+    code_output: CodeGenerationOutput,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    erc_result: dict[str, object] | None,
+    context: CorrectionContext | None = None,
+) -> tuple[CodeGenerationOutput, ERCHandlingOutput]:
+    """Run the ERC Handling agent and return updated code and ERC info."""
+
+    input_msg = format_erc_handling_input(
         code_output.complete_skidl_code,
         validation,
         plan,
@@ -289,10 +316,10 @@ async def run_code_correction_erc_only(
         erc_result,
         context,
     )
-    result = await run_agent(code_corrector, sanitize_text(input_msg))
-    correction = cast(CodeCorrectionOutput, result.final_output)
-    code_output.complete_skidl_code = correction.corrected_code
-    return code_output
+    result = await run_agent(erc_handler, sanitize_text(input_msg))
+    erc_out = cast(ERCHandlingOutput, result.final_output)
+    code_output.complete_skidl_code = erc_out.final_code
+    return code_output, erc_out
 
 
 async def run_with_retry(
@@ -382,14 +409,20 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
                 and not erc_result.get("erc_passed", False)
                 and correction_context.should_continue_attempts()
             ):
-                code_out = await run_code_correction_erc_only(
-                    code_out, validation, plan, selection, docs, erc_result, correction_context
+                code_out, erc_out = await run_erc_handling(
+                    code_out,
+                    validation,
+                    plan,
+                    selection,
+                    docs,
+                    erc_result,
+                    correction_context,
                 )
                 _, erc_result = await run_code_validation(
                     code_out, selection, docs, run_erc_flag=True
                 )
                 if erc_result is not None:
-                    correction_context.add_erc_attempt(erc_result, [])
+                    correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
 
         if validation.status != "pass":
             if settings.dev_mode:
@@ -446,14 +479,20 @@ async def pipeline(prompt: str, show_reasoning: bool = False) -> CodeGenerationO
             and not erc_result.get("erc_passed", False)
             and correction_context.should_continue_attempts()
         ):
-            code_out = await run_code_correction_erc_only(
-                code_out, validation, final_plan, selection, docs, erc_result, correction_context
+            code_out, erc_out = await run_erc_handling(
+                code_out,
+                validation,
+                final_plan,
+                selection,
+                docs,
+                erc_result,
+                correction_context,
             )
             _, erc_result = await run_code_validation(
                 code_out, selection, docs, run_erc_flag=True
             )
             if erc_result is not None:
-                correction_context.add_erc_attempt(erc_result, [])
+                correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
 
     if validation.status != "pass":
         if settings.dev_mode:

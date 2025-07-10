@@ -22,6 +22,7 @@ class Settings:
     documentation_model: str = field(default="o4-mini")
     code_generation_model: str = field(default="o4-mini")
     code_validation_model: str = field(default="o4-mini")
+    erc_handling_model: str = field(default="o4-mini")
     calculation_image: str = field(
         default_factory=lambda: os.getenv("CALC_IMAGE", "python:3.12-slim")
     )

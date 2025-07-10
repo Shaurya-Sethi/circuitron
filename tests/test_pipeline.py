@@ -169,8 +169,15 @@ async def fake_pipeline_with_correction() -> None:
          ), \
          patch.object(
              pl,
-             "run_code_correction_erc_only",
-             AsyncMock(return_value=corrected),
+             "run_erc_handling",
+             AsyncMock(return_value=(corrected, pl.ERCHandlingOutput(
+                 final_code="fixed",
+                 erc_issues_identified=[],
+                 corrections_applied=[],
+                 erc_validation_status="pass",
+                 remaining_warnings=[],
+                 resolution_strategy="",
+             ))),
          ), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()), \
          patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
@@ -234,7 +241,18 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_pass, val_ok])), \
          patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=corrected)), \
-         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=corrected)), \
+         patch.object(
+             pl,
+             "run_erc_handling",
+             AsyncMock(return_value=(corrected, pl.ERCHandlingOutput(
+                 final_code="fixed",
+                 erc_issues_identified=[],
+                 corrections_applied=[],
+                 erc_validation_status="pass",
+                 remaining_warnings=[],
+                 resolution_strategy="",
+             ))),
+         ), \
          patch.object(pl, "execute_final_script", AsyncMock(return_value="{}")):
         result = await pl.pipeline("test")
     assert result.complete_skidl_code == "fixed"
@@ -377,7 +395,18 @@ async def fake_pipeline_erc_error() -> None:
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(side_effect=fake_validate)), \
-         patch.object(pl, "run_code_correction_erc_only", AsyncMock(return_value=code_out)), \
+         patch.object(
+             pl,
+             "run_erc_handling",
+             AsyncMock(return_value=(code_out, pl.ERCHandlingOutput(
+                 final_code="code",
+                 erc_issues_identified=[],
+                 corrections_applied=[],
+                 erc_validation_status="fail",
+                 remaining_warnings=[],
+                 resolution_strategy="",
+             ))),
+         ), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         with pytest.raises(pl.PipelineError):
             await pl.pipeline("test")

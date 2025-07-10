@@ -740,7 +740,7 @@ def format_code_correction_erc_input(
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None,
     context: CorrectionContext | None = None,
-) -> str:
+    ) -> str:
     """Format input for ERC-only code correction."""
 
     text = format_code_correction_input(
@@ -756,3 +756,26 @@ def format_code_correction_erc_input(
         text
         + "\nValidation has passed. Use the run_erc_tool as needed and fix ERC violations only."
     )
+
+
+def format_erc_handling_input(
+    script_content: str,
+    validation: CodeValidationOutput,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    erc_result: dict[str, object] | None,
+    context: CorrectionContext | None = None,
+) -> str:
+    """Format input for the ERC Handling agent."""
+
+    text = format_code_correction_input(
+        script_content,
+        validation,
+        plan,
+        selection,
+        docs,
+        erc_result,
+        context,
+    )
+    return text + "\nFocus solely on electrical rules violations."

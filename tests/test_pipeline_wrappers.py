@@ -67,9 +67,16 @@ async def run_wrappers() -> None:
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(
-            final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes="")
+            final_output=pl.ERCHandlingOutput(
+                final_code="fixed",
+                erc_issues_identified=[],
+                corrections_applied=[],
+                erc_validation_status="pass",
+                remaining_warnings=[],
+                resolution_strategy="",
+            )
         )
-        await pl.run_code_correction_erc_only(
+        await pl.run_erc_handling(
             CodeGenerationOutput(complete_skidl_code="code"),
             CodeValidationOutput(status="pass", summary="ok"),
             PlanOutput(),
