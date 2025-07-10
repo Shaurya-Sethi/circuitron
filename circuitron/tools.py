@@ -40,7 +40,7 @@ __all__ = [
 
 
 container_name = f"circuitron-kicad-{os.getpid()}"
-kicad_session = DockerSession(settings.kicad_image, container_name)
+kicad_session: DockerSession = DockerSession(settings.kicad_image, container_name)
 
 
 @function_tool
@@ -518,7 +518,7 @@ set_default_tool(KICAD5)
         # Copy generated files from container to host directory
         if success:
             # Copy all files from the container's working directory to the output directory
-            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            session.copy_generated_files("/workspace/*", output_dir)
             files = sorted(os.listdir(output_dir))
         else:
             files = []
