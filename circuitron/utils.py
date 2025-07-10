@@ -640,7 +640,8 @@ def prepare_erc_only_script(full_script: str) -> str:
 def prepare_output_dir(output_dir: str | None = None) -> str:
     """Ensure ``output_dir`` exists and is empty.
 
-    When ``output_dir`` is ``None`` a new temporary directory is created.
+    When ``output_dir`` is ``None`` a new directory called 'circuitron_output' 
+    is created in the current working directory.
 
     Args:
         output_dir: Optional target directory path.
@@ -649,11 +650,18 @@ def prepare_output_dir(output_dir: str | None = None) -> str:
         The absolute path to the prepared directory.
     """
 
-    path = output_dir or tempfile.mkdtemp(prefix="circuitron_out_")
+    if output_dir is None:
+        output_dir = os.path.join(os.getcwd(), "circuitron_output")
+    
+    path = output_dir
     os.makedirs(path, exist_ok=True)
+    
+    # Clear any existing files in the directory
     for name in os.listdir(path):
+        file_path = os.path.join(path, name)
         try:
-            os.remove(os.path.join(path, name))
+            if os.path.isfile(file_path):
+                os.remove(file_path)
         except OSError:
             pass
     return os.path.abspath(path)
