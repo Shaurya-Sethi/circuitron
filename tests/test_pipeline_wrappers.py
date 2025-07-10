@@ -56,7 +56,7 @@ async def run_wrappers() -> None:
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=CodeCorrectionOutput(corrected_code="fixed", validation_notes=""))
-        await pl.run_code_correction_validation_only(
+        await pl.run_validation_correction(
             CodeGenerationOutput(complete_skidl_code="code"),
             CodeValidationOutput(status="fail", summary="bad"),
             PlanOutput(),

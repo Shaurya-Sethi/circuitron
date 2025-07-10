@@ -765,31 +765,6 @@ def format_code_correction_validation_input(
     return text + "\nFocus only on fixing validation issues. Ignore ERC results."
 
 
-def format_code_correction_erc_input(
-    script_content: str,
-    validation: CodeValidationOutput,
-    plan: PlanOutput,
-    selection: PartSelectionOutput,
-    docs: DocumentationOutput,
-    erc_result: dict[str, object] | None,
-    context: CorrectionContext | None = None,
-) -> str:
-    """Format input for ERC-only code correction."""
-
-    text = format_code_correction_input(
-        script_content,
-        validation,
-        plan,
-        selection,
-        docs,
-        erc_result,
-        context,
-    )
-    return (
-        text
-        + "\nValidation has passed. Use the run_erc_tool as needed and fix ERC violations only."
-    )
-
 
 def format_erc_handling_input(
     script_content: str,

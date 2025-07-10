@@ -164,7 +164,7 @@ async def fake_pipeline_with_correction() -> None:
          ), \
          patch.object(
              pl,
-             "run_code_correction_validation_only",
+             "run_validation_correction",
              AsyncMock(return_value=corrected),
          ), \
          patch.object(
@@ -240,7 +240,7 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_fail, val_pass, val_ok])), \
-         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=corrected)), \
+         patch.object(pl, "run_validation_correction", AsyncMock(return_value=corrected)), \
          patch.object(
              pl,
              "run_erc_handling",
@@ -356,7 +356,7 @@ async def fake_pipeline_validation_error() -> None:
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=val_fail)), \
-         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_validation_correction", AsyncMock(return_value=code_out)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         with pytest.raises(pl.PipelineError):
             await pl.pipeline("test")
@@ -435,7 +435,7 @@ async def fake_pipeline_debug_failure(capsys: pytest.CaptureFixture[str]) -> str
          patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
          patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
          patch.object(pl, "run_code_validation", AsyncMock(return_value=val_fail)), \
-         patch.object(pl, "run_code_correction_validation_only", AsyncMock(return_value=code_out)), \
+         patch.object(pl, "run_validation_correction", AsyncMock(return_value=code_out)), \
          patch.object(pl, "collect_user_feedback", return_value=UserFeedback()):
         pl.settings.dev_mode = True
         with pytest.raises(pl.PipelineError):
