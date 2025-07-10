@@ -10,7 +10,12 @@ from .tools import create_mcp_server
 
 
 class MCPManager:
-    """Central manager for MCP server connections."""
+    """Central manager for MCP server connections.
+
+    This class manages a single MCP server connection that is shared
+    across all agents in the Circuitron pipeline. The single server
+    provides both documentation and validation capabilities.
+    """
 
     def __init__(self) -> None:
         self._server = create_mcp_server()
@@ -20,7 +25,9 @@ class MCPManager:
         for attempt in range(3):
             try:
                 await asyncio.wait_for(self._server.connect(), timeout=20.0)  # type: ignore[no-untyped-call]
-                logging.info("Successfully connected to MCP server: %s", self._server.name)
+                logging.info(
+                    "Successfully connected to MCP server: %s", self._server.name
+                )
                 return
             except Exception as exc:  # pragma: no cover - network errors
                 if attempt == 2:
@@ -41,12 +48,8 @@ class MCPManager:
         except Exception as exc:  # pragma: no cover - cleanup errors
             logging.warning("Error cleaning MCP server %s: %s", self._server.name, exc)
 
-    def get_doc_server(self) -> MCPServer:
-        """Return the MCP server instance."""
-        return self._server
-
-    def get_validation_server(self) -> MCPServer:
-        """Return the MCP server instance."""
+    def get_server(self) -> MCPServer:
+        """Return the MCP server instance used by all agents."""
         return self._server
 
 
