@@ -334,3 +334,30 @@ class ERCHandlingOutput(BaseModel):
     final_code: str = Field(
         description="Final SKiDL code with all ERC issues resolved",
     )
+
+
+class RuntimeErrorCorrectionOutput(BaseModel):
+    """Output from the Runtime Error Correction Agent."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    runtime_issues_identified: List[str] = Field(
+        default_factory=list,
+        description="Python runtime errors found with detailed descriptions and locations",
+    )
+    corrections_applied: List[str] = Field(
+        default_factory=list,
+        description="Runtime error corrections made with technical rationale",
+    )
+    execution_status: Literal["success", "runtime_error", "timeout"] = Field(
+        description="Final execution status after corrections",
+    )
+    error_details: str = Field(
+        description="Complete error traceback and diagnostic information",
+    )
+    corrected_code: str = Field(
+        description="Updated SKiDL code with runtime issues resolved",
+    )
+    execution_output: str = Field(
+        description="Captured stdout/stderr from script execution attempt",
+    )
+

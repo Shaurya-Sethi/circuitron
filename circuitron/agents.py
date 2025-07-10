@@ -24,6 +24,7 @@ from .prompts import (
     CODE_VALIDATION_PROMPT,
     CODE_CORRECTION_PROMPT,
     ERC_HANDLING_PROMPT,
+    RUNTIME_ERROR_CORRECTION_PROMPT,
 )
 from .models import (
     PlanOutput,
@@ -35,6 +36,7 @@ from .models import (
     CodeValidationOutput,
     CodeCorrectionOutput,
     ERCHandlingOutput,
+    RuntimeErrorCorrectionOutput,
 )
 from .tools import (
     execute_calculation,
@@ -42,6 +44,7 @@ from .tools import (
     search_kicad_footprints,
     extract_pin_details,
     run_erc_tool,
+    run_runtime_check_tool,
     get_kg_usage_guide,
 )
 from .mcp_manager import mcp_manager
@@ -186,6 +189,26 @@ def create_code_correction_agent() -> Agent:
     )
 
 
+def create_runtime_error_correction_agent() -> Agent:
+    """Create and configure the Runtime Error Correction Agent."""
+
+    model_settings = ModelSettings(
+        tool_choice=_tool_choice_for_mcp(settings.runtime_correction_model)
+    )
+
+    tools: list[Tool] = [get_kg_usage_guide, run_runtime_check_tool]
+
+    return Agent(
+        name="Circuitron-RuntimeCorrector",
+        instructions=RUNTIME_ERROR_CORRECTION_PROMPT,
+        model=settings.runtime_correction_model,
+        output_type=RuntimeErrorCorrectionOutput,
+        tools=tools,
+        mcp_servers=[mcp_manager.get_server()],
+        model_settings=model_settings,
+    )
+
+
 def create_erc_handling_agent() -> Agent:
     """Create and configure the ERC Handling Agent."""
     model_settings = ModelSettings(
@@ -214,4 +237,5 @@ documentation = create_documentation_agent()
 code_generator = create_code_generation_agent()
 code_validator = create_code_validation_agent()
 code_corrector = create_code_correction_agent()
+runtime_error_corrector = create_runtime_error_correction_agent()
 erc_handler = create_erc_handling_agent()

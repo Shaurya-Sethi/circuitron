@@ -637,6 +637,22 @@ def prepare_erc_only_script(full_script: str) -> str:
     return "\n".join(new_lines)
 
 
+def prepare_runtime_check_script(full_script: str) -> str:
+    """Return a modified script that stops before ERC() for runtime checking."""
+
+    new_lines: list[str] = []
+    for line in full_script.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("#"):
+            new_lines.append(line)
+            continue
+        if re.search(r"\b(generate_\w+|ERC)\s*\(", stripped):
+            new_lines.append(f"# {line}")
+        else:
+            new_lines.append(line)
+    return "\n".join(new_lines)
+
+
 def prepare_output_dir(output_dir: str | None = None) -> str:
     """Ensure ``output_dir`` exists and is empty.
 
@@ -822,4 +838,52 @@ def format_erc_handling_input(
         parts.append("")
 
     parts.append("Use electrical design knowledge to resolve remaining ERC violations.")
+    return "\n".join(parts)
+
+
+def format_runtime_correction_input(
+    code: str,
+    runtime_result: dict,
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    docs: DocumentationOutput,
+    context: CorrectionContext | None = None,
+) -> str:
+    """Format input for the Runtime Error Correction agent."""
+
+    parts = [
+        "RUNTIME ERROR CONTEXT",
+        "=" * 40,
+        "Script Content:",
+        code,
+        "",
+        "Runtime Result:",
+        str(runtime_result),
+        "",
+    ]
+
+    plan_text = format_plan_summary(plan)
+    if plan_text:
+        parts.append("DESIGN CONTEXT:")
+        parts.append(plan_text)
+        parts.append("")
+
+    selection_text = format_selection_summary(selection)
+    if selection_text:
+        parts.append("COMPONENT CONTEXT:")
+        parts.append(selection_text)
+        parts.append("")
+
+    docs_text = format_docs_summary(docs)
+    if docs_text:
+        parts.append("DOCUMENTATION CONTEXT:")
+        parts.append(docs_text)
+        parts.append("")
+
+    if context is not None:
+        parts.append("RUNTIME HISTORY:")
+        parts.append(context.get_runtime_context_for_agent())
+        parts.append("")
+
+    parts.append("Fix the runtime errors so the script executes to the ERC stage.")
     return "\n".join(parts)
