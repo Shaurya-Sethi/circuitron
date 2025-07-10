@@ -69,12 +69,8 @@ from circuitron.utils import (
 )
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
-from circuitron.tools import run_erc as run_erc_cmd
+from circuitron.tools import run_erc
 from circuitron.tools import execute_final_script
-
-# Expose ``run_erc`` for backward compatibility in tests and scripts.
-# This alias calls the same implementation as the ``run_erc`` tool.
-run_erc = run_erc_cmd
 
 
 class PipelineError(RuntimeError):

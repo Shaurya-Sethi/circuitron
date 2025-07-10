@@ -13,7 +13,7 @@ cfg.setup_environment()
 
 
 def _fake_exec_python_search(
-    script: str, timeout: int = 120
+    script: str, _timeout: int = 120
 ) -> subprocess.CompletedProcess[str]:
     buf = io.StringIO()
 
@@ -29,7 +29,7 @@ def _fake_exec_python_search(
 
 
 def _fake_exec_python_footprints(
-    script: str, timeout: int = 120
+    script: str, _timeout: int = 120
 ) -> subprocess.CompletedProcess[str]:
     buf = io.StringIO()
 
@@ -49,7 +49,7 @@ def test_search_kicad_libraries_parses_stdout() -> None:
 
     with patch(
         "circuitron.tools.kicad_session.exec_python",
-        side_effect=_fake_exec_python_search,
+        side_effect=lambda script, timeout=120: _fake_exec_python_search(script, timeout),
     ):
         ctx = ToolContext(context=None, tool_call_id="t_fixed1")
         args = json.dumps({"query": "R"})
@@ -68,7 +68,7 @@ def test_search_kicad_footprints_parses_stdout() -> None:
 
     with patch(
         "circuitron.tools.kicad_session.exec_python",
-        side_effect=_fake_exec_python_footprints,
+        side_effect=lambda script, timeout=120: _fake_exec_python_footprints(script, timeout),
     ):
         ctx = ToolContext(context=None, tool_call_id="t_fixed2")
         args = json.dumps({"query": "SOIC"})

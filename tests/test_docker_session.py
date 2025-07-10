@@ -164,7 +164,7 @@ def test_exec_full_script() -> None:
     run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
     rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     with patch.object(session, "start"), patch.object(session, "_run", side_effect=[cp_proc, run_proc, rm_proc]) as run_mock:
-        result = session.exec_full_script("/tmp/x.py", "/out")
+        result = session.exec_full_script("/tmp/x.py")
         assert result.stdout == "ok"
         assert run_mock.call_args_list[0].args[0][:2] == ["docker", "cp"]
         assert run_mock.call_args_list[1].args[0][:3] == ["docker", "exec", "-i"]
