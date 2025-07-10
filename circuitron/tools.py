@@ -113,8 +113,13 @@ async def search_kicad_libraries(query: str, max_results: int = 50) -> str:
     """
     script = textwrap.dedent(
         f"""
+import os
 import json, io, contextlib
 from skidl import *
+
+# Set up KiCad environment variables
+os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+
 set_default_tool(KICAD5)
 max_results = {max_results}
 buf = io.StringIO()
@@ -167,7 +172,7 @@ print(json.dumps(filtered_results))
 """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
+        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -201,8 +206,14 @@ async def search_kicad_footprints(query: str, max_results: int = 30) -> str:
     """
     script = textwrap.dedent(
         f"""
+import os
 import json, io, contextlib
 from skidl import *
+
+# Set up KiCad environment variables
+os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+
 set_default_tool(KICAD5)
 max_results = {max_results}
 buf = io.StringIO()
@@ -234,7 +245,7 @@ print(json.dumps(results))
 """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
+        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "footprint search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -259,8 +270,13 @@ print(json.dumps(results))
 async def extract_pin_details(library: str, part_name: str) -> str:
     """Return pin details using skidl.show()."""
     script = textwrap.dedent(f"""
+import os
 import json, io, contextlib
 from skidl import *
+
+# Set up KiCad environment variables
+os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+
 set_default_tool(KICAD5)
 buf = io.StringIO()
 try:
@@ -280,7 +296,7 @@ for line in text:
 print(json.dumps(pins))
 """)
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python, script, timeout=120)
+        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "pin extract timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -333,8 +349,13 @@ async def run_erc(script_path: str) -> str:
 
     wrapper = textwrap.dedent(
         """
+        import os
         import json, runpy, io, contextlib, re
         from skidl import *
+        
+        # Set up KiCad environment variables
+        os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+        
         set_default_tool(KICAD5)
         out = io.StringIO()
         err = io.StringIO()
@@ -358,7 +379,7 @@ async def run_erc(script_path: str) -> str:
         """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_erc, script_path, wrapper)
+        proc = await asyncio.to_thread(kicad_session.exec_erc_with_env, script_path, wrapper)
     except subprocess.TimeoutExpired as exc:
         return json.dumps(
             {"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)}
@@ -400,13 +421,38 @@ async def execute_final_script(script_content: str, output_dir: str) -> str:
         f"circuitron-final-{os.getpid()}",
         volumes={output_dir: docker_output_dir},
     )
-    script_path = write_temp_skidl_script(script_content)
+    # Create a wrapper script that handles library loading more gracefully
+    wrapped_script = f"""
+import os
+import sys
+from skidl import *
+
+# Set up KiCad environment variables
+os.environ['KICAD5_SYMBOL_DIR'] = '/usr/share/kicad/library'
+os.environ['KICAD5_FOOTPRINT_DIR'] = '/usr/share/kicad/modules'
+
+# Set KiCad as the default tool
+set_default_tool(KICAD5)
+
+# User script starts here
+{script_content}
+"""
+    
+    script_path = write_temp_skidl_script(wrapped_script)
     try:
         proc = await asyncio.to_thread(
-            session.exec_full_script, script_path
+            session.exec_full_script_with_env, script_path
         )
         success = proc.returncode == 0
-        files = sorted(os.listdir(output_dir))
+        
+        # Copy generated files from container to host directory
+        if success:
+            # Copy all files from the container's working directory to the output directory
+            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            files = sorted(os.listdir(output_dir))
+        else:
+            files = []
+        
         return json.dumps(
             {
                 "success": success,
