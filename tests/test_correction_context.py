@@ -28,7 +28,7 @@ def test_erc_summary_and_issue_tracking() -> None:
     ctx = CorrectionContext()
     erc = {
         "erc_passed": False,
-        "stdout": "WARNING: w\nERROR: e\n1 errors found during ERC\n1 warnings found during ERC",
+        "stdout": "WARNING: w\nERROR: e\n1 errors found during ERC\n1 warning found during ERC",
     }
     ctx.add_erc_attempt(erc, ["fix1"])
     summary = ctx.get_erc_summary_for_agent()

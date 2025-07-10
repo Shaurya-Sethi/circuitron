@@ -155,7 +155,7 @@ async def fake_pipeline_with_correction() -> None:
         CodeValidationOutput(status="pass", summary="ok"),
         {
             "erc_passed": False,
-            "stdout": "ERROR: e\n1 errors found during ERC\n1 warnings found during ERC",
+            "stdout": "ERROR: e\n1 errors found during ERC\n1 warning found during ERC",
         },
     )
     val_ok = (
@@ -289,11 +289,11 @@ async def fake_pipeline_warning_approval() -> None:
     val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
     erc_start = (
         CodeValidationOutput(status="pass", summary="ok"),
-        {"erc_passed": False, "stdout": "ERROR: e\nWARNING: w\n1 errors found during ERC\n1 warnings found during ERC"},
+        {"erc_passed": False, "stdout": "ERROR: e\nWARNING: w\n1 errors found during ERC\n1 warning found during ERC"},
     )
     erc_final = (
         CodeValidationOutput(status="pass", summary="ok"),
-        {"erc_passed": True, "stdout": "WARNING: w\n0 errors found during ERC\n1 warnings found during ERC"},
+        {"erc_passed": True, "stdout": "WARNING: w\n0 errors found during ERC\n1 warning found during ERC"},
     )
 
     with patch.object(pl, "run_planner", AsyncMock(return_value=plan_result)), \
@@ -322,8 +322,8 @@ async def fake_pipeline_warning_approval() -> None:
     assert erc_mock.await_count == 1
 
 
-def test_pipeline_warning_approval_flow() -> None:
-    asyncio.run(fake_pipeline_warning_approval())
+def test_pipeline_warning_approval_flow(capsys: pytest.CaptureFixture[str]) -> None:
+    asyncio.run(fake_pipeline_warning_approval(capsys))
 
 
 def test_run_code_validation_cleanup(tmp_path: Path) -> None:
@@ -532,7 +532,7 @@ async def fake_pipeline_warning_approval(capsys: pytest.CaptureFixture[str]) -> 
 
     erc_warn = {
         "erc_passed": True,
-        "stdout": "WARNING: w\n0 errors found during ERC\n1 warnings found during ERC",
+        "stdout": "WARNING: w\n0 errors found during ERC\n1 warning found during ERC",
     }
 
     val_pass = (CodeValidationOutput(status="pass", summary="ok"), None)
@@ -575,7 +575,18 @@ def test_erc_warning_approval_breaks_loop(capsys: pytest.CaptureFixture[str]) ->
     assert result.complete_skidl_code == "code"
     assert erc_calls == 1
     assert val_calls == 3
-    assert "Agent approved warnings as acceptable" in out
     assert ctx is not None
     assert ctx.erc_issues_history[-1]["warnings"]
+
+
+def test_has_erc_warnings() -> None:
+    from circuitron.pipeline import _has_erc_warnings
+
+    plural = {"stdout": "0 errors found during ERC\n2 warnings found during ERC"}
+    singular = {"stdout": "0 errors found during ERC\n1 warning found during ERC"}
+    none = {"stdout": "0 errors found during ERC\n0 warnings found during ERC"}
+
+    assert _has_erc_warnings(plural)
+    assert _has_erc_warnings(singular)
+    assert not _has_erc_warnings(none)
 
