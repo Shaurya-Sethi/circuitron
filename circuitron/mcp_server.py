@@ -11,7 +11,7 @@ import urllib.request
 from typing import Any
 
 CONTAINER_NAME = "circuitron-mcp"
-IMAGE = "ghcr.io/shaurya-sethi/sentinel-mcp:latest"
+IMAGE = "ghcr.io/shaurya-sethi/circuitron-mcp:latest"
 
 
 def _run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
