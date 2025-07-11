@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Utilities to manage the MCP server Docker container."""
+
+from __future__ import annotations
 
 import atexit
 import logging
@@ -19,8 +19,9 @@ def _run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
 
 
 def _health_check(url: str) -> bool:
+    """Check if the MCP server is reachable via its SSE endpoint."""
     try:
-        with urllib.request.urlopen(f"{url}/health", timeout=5):
+        with urllib.request.urlopen(f"{url}/sse", timeout=5):
             pass
         return True
     except Exception:
