@@ -32,10 +32,11 @@ def test_run_circuitron_handles_pipeline_error() -> None:
 
 def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:
     out = CodeGenerationOutput(complete_skidl_code="abc")
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)):
         cli.main()
     captured = capsys.readouterr().out
@@ -45,10 +46,11 @@ def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_cli_main_prompts_for_input(monkeypatch: pytest.MonkeyPatch) -> None:
     out = CodeGenerationOutput(complete_skidl_code="xyz")
-    args = SimpleNamespace(prompt=None, reasoning=True, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt=None, reasoning=True, retries=0, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)) as run_mock:
         monkeypatch.setattr("builtins.input", lambda _: "hello")
         cli.main()
@@ -64,10 +66,11 @@ def test_module_main_called() -> None:
 
 def test_cli_main_stops_session() -> None:
     out = CodeGenerationOutput(complete_skidl_code="123")
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)), \
          patch("circuitron.tools.kicad_session.stop") as stop_mock:
         cli.main()
@@ -76,10 +79,11 @@ def test_cli_main_stops_session() -> None:
 def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) -> None:
     import circuitron.config as cfg
     cfg.setup_environment()
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=KeyboardInterrupt)), \
          patch("circuitron.tools.kicad_session.stop"):
         cli.main()
@@ -88,10 +92,11 @@ def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) 
 
 
 def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=1, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=RuntimeError("fail"))), \
          patch("circuitron.tools.kicad_session.stop"):
         cli.main()
@@ -100,27 +105,30 @@ def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_verify_containers_success() -> None:
-    with patch("circuitron.tools.kicad_session.start") as start_mock:
+    with patch("circuitron.cli.kicad_session.start") as start_mock, \
+         patch("circuitron.cli.ensure_mcp", return_value=True) as mcp_mock:
         assert cli.verify_containers() is True
         start_mock.assert_called_once()
+        mcp_mock.assert_called_once()
 
 
 def test_verify_containers_failure(capsys: pytest.CaptureFixture[str]) -> None:
     with patch(
-        "circuitron.tools.kicad_session.start",
+        "circuitron.cli.kicad_session.start",
         side_effect=RuntimeError("bad"),
-    ):
+    ), patch("circuitron.cli.ensure_mcp", return_value=True):
         assert cli.verify_containers() is False
     captured = capsys.readouterr().out
     assert "failed to start" in captured.lower()
 
 
 def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt=None, reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt=None, reasoning=False, retries=0, dev=False, output_dir=None)
     out = CodeGenerationOutput(complete_skidl_code="")
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.tools.kicad_session.start", side_effect=RuntimeError("bad")), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
+         patch("circuitron.cli.kicad_session.start", side_effect=RuntimeError("bad")), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)) as run_mock, \
          patch("circuitron.tools.kicad_session.stop"):
         monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(AssertionError("prompt called")))
@@ -129,11 +137,12 @@ def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch
 
 
 def test_cli_main_checks_internet(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
     with patch("circuitron.cli.setup_environment"), \
-         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.cli.parse_cli_args", return_value=args), \
          patch("circuitron.cli.check_internet_connection", return_value=False), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.tools.kicad_session.stop") as stop_mock, \
          patch("circuitron.cli.run_circuitron", AsyncMock()) as run_mock:
         cli.main()
@@ -167,12 +176,13 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
         await dbg.run_agent(SimpleNamespace(name="A"), "hi")
         return CodeGenerationOutput(complete_skidl_code="code")
 
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=True, output_dir=None)
-    with patch("circuitron.pipeline.parse_args", return_value=args), \
+    args = SimpleNamespace(command="run", prompt="p", reasoning=False, retries=0, dev=True, output_dir=None)
+    with patch("circuitron.cli.parse_cli_args", return_value=args), \
          patch("circuitron.cli.setup_environment", side_effect=lambda dev: setattr(cfg.settings, "dev_mode", dev)), \
          patch("circuitron.debug.Runner.run", AsyncMock(return_value=run_result)), \
          patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=fake_run)), \
-         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.cli.kicad_session.start"), \
+         patch("circuitron.cli.ensure_mcp", return_value=True), \
          patch("circuitron.tools.kicad_session.stop"), \
          patch("circuitron.debug.display_run_items", wraps=dbg.display_run_items) as disp_mock:
         cli.main()

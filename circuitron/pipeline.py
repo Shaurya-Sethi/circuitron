@@ -652,9 +652,12 @@ async def main() -> None:
     """CLI entry point for the Circuitron pipeline."""
     args = parse_args()
     from circuitron.config import setup_environment
+    from circuitron.cli import verify_containers
 
     setup_environment(dev=args.dev)
     if not check_internet_connection():
+        return
+    if not verify_containers():
         return
     await mcp_manager.initialize()
     try:
