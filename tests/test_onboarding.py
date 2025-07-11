@@ -19,3 +19,4 @@ def test_run_onboarding_writes_env(tmp_path, monkeypatch):
     assert "OPENAI_API_KEY='k'" in data
     assert "SUPABASE_URL='surl'" in data
     assert "NEO4J_USER='user'" in data
+    assert "MCP_PORT='8051'" in data
