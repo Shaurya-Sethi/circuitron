@@ -5,12 +5,26 @@ from __future__ import annotations
 import os
 import sys
 import importlib
+from pathlib import Path
 from dotenv import load_dotenv
 import urllib.request
 
 from .settings import Settings
+from .onboarding import run_onboarding
+
+ENV_FILE = Path(os.getenv("CIRCUITRON_ENV_FILE", str(Path.home() / ".circuitron" / ".env")))
 
 settings = Settings()
+
+ENV_DIR = ENV_FILE.parent
+
+
+def _load_env() -> None:
+    """Load environment variables from the Circuitron configuration file."""
+    if not ENV_FILE.exists() and os.getenv("CIRCUITRON_AUTO_ONBOARD", "1") != "0":
+        run_onboarding()
+    load_dotenv(ENV_FILE)
+
 
 
 def _check_mcp_health(url: str) -> None:
@@ -34,10 +48,15 @@ def setup_environment(dev: bool = False) -> Settings:
     Args:
         dev: Enable logfire tracing when ``True``. Requires ``logfire`` to be installed.
     """
-    load_dotenv()
+    _load_env()
 
     required = [
         "OPENAI_API_KEY",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_KEY",
+        "NEO4J_URI",
+        "NEO4J_USER",
+        "NEO4J_PASSWORD",
         "MCP_URL",
     ]
     missing = [var for var in required if not os.getenv(var)]
@@ -60,3 +79,5 @@ def setup_environment(dev: bool = False) -> Settings:
     settings.__dict__.update(vars(new_settings))
     settings.dev_mode = dev
     return settings
+
+__all__ = ["settings", "setup_environment", "ENV_FILE"]

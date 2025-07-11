@@ -96,11 +96,13 @@ def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pl, "parse_args", lambda _=None: args)
     monkeypatch.setattr(pl, "run_with_retry", AsyncMock())
     monkeypatch.setattr(pl, "check_internet_connection", lambda: False)
+    monkeypatch.setattr("circuitron.cli.verify_containers", lambda: True)
     asyncio.run(pl.main())
     cast(AsyncMock, pl.run_with_retry).assert_not_awaited()
 
     # Now with connection available
     monkeypatch.setattr(pl, "check_internet_connection", lambda: True)
+    monkeypatch.setattr("circuitron.cli.verify_containers", lambda: True)
     asyncio.run(pl.main())
     cast(AsyncMock, pl.run_with_retry).assert_awaited_with(
         "p",
