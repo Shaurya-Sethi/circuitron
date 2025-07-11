@@ -6,6 +6,8 @@ import logging
 
 from agents.mcp import MCPServer
 
+from .settings import CONNECTION_SETTINGS
+
 from .tools import create_mcp_server
 
 
@@ -22,20 +24,28 @@ class MCPManager:
 
     async def _connect_server_with_timeout(self) -> None:
         """Attempt to connect to the MCP server with retries."""
-        for attempt in range(3):
+        max_attempts = CONNECTION_SETTINGS.mcp_max_connection_attempts
+        for attempt in range(max_attempts):
             try:
-                await asyncio.wait_for(self._server.connect(), timeout=20.0)  # type: ignore[no-untyped-call]
+                await asyncio.wait_for(
+                    self._server.connect(),
+                    timeout=CONNECTION_SETTINGS.mcp_connection_timeout,
+                )  # type: ignore[no-untyped-call]
                 logging.info(
                     "Successfully connected to MCP server: %s", self._server.name
                 )
                 return
             except Exception as exc:  # pragma: no cover - network errors
-                if attempt == 2:
+                if attempt == max_attempts - 1:
                     logging.warning(
                         "Failed to connect MCP server %s: %s", self._server.name, exc
                     )
-                else:
-                    await asyncio.sleep(2**attempt)
+                wait = min(
+                    CONNECTION_SETTINGS.initial_retry_delay
+                    * CONNECTION_SETTINGS.retry_exponential_base**attempt,
+                    CONNECTION_SETTINGS.max_retry_delay,
+                )
+                await asyncio.sleep(wait)
 
     async def initialize(self) -> None:
         """Connect the managed MCP server."""

@@ -27,6 +27,27 @@ def is_connected(url: str = "https://api.openai.com", timeout: float = 3.0) -> b
         return False
 
 
+async def async_health_check(url: str, timeout: float = 10.0) -> bool:
+    """Asynchronously check server health via a HEAD request."""
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.head(url)
+            return response.status_code < 400
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError, socket.gaierror, TimeoutError, OSError):
+        return False
+
+
+def classify_connection_error(exc: Exception) -> str:
+    """Return a short classification string for connection-related errors."""
+    if isinstance(exc, httpx.ConnectError):
+        return "connection_refused"
+    if isinstance(exc, httpx.TimeoutException):
+        return "timeout"
+    if isinstance(exc, httpx.RequestError):
+        return "request_error"
+    return exc.__class__.__name__
+
+
 def check_internet_connection() -> bool:
     """Check for internet connectivity and print a message when absent.
 
@@ -42,4 +63,9 @@ def check_internet_connection() -> bool:
         return False
     return True
 
-__all__ = ["check_internet_connection", "is_connected"]
+__all__ = [
+    "check_internet_connection",
+    "is_connected",
+    "async_health_check",
+    "classify_connection_error",
+]

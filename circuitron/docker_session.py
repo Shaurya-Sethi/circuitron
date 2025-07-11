@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import threading
 from .utils import convert_windows_path_for_docker
+from .settings import CONNECTION_SETTINGS
 
 
 def ensure_windows_tmp_directory() -> None:
@@ -94,6 +95,18 @@ class DockerSession:
         except subprocess.CalledProcessError:
             return False
 
+    def _wait_for_container_ready(self, max_wait: int) -> bool:
+        """Wait for the container to be ready."""
+        start = time.time()
+        attempt = 0
+        while time.time() - start < max_wait:
+            if self._health_check():
+                return True
+            wait_time = min(2 ** attempt, 5)
+            time.sleep(wait_time)
+            attempt += 1
+        return False
+
     def start(self) -> None:
         """Ensure the container is running."""
         with self._lock:
@@ -173,6 +186,10 @@ class DockerSession:
                     str(exc).strip(),
                 )
                 raise
+            if not self._wait_for_container_ready(
+                CONNECTION_SETTINGS.container_start_timeout
+            ):
+                raise RuntimeError("Container failed to become ready")
             self.started = True
 
     def exec_python(

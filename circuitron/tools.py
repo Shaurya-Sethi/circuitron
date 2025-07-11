@@ -16,6 +16,7 @@ import json
 from .models import CalcResult
 from .config import settings
 from .docker_session import DockerSession
+from .settings import CONNECTION_SETTINGS
 from .utils import (
     write_temp_skidl_script,
     prepare_output_dir,
@@ -319,13 +320,15 @@ def create_mcp_server() -> MCPServerSse:
         MCPServerSse configured for the ``skidl_docs`` server.
     """
     url = f"{settings.mcp_url}/sse"
-    timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
+    timeout = CONNECTION_SETTINGS.mcp_connection_timeout
+    if os.getenv("DOCKER_ENV"):
+        timeout += 5.0
     return MCPServerSse(
         name="skidl_docs",
         params={
             "url": url,
             "timeout": timeout,
-            "sse_read_timeout": timeout * 2,
+            "sse_read_timeout": CONNECTION_SETTINGS.mcp_health_check_timeout,
         },
         cache_tools_list=True,
         client_session_timeout_seconds=timeout,

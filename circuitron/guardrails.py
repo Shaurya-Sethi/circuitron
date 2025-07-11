@@ -10,7 +10,7 @@ from agents import Agent, GuardrailFunctionOutput, Runner, input_guardrail
 import httpx
 import openai
 
-from .network import is_connected
+from .network import is_connected, classify_connection_error
 from .exceptions import PipelineError
 from .config import settings
 
@@ -59,9 +59,9 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
     try:
         coro = Runner.run(pcb_query_agent, input_data, context=ctx.context)
         result = await asyncio.wait_for(coro, timeout=settings.network_timeout)
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as exc:
         raise PipelineError(
-            "Network operation timed out. Please check your connection and try again."
+            f"Operation timeout: {classify_connection_error(exc)}"
         )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
         print(f"Network error: {exc}")
@@ -69,7 +69,9 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
             raise PipelineError(
                 "Internet connection lost. Please check your connection and try again."
             ) from exc
-        raise PipelineError("Network connection issue") from exc
+        raise PipelineError(
+            f"Network connection issue: {classify_connection_error(exc)}"
+        ) from exc
 
     output = result.final_output_as(PCBQueryOutput)
     return GuardrailFunctionOutput(

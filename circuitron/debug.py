@@ -14,7 +14,7 @@ from agents.items import MessageOutputItem, ToolCallOutputItem
 from agents.result import RunResult
 
 from .config import settings
-from .network import is_connected
+from .network import is_connected, classify_connection_error
 from .exceptions import PipelineError
 
 
@@ -62,9 +62,9 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
         message = "Sorry, I can only assist with PCB design questions."
         print(message)
         raise PipelineError(message)
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as exc:
         raise PipelineError(
-            "Network operation timed out. Please check your connection and try again."
+            f"Operation timeout: {classify_connection_error(exc)}"
         )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
         print(f"Network error: {exc}")
@@ -72,7 +72,7 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
             raise PipelineError(
                 "Internet connection lost. Please check your connection and try again."
             ) from exc
-        raise PipelineError("Network connection issue") from exc
+        raise PipelineError(f"Network connection issue: {classify_connection_error(exc)}") from exc
 
     if settings.dev_mode:
         display_run_items(result)

@@ -9,6 +9,48 @@ Example:
 
 from dataclasses import dataclass, field
 import os
+from typing import Final
+
+
+@dataclass
+class ConnectionSettings:
+    """Centralized timeouts and retry configuration."""
+
+    container_start_timeout: int = int(os.getenv("CONTAINER_START_TIMEOUT", "30"))
+    container_health_check_timeout: int = int(
+        os.getenv("CONTAINER_HEALTH_TIMEOUT", "10")
+    )
+    container_max_startup_attempts: int = int(
+        os.getenv("CONTAINER_MAX_ATTEMPTS", "3")
+    )
+
+    mcp_startup_timeout: int = int(os.getenv("MCP_STARTUP_TIMEOUT", "60"))
+    mcp_health_check_timeout: int = int(os.getenv("MCP_HEALTH_TIMEOUT", "15"))
+    mcp_connection_timeout: int = int(os.getenv("MCP_CONNECTION_TIMEOUT", "20"))
+    mcp_max_connection_attempts: int = int(
+        os.getenv("MCP_MAX_CONNECTION_ATTEMPTS", "5")
+    )
+
+    network_operation_timeout: int = int(
+        os.getenv("NETWORK_OPERATION_TIMEOUT", "120")
+    )
+    api_request_timeout: int = int(os.getenv("API_REQUEST_TIMEOUT", "30"))
+
+    initial_retry_delay: float = float(os.getenv("INITIAL_RETRY_DELAY", "1"))
+    max_retry_delay: float = float(os.getenv("MAX_RETRY_DELAY", "10"))
+    retry_exponential_base: float = float(os.getenv("RETRY_EXPONENTIAL_BASE", "2"))
+
+    def get_progressive_timeout(self, attempt: int, base_timeout: int) -> int:
+        """Return progressively increased timeout for retry attempts."""
+        return min(
+            int(base_timeout * (self.retry_exponential_base**attempt)),
+            base_timeout * 3,
+        )
+
+
+CONNECTION_SETTINGS: Final = ConnectionSettings()
+
+__all__ = ["Settings", "ConnectionSettings", "CONNECTION_SETTINGS"]
 
 
 @dataclass

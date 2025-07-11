@@ -36,7 +36,7 @@ def test_remove_exited_container() -> None:
     run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     with patch.object(
         session, "_run", side_effect=[ps_proc, rm_proc, run_proc]
-    ) as run_mock:
+    ) as run_mock, patch.object(session, "_wait_for_container_ready", return_value=True):
         session.start()
         assert session.started is True
         assert run_mock.call_args_list[0].args[0][:3] == ["docker", "ps", "-a"]
@@ -54,6 +54,7 @@ def test_start_logs_failure() -> None:
     with (
         patch.object(session, "_run", side_effect=[ps_proc, err]) as run_mock,
         patch("circuitron.docker_session.logging.error") as log_mock,
+        patch.object(session, "_wait_for_container_ready", return_value=True),
     ):
         with pytest.raises(RuntimeError):
             session.start()
@@ -68,6 +69,7 @@ def test_start_error_message() -> None:
     with (
         patch.object(session, "_run", side_effect=[ps_proc, err]),
         patch("circuitron.docker_session.logging.error"),
+        patch.object(session, "_wait_for_container_ready", return_value=True),
     ):
         with pytest.raises(RuntimeError) as info:
             session.start()
@@ -113,7 +115,7 @@ def test_start_rechecks_container_state() -> None:
     session.started = True
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock:
+    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock, patch.object(session, "_wait_for_container_ready", return_value=True):
         session.start()
         assert run_mock.call_count == 2
         assert run_mock.call_args_list[0].args[0][:3] == ["docker", "ps", "-a"]
@@ -134,7 +136,7 @@ def test_start_health_check_failure() -> None:
     health_err = subprocess.CalledProcessError(returncode=1, cmd=["docker"], stderr="bad")
     rm_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-    with patch.object(session, "_run", side_effect=[ps_proc, health_err, rm_proc, run_proc]) as run_mock:
+    with patch.object(session, "_run", side_effect=[ps_proc, health_err, rm_proc, run_proc]) as run_mock, patch.object(session, "_wait_for_container_ready", return_value=True):
         session.start()
         assert session.started is True
         assert run_mock.call_args_list[2].args[0][:3] == ["docker", "rm", "-f"]
@@ -151,7 +153,7 @@ def test_start_with_volume_mount() -> None:
     session = DockerSession("img", "cont", volumes={"/host": "/cont"})
     ps_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
     run_proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock:
+    with patch.object(session, "_run", side_effect=[ps_proc, run_proc]) as run_mock, patch.object(session, "_wait_for_container_ready", return_value=True):
         session.start()
         args = run_mock.call_args_list[1].args[0]
         assert "-v" in args and "/host:/cont" in args

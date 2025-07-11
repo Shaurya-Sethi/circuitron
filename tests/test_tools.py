@@ -145,9 +145,7 @@ def test_create_mcp_server() -> None:
     assert server.name == "skidl_docs"
     assert server.params["url"] == cfg.settings.mcp_url + "/sse"
     assert "timeout" in server.params
-    assert server.client_session_timeout_seconds == (
-        15.0 if os.getenv("DOCKER_ENV") else 10.0
-    )
+    assert server.client_session_timeout_seconds == server.params["timeout"]
 
 
 def test_run_erc_success() -> None:

@@ -10,6 +10,8 @@ import time
 import urllib.request
 from typing import Any
 
+from .settings import CONNECTION_SETTINGS
+
 CONTAINER_NAME = "circuitron-mcp"
 IMAGE = "ghcr.io/shaurya-sethi/circuitron-mcp:latest"
 
@@ -26,6 +28,19 @@ def _health_check(url: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def _wait_for_server_ready(url: str, max_wait: int) -> bool:
+    """Wait for the MCP server to respond within ``max_wait`` seconds."""
+    start = time.time()
+    attempt = 0
+    while time.time() - start < max_wait:
+        if _health_check(url):
+            return True
+        wait_time = min(2 ** attempt, 5)
+        time.sleep(wait_time)
+        attempt += 1
+    return False
 
 
 def is_running(url: str) -> bool:
@@ -109,13 +124,13 @@ def start() -> bool:
         logging.error("Failed to start MCP container: %s", proc.stderr.strip())
         return False
 
-    max_attempts = int(os.getenv("MCP_START_MAX_ATTEMPTS", "20"))
-    for _ in range(max_attempts):
-        time.sleep(1)
-        if is_running(url):
-            atexit.register(stop)
-            return True
-    logging.error("MCP server failed to start after %s seconds", max_attempts)
+    if _wait_for_server_ready(url, CONNECTION_SETTINGS.mcp_startup_timeout):
+        atexit.register(stop)
+        return True
+
+    logging.error(
+        "MCP server failed to start within %ss", CONNECTION_SETTINGS.mcp_startup_timeout
+    )
     return False
 
 
