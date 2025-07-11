@@ -25,7 +25,6 @@ REQUIRED_VARS: list[tuple[str, str, bool]] = [
 PRESET_VARS = {
     "HOST": "0.0.0.0",
     "PORT": "8051",
-    "MCP_PORT": "8051",
     "TRANSPORT": "sse",
     "MODEL_CHOICE": "gpt-4.1-nano",
     "USE_CONTEXTUAL_EMBEDDINGS": "true",

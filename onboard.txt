@@ -1,0 +1,2 @@
+The MCP server always exposes port `8051` inside its Docker container and maps it
+to port `8051` on the host. The port mapping cannot be changed.

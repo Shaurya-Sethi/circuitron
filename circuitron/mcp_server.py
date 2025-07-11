@@ -81,7 +81,6 @@ def start() -> bool:
         }.items()
     }
 
-    host_port = os.getenv("MCP_PORT", "8051")
     cmd = [
         "docker",
         "run",
@@ -89,7 +88,7 @@ def start() -> bool:
         "--name",
         CONTAINER_NAME,
         "-p",
-        f"{host_port}:8051",
+        "8051:8051",
     ]
     for k, v in env_vars.items():
         if v:
