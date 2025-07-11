@@ -15,3 +15,5 @@ temp_test_files/
 prompt_engg_workflow.md
 test_output/
 test_run_output/
+.clinerules/
+memory-bank/
