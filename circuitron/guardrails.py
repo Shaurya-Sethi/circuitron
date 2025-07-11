@@ -26,7 +26,22 @@ pcb_query_agent = Agent(
 
 @input_guardrail
 async def pcb_query_guardrail(ctx, agent, input_data):
-    """Refuse processing if the user query is not PCB related."""
+    """Refuse processing if the user query is not PCB related.
+
+    Args:
+        ctx: The :class:`~agents.RunContextWrapper` supplied to the guardrail.
+        agent: The :class:`~agents.Agent` about to run.
+        input_data: The user's request or message payload.
+
+    Returns:
+        A :class:`GuardrailFunctionOutput` describing whether the query is
+        relevant. ``tripwire_triggered`` is ``True`` when the query is
+        unrelated to PCB design.
+
+    Example:
+        >>> await pcb_query_guardrail(ctx, agent, "Design a buck converter")
+        GuardrailFunctionOutput(...)
+    """
     result = await Runner.run(pcb_query_agent, input_data, context=ctx.context)
     output = result.final_output_as(PCBQueryOutput)
     return GuardrailFunctionOutput(output_info=output, tripwire_triggered=not output.is_relevant)
