@@ -25,4 +25,27 @@ def test_ensure_running_starts_container(monkeypatch):
     run_cmd = commands[-1]
     idx = run_cmd.index("-p")
     assert run_cmd[idx + 1] == "8051:8051"
-    assert f"PORT=9999" in run_cmd
+    assert "PORT=9999" in run_cmd
+
+
+def test_start_respects_attempt_env(monkeypatch):
+    attempts = {"count": 0}
+
+    def fake_is_running(_url: str) -> bool:
+        attempts["count"] += 1
+        # become healthy on the fourth check
+        return attempts["count"] >= 4
+
+    monkeypatch.setattr(srv, "is_running", fake_is_running)
+    monkeypatch.setattr(
+        srv, "_run", lambda *_a, **_k: subprocess.CompletedProcess([], 0, "", "")
+    )
+    monkeypatch.setattr(srv, "_container_status", lambda: None)
+    monkeypatch.setattr(srv, "_remove_container", lambda: None)
+    monkeypatch.setattr(srv.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(srv.atexit, "register", lambda *_a, **_k: None)
+    monkeypatch.setenv("MCP_START_MAX_ATTEMPTS", "5")
+
+    assert srv.start() is True
+    # one initial check plus three loop iterations
+    assert attempts["count"] == 4
