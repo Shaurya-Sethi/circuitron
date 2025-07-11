@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 from agents import Agent, GuardrailFunctionOutput, Runner, input_guardrail
+import httpx
+import openai
 
 
 class PCBQueryOutput(BaseModel):
@@ -25,7 +29,7 @@ pcb_query_agent = Agent(
 
 
 @input_guardrail
-async def pcb_query_guardrail(ctx, agent, input_data):
+async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> GuardrailFunctionOutput:
     """Refuse processing if the user query is not PCB related.
 
     Args:
@@ -42,9 +46,17 @@ async def pcb_query_guardrail(ctx, agent, input_data):
         >>> await pcb_query_guardrail(ctx, agent, "Design a buck converter")
         GuardrailFunctionOutput(...)
     """
-    result = await Runner.run(pcb_query_agent, input_data, context=ctx.context)
+    try:
+        result = await Runner.run(pcb_query_agent, input_data, context=ctx.context)
+    except (httpx.HTTPError, openai.OpenAIError) as exc:
+        print(f"Network error: {exc}")
+        raise RuntimeError("Network connection issue") from exc
+
     output = result.final_output_as(PCBQueryOutput)
-    return GuardrailFunctionOutput(output_info=output, tripwire_triggered=not output.is_relevant)
+    return GuardrailFunctionOutput(
+        output_info=output,
+        tripwire_triggered=not output.is_relevant,
+    )
 
 
 __all__ = ["pcb_query_guardrail"]

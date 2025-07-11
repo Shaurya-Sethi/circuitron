@@ -465,7 +465,7 @@ export KISYSMOD=/usr/share/kicad/modules
         
         for attempt in range(max_retries):
             try:
-                proc = self._run(cp_cmd, check=True)
+                self._run(cp_cmd, check=True)
                 return  # Success, exit the retry loop
             except subprocess.CalledProcessError as e:
                 error_msg = e.stderr.strip() if e.stderr else ""
