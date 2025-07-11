@@ -6,7 +6,19 @@ import httpx
 
 
 def is_connected(url: str = "https://api.openai.com", timeout: float = 3.0) -> bool:
-    """Return ``True`` if ``url`` is reachable within ``timeout`` seconds."""
+    """Return ``True`` if ``url`` is reachable within ``timeout`` seconds.
+
+    Args:
+        url: Endpoint to send a ``HEAD`` request to.
+        timeout: Seconds to wait for the response.
+
+    Returns:
+        ``True`` when the endpoint responds without error, otherwise ``False``.
+
+    Example:
+        >>> is_connected()
+        True
+    """
     try:
         httpx.head(url, timeout=timeout)
         return True
@@ -15,7 +27,15 @@ def is_connected(url: str = "https://api.openai.com", timeout: float = 3.0) -> b
 
 
 def check_internet_connection() -> bool:
-    """Check for internet connectivity and print a message when absent."""
+    """Check for internet connectivity and print a message when absent.
+
+    Returns:
+        ``True`` if :func:`is_connected` succeeds, otherwise ``False``.
+
+    Example:
+        >>> check_internet_connection()
+        True
+    """
     if not is_connected():
         print("No internet connection detected. Please connect and try again.")
         return False
