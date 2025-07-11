@@ -1,2 +1,0 @@
-The MCP server container exposes port 8051. Circuitron maps this port to the host using the ``MCP_PORT`` environment variable, defaulting to ``8051``. The ``PORT`` variable is still passed into the container but no longer affects host port mapping.
-
