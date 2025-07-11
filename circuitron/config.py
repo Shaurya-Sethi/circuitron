@@ -32,8 +32,6 @@ def _check_mcp_health(url: str) -> None:
     if os.getenv("MCP_HEALTHCHECK") not in {"1", "true", "yes"}:
         return
     try:
-        with urllib.request.urlopen(f"{url}/health", timeout=5):
-            pass
         with urllib.request.urlopen(f"{url}/sse", timeout=5):
             pass
     except Exception as exc:  # pragma: no cover - network errors
