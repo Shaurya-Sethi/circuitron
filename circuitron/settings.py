@@ -39,4 +39,7 @@ class Settings:
     max_turns: int = field(
         default_factory=lambda: int(os.getenv("CIRCUITRON_MAX_TURNS", "50"))
     )
+    network_timeout: float = field(
+        default_factory=lambda: float(os.getenv("CIRCUITRON_NETWORK_TIMEOUT", "60"))
+    )
     dev_mode: bool = False

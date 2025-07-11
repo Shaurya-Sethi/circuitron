@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 import httpx
 
 
@@ -22,7 +23,7 @@ def is_connected(url: str = "https://api.openai.com", timeout: float = 3.0) -> b
     try:
         httpx.head(url, timeout=timeout)
         return True
-    except httpx.HTTPError:
+    except (httpx.RequestError, socket.gaierror, TimeoutError, OSError):
         return False
 
 

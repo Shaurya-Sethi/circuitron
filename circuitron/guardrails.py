@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncio
 from pydantic import BaseModel
 from agents import Agent, GuardrailFunctionOutput, Runner, input_guardrail
 import httpx
 import openai
+
+from .network import is_connected
+from .exceptions import PipelineError
+from .config import settings
 
 
 class PCBQueryOutput(BaseModel):
@@ -46,11 +51,25 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
         >>> await pcb_query_guardrail(ctx, agent, "Design a buck converter")
         GuardrailFunctionOutput(...)
     """
+    if not is_connected():
+        raise PipelineError(
+            "Internet connection lost. Please check your connection and try again."
+        )
+
     try:
-        result = await Runner.run(pcb_query_agent, input_data, context=ctx.context)
+        coro = Runner.run(pcb_query_agent, input_data, context=ctx.context)
+        result = await asyncio.wait_for(coro, timeout=settings.network_timeout)
+    except asyncio.TimeoutError:
+        raise PipelineError(
+            "Network operation timed out. Please check your connection and try again."
+        )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
         print(f"Network error: {exc}")
-        raise RuntimeError("Network connection issue") from exc
+        if not is_connected():
+            raise PipelineError(
+                "Internet connection lost. Please check your connection and try again."
+            ) from exc
+        raise PipelineError("Network connection issue") from exc
 
     output = result.final_output_as(PCBQueryOutput)
     return GuardrailFunctionOutput(

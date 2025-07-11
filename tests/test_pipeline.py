@@ -399,9 +399,21 @@ async def fake_run_with_retry_fail() -> None:
         assert result is None
 
 
+async def fake_run_with_retry_network_error() -> None:
+    from circuitron import pipeline as pl
+
+    async def fail_network(*args: object, **kwargs: object) -> None:
+        raise pl.PipelineError("net")
+
+    with patch.object(pl, "pipeline", AsyncMock(side_effect=fail_network)):
+        with pytest.raises(pl.PipelineError):
+            await pl.run_with_retry("p", retries=2)
+
+
 def test_run_with_retry_behaviour() -> None:
     asyncio.run(fake_run_with_retry_success())
     asyncio.run(fake_run_with_retry_fail())
+    asyncio.run(fake_run_with_retry_network_error())
 
 
 async def fake_pipeline_validation_error() -> None:

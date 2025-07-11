@@ -79,10 +79,7 @@ from circuitron.utils import (
 from circuitron.tools import run_erc
 from circuitron.tools import execute_final_script
 from circuitron.tools import run_runtime_check
-
-
-class PipelineError(RuntimeError):
-    """Raised when the pipeline fails to produce valid SKiDL code."""
+from .exceptions import PipelineError
 
 
 __all__ = [
@@ -377,6 +374,8 @@ async def run_with_retry(
     while True:
         try:
             return await pipeline(prompt, show_reasoning=show_reasoning, output_dir=output_dir)
+        except PipelineError:
+            raise
         except Exception as exc:
             attempts += 1
             print(f"Error during pipeline execution: {exc}")
@@ -660,12 +659,15 @@ async def main() -> None:
     await mcp_manager.initialize()
     try:
         prompt = args.prompt or input("Prompt: ")
-        await run_with_retry(
-            prompt,
-            show_reasoning=args.reasoning,
-            retries=args.retries,
-            output_dir=args.output_dir,
-        )
+        try:
+            await run_with_retry(
+                prompt,
+                show_reasoning=args.reasoning,
+                retries=args.retries,
+                output_dir=args.output_dir,
+            )
+        except PipelineError as exc:
+            print(f"Fatal error: {exc}")
     finally:
         await mcp_manager.cleanup()
 

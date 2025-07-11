@@ -6,6 +6,7 @@ from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
 from .mcp_manager import mcp_manager
 from .network import check_internet_connection
+from .exceptions import PipelineError
 
 
 async def run_circuitron(
@@ -20,12 +21,16 @@ async def run_circuitron(
 
     await mcp_manager.initialize()
     try:
-        return await run_with_retry(
-            prompt,
-            show_reasoning=show_reasoning,
-            retries=retries,
-            output_dir=output_dir,
-        )
+        try:
+            return await run_with_retry(
+                prompt,
+                show_reasoning=show_reasoning,
+                retries=retries,
+                output_dir=output_dir,
+            )
+        except PipelineError as exc:
+            print(f"Fatal error: {exc}")
+            return None
     finally:
         await mcp_manager.cleanup()
 

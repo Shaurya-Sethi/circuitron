@@ -6,6 +6,7 @@ import pytest
 import circuitron.debug as dbg
 from circuitron.agents import planner
 from circuitron.guardrails import pcb_query_guardrail, PCBQueryOutput
+from circuitron.exceptions import PipelineError
 from agents.guardrail import GuardrailFunctionOutput
 
 
@@ -18,7 +19,7 @@ def test_non_pcb_prompt_triggers_guardrail(capsys: pytest.CaptureFixture[str], m
     )
     monkeypatch.setattr(pcb_query_guardrail, "guardrail_function", mock_guardrail)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(PipelineError):
         asyncio.run(dbg.run_agent(planner, "Tell me a joke"))
 
     mock_guardrail.assert_awaited_once()
@@ -33,7 +34,7 @@ def test_guardrail_network_failure(capsys: pytest.CaptureFixture[str], monkeypat
         raise httpx.RequestError("fail")
 
     monkeypatch.setattr(dbg.Runner, "run", raise_network)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(PipelineError):
         asyncio.run(dbg.run_agent(planner, "design"))
     out = capsys.readouterr().out
     assert "network error" in out.lower()

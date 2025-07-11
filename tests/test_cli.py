@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import circuitron.cli as cli
 from circuitron.models import CodeGenerationOutput
+from circuitron.exceptions import PipelineError
 import pytest
 
 
@@ -18,6 +19,15 @@ def test_run_circuitron_invokes_pipeline() -> None:
     with patch("circuitron.pipeline.run_with_retry", AsyncMock(side_effect=fake_pipeline)):
         result = asyncio.run(cli.run_circuitron("p", show_reasoning=True, retries=1))
     assert result is out
+
+
+def test_run_circuitron_handles_pipeline_error() -> None:
+    async def fail_pipeline(*_a: object, **_k: object) -> None:
+        raise PipelineError("bad")
+
+    with patch("circuitron.pipeline.run_with_retry", AsyncMock(side_effect=fail_pipeline)):
+        result = asyncio.run(cli.run_circuitron("p"))
+    assert result is None
 
 
 def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:

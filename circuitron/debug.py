@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncio
 import httpx
 import openai
 from agents.exceptions import InputGuardrailTripwireTriggered
@@ -13,6 +14,8 @@ from agents.items import MessageOutputItem, ToolCallOutputItem
 from agents.result import RunResult
 
 from .config import settings
+from .network import is_connected
+from .exceptions import PipelineError
 
 
 def display_run_items(result: RunResult) -> None:
@@ -47,15 +50,29 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
     Returns:
         The :class:`RunResult` from the agent run.
     """
+    if not is_connected():
+        raise PipelineError(
+            "Internet connection lost. Please check your connection and try again."
+        )
+
     try:
-        result = await Runner.run(agent, input_data, max_turns=settings.max_turns)
+        coro = Runner.run(agent, input_data, max_turns=settings.max_turns)
+        result = await asyncio.wait_for(coro, timeout=settings.network_timeout)
     except InputGuardrailTripwireTriggered:
         message = "Sorry, I can only assist with PCB design questions."
         print(message)
-        raise RuntimeError(message)
+        raise PipelineError(message)
+    except asyncio.TimeoutError:
+        raise PipelineError(
+            "Network operation timed out. Please check your connection and try again."
+        )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
         print(f"Network error: {exc}")
-        raise RuntimeError("Network connection issue") from exc
+        if not is_connected():
+            raise PipelineError(
+                "Internet connection lost. Please check your connection and try again."
+            ) from exc
+        raise PipelineError("Network connection issue") from exc
 
     if settings.dev_mode:
         display_run_items(result)
