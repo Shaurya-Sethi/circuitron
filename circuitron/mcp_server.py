@@ -34,7 +34,15 @@ def is_running(url: str) -> bool:
 
 def _container_status() -> str | None:
     proc = _run(
-        ["docker", "ps", "-a", "--filter", f"name={CONTAINER_NAME}", "--format", "{{.Status}}"],
+        [
+            "docker",
+            "ps",
+            "-a",
+            "--filter",
+            f"name={CONTAINER_NAME}",
+            "--format",
+            "{{.Status}}",
+        ],
     )
     if proc.returncode != 0:
         logging.warning("docker ps failed: %s", proc.stderr.strip())
@@ -101,12 +109,13 @@ def start() -> bool:
         logging.error("Failed to start MCP container: %s", proc.stderr.strip())
         return False
 
-    for _ in range(20):
+    max_attempts = int(os.getenv("MCP_START_MAX_ATTEMPTS", "20"))
+    for _ in range(max_attempts):
         time.sleep(1)
         if is_running(url):
             atexit.register(stop)
             return True
-    logging.error("MCP server failed to start")
+    logging.error("MCP server failed to start after %s seconds", max_attempts)
     return False
 
 
