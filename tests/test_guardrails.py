@@ -28,7 +28,7 @@ def test_non_pcb_prompt_triggers_guardrail(capsys: pytest.CaptureFixture[str], m
 
 
 def test_guardrail_network_failure(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
-    async def raise_network(*_a, **_k):
+    async def raise_network(*_a: object, **_k: object) -> None:
         import httpx
 
         raise httpx.RequestError("fail")

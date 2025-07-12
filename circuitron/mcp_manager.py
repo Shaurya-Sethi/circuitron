@@ -26,9 +26,9 @@ class MCPManager:
         for attempt in range(3):
             try:
                 await asyncio.wait_for(
-                    self._server.connect(),
+                    self._server.connect(),  # type: ignore[no-untyped-call]
                     timeout=settings.network_timeout,
-                )  # type: ignore[no-untyped-call]
+                )
                 logging.info(
                     "Successfully connected to MCP server: %s", self._server.name
                 )

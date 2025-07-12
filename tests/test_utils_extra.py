@@ -122,7 +122,7 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     # edited plan
     edit = PlanEditorOutput(decision=PlanEditDecision(reasoning="r"), updated_plan=plan)
     pretty_print_edited_plan(edit)
-    pretty_print_found_parts("[]")
+    pretty_print_found_parts({})
     selected = PartSelectionOutput(
         selections=[
             SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[])

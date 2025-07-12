@@ -22,7 +22,7 @@ async def fake_pipeline_no_feedback() -> None:
     import circuitron.pipeline as pl
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components_json="[]")
+    part_out = PartFinderOutput(found_components={})
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -49,7 +49,7 @@ async def fake_pipeline_edit_plan() -> None:
         decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
-    part_out = PartFinderOutput(found_components_json="[]")
+    part_out = PartFinderOutput(found_components={})
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
