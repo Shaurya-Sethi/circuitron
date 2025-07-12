@@ -75,7 +75,9 @@ from circuitron.utils import (
     pretty_print_validation,
     pretty_print_generated_code,
     validate_code_generation_results,
+    format_docs_summary,
 )
+from circuitron.ui.components import panel
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
 from circuitron.tools import run_erc
@@ -217,7 +219,10 @@ async def run_code_generation(
     agent = agent or get_code_generation_agent()
     result = await run_agent(agent, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
-    pretty_print_generated_code(code_output)
+    if ui:
+        panel.show_panel(ui.console, "Generated Code", code_output.complete_skidl_code, ui.theme)
+    else:
+        pretty_print_generated_code(code_output)
     validate_code_generation_results(code_output)
     if ui:
         ui.finish_stage("Coding")
@@ -260,7 +265,10 @@ async def run_code_validation(
         agent = agent or get_code_validation_agent()
         result = await run_agent(agent, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
-        pretty_print_validation(validation)
+        if ui:
+            panel.show_panel(ui.console, "Validation", validation.summary, ui.theme)
+        else:
+            pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
         if run_erc_flag and validation.status == "pass" and script_path:
             erc_json = await run_erc(script_path)
@@ -527,7 +535,10 @@ async def pipeline(
 
     plan_result = await run_planner(prompt, ui=ui, agent=planner_agent)
     plan = plan_result.final_output
-    pretty_print_plan(plan)
+    if ui:
+        ui.display_plan(plan)
+    else:
+        pretty_print_plan(plan)
 
     if settings.dev_mode and plan.calculation_codes:
         print("\n=== Debug: Calculation Codes ===")
@@ -547,21 +558,30 @@ async def pipeline(
         ]
     ):
         part_output = await run_part_finder(plan, ui=ui, agent=partfinder_agent)
-        pretty_print_found_parts(part_output.found_components)
+        if ui:
+            ui.display_found_parts(part_output.found_components)
+        else:
+            pretty_print_found_parts(part_output.found_components)
         selection = await run_part_selector(
             plan,
             part_output,
             ui=ui,
             agent=partselection_agent,
         )
-        pretty_print_selected_parts(selection)
+        if ui:
+            ui.display_selected_parts(selection.selections)
+        else:
+            pretty_print_selected_parts(selection)
         docs = await run_documentation(
             plan,
             selection,
             ui=ui,
             agent=documentation_agent,
         )
-        pretty_print_documentation(docs)
+        if ui:
+            panel.show_panel(ui.console, "Documentation", utils.format_docs_summary(docs), ui.theme)
+        else:
+            pretty_print_documentation(docs)
         code_out = await run_code_generation(
             plan,
             selection,
@@ -711,16 +731,28 @@ async def pipeline(
         feedback,
         agent=plan_edit_agent,
     )
-    pretty_print_edited_plan(edit_result)
+    if ui:
+        panel.show_panel(ui.console, "Plan Updated", utils.format_plan_summary(edit_result.updated_plan), ui.theme)
+    else:
+        pretty_print_edited_plan(edit_result)
     assert edit_result.updated_plan is not None
     final_plan = edit_result.updated_plan
 
     part_output = await run_part_finder(final_plan, agent=partfinder_agent)
-    pretty_print_found_parts(part_output.found_components)
+    if ui:
+        ui.display_found_parts(part_output.found_components)
+    else:
+        pretty_print_found_parts(part_output.found_components)
     selection = await run_part_selector(final_plan, part_output, agent=partselection_agent)
-    pretty_print_selected_parts(selection)
+    if ui:
+        ui.display_selected_parts(selection.selections)
+    else:
+        pretty_print_selected_parts(selection)
     docs = await run_documentation(final_plan, selection, agent=documentation_agent)
-    pretty_print_documentation(docs)
+    if ui:
+        panel.show_panel(ui.console, "Documentation", utils.format_docs_summary(docs), ui.theme)
+    else:
+        pretty_print_documentation(docs)
     code_out = await run_code_generation(final_plan, selection, docs, agent=codegen_agent)
     validation, _ = await run_code_validation(
         code_out,
