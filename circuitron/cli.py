@@ -7,6 +7,7 @@ from circuitron.tools import kicad_session
 from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
+from circuitron.ui.app import TerminalUI
 
 
 async def run_circuitron(
@@ -67,7 +68,10 @@ def main() -> None:
     code_output: CodeGenerationOutput | None = None
     try:
         try:
-            code_output = asyncio.run(run_circuitron(prompt, show_reasoning, retries, output_dir))
+            ui = TerminalUI()
+            code_output = asyncio.run(
+                ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir)
+            )
         except KeyboardInterrupt:
             print("\nExecution interrupted by user.")
         except Exception as exc:

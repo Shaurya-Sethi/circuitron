@@ -36,7 +36,7 @@ def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> No
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)):
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)):
         cli.main()
     captured = capsys.readouterr().out
     assert "GENERATED SKiDL CODE" in captured
@@ -49,10 +49,12 @@ def test_cli_main_prompts_for_input(monkeypatch: pytest.MonkeyPatch) -> None:
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)) as run_mock:
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)) as run_mock:
         monkeypatch.setattr("builtins.input", lambda _: "hello")
         cli.main()
-        run_mock.assert_awaited_with("hello", True, 0, None)
+        run_mock.assert_awaited_with(
+            "hello", show_reasoning=True, retries=0, output_dir=None
+        )
 
 
 def test_module_main_called() -> None:
@@ -68,7 +70,7 @@ def test_cli_main_stops_session() -> None:
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)), \
          patch("circuitron.tools.kicad_session.stop") as stop_mock:
         cli.main()
         stop_mock.assert_called_once()
@@ -80,7 +82,7 @@ def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) 
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=KeyboardInterrupt)), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=KeyboardInterrupt)), \
          patch("circuitron.tools.kicad_session.stop"):
         cli.main()
     captured = capsys.readouterr().out
@@ -92,7 +94,7 @@ def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=RuntimeError("fail"))), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=RuntimeError("fail"))), \
          patch("circuitron.tools.kicad_session.stop"):
         cli.main()
     captured = capsys.readouterr().out
@@ -121,7 +123,7 @@ def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start", side_effect=RuntimeError("bad")), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(return_value=out)) as run_mock, \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)) as run_mock, \
          patch("circuitron.tools.kicad_session.stop"):
         monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(AssertionError("prompt called")))
         cli.main()
@@ -135,7 +137,7 @@ def test_cli_main_checks_internet(monkeypatch: pytest.MonkeyPatch) -> None:
          patch("circuitron.cli.check_internet_connection", return_value=False), \
          patch("circuitron.tools.kicad_session.start"), \
          patch("circuitron.tools.kicad_session.stop") as stop_mock, \
-         patch("circuitron.cli.run_circuitron", AsyncMock()) as run_mock:
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock()) as run_mock:
         cli.main()
         run_mock.assert_not_called()
         stop_mock.assert_not_called()
@@ -171,7 +173,7 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
     with patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.setup_environment", side_effect=lambda dev: setattr(cfg.settings, "dev_mode", dev)), \
          patch("circuitron.debug.Runner.run", AsyncMock(return_value=run_result)), \
-         patch("circuitron.cli.run_circuitron", AsyncMock(side_effect=fake_run)), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=fake_run)), \
          patch("circuitron.tools.kicad_session.start"), \
          patch("circuitron.tools.kicad_session.stop"), \
          patch("circuitron.debug.display_run_items", wraps=dbg.display_run_items) as disp_mock:
