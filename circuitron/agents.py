@@ -52,8 +52,9 @@ from .guardrails import pcb_query_guardrail
 
 
 def _tool_choice_for_mcp(model: str) -> str:
-    """Return appropriate tool_choice for MCP tools based on the model."""
-    return "auto" if "mini" in model else "required"
+    """Return appropriate tool_choice for MCP tools based on the model.
+    Only return 'auto' if the model is exactly 'o4-mini', else 'required'."""
+    return "auto" if model == "o4-mini" else "required"
 
 
 def create_planning_agent() -> Agent:
