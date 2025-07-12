@@ -147,6 +147,10 @@ circuitron --dev "Design a voltage divider"
 ```
 
 The `--output-dir` option saves all generated files to a specific location. By default results are written to `./circuitron_output`.
+
+### Theme Switching
+
+Use the `/theme` command at any prompt to switch between `electric`, `dark`, and `light` themes. The chosen theme is stored in `~/.circuitron`.
 ### Running Tests
 
 ```bash

@@ -60,7 +60,9 @@ def main() -> None:
     if not verify_containers():
         return
 
-    prompt = args.prompt or input("Prompt: ")
+    ui = TerminalUI()
+    ui.start_banner()
+    prompt = args.prompt or ui.prompt_user("Prompt")
     show_reasoning = args.reasoning
     retries = args.retries
     output_dir = args.output_dir
@@ -68,7 +70,6 @@ def main() -> None:
     code_output: CodeGenerationOutput | None = None
     try:
         try:
-            ui = TerminalUI()
             code_output = asyncio.run(
                 ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir)
             )
