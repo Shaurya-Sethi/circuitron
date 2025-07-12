@@ -176,7 +176,11 @@ print(json.dumps(filtered_results))
 """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python_with_env,
+            script,
+            timeout=int(settings.network_timeout),
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -250,7 +254,11 @@ print(json.dumps(results))
 """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python_with_env,
+            script,
+            timeout=int(settings.network_timeout),
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "footprint search timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -302,7 +310,11 @@ except Exception as exc:
     print(json.dumps({{"error": str(exc)}}))
 """)
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_python_with_env, script, timeout=120)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_python_with_env,
+            script,
+            timeout=int(settings.network_timeout),
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps({"error": "pin extract timeout", "details": str(exc)})
     except subprocess.CalledProcessError as exc:
@@ -319,7 +331,7 @@ def create_mcp_server() -> MCPServerSse:
         MCPServerSse configured for the ``skidl_docs`` server.
     """
     url = f"{settings.mcp_url}/sse"
-    timeout = 15.0 if os.getenv("DOCKER_ENV") else 10.0
+    timeout = settings.network_timeout
     return MCPServerSse(
         name="skidl_docs",
         params={
@@ -375,7 +387,10 @@ async def run_runtime_check(script_path: str) -> str:
     )
     try:
         proc = await asyncio.to_thread(
-            kicad_session.exec_erc_with_env, script_path, wrapper
+            kicad_session.exec_erc_with_env,
+            script_path,
+            wrapper,
+            timeout=int(settings.network_timeout),
         )
     except subprocess.TimeoutExpired as exc:
         return json.dumps(
@@ -457,7 +472,12 @@ async def run_erc(script_path: str) -> str:
         """
     )
     try:
-        proc = await asyncio.to_thread(kicad_session.exec_erc_with_env, script_path, wrapper)
+        proc = await asyncio.to_thread(
+            kicad_session.exec_erc_with_env,
+            script_path,
+            wrapper,
+            timeout=int(settings.network_timeout),
+        )
     except subprocess.TimeoutExpired as exc:
         return json.dumps(
             {"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)}
@@ -520,7 +540,9 @@ set_default_tool(KICAD5)
     script_path = write_temp_skidl_script(wrapped_script)
     try:
         proc = await asyncio.to_thread(
-            session.exec_full_script_with_env, script_path
+            session.exec_full_script_with_env,
+            script_path,
+            timeout=int(settings.network_timeout),
         )
         success = proc.returncode == 0
         
