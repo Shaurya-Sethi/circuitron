@@ -230,14 +230,85 @@ def create_erc_handling_agent() -> Agent:
     )
 
 
-# Create agent instances
-planner = create_planning_agent()
-plan_editor = create_plan_edit_agent()
-part_finder = create_partfinder_agent()
-part_selector = create_partselection_agent()
-documentation = create_documentation_agent()
-code_generator = create_code_generation_agent()
-code_validator = create_code_validation_agent()
-code_corrector = create_code_correction_agent()
-runtime_error_corrector = create_runtime_error_correction_agent()
-erc_handler = create_erc_handling_agent()
+def get_planning_agent() -> Agent:
+    """Return a new instance of the Planning Agent."""
+
+    return create_planning_agent()
+
+
+def get_plan_edit_agent() -> Agent:
+    """Return a new instance of the Plan Edit Agent."""
+
+    return create_plan_edit_agent()
+
+
+def get_partfinder_agent() -> Agent:
+    """Return a new instance of the PartFinder Agent."""
+
+    return create_partfinder_agent()
+
+
+def get_partselection_agent() -> Agent:
+    """Return a new instance of the Part Selection Agent."""
+
+    return create_partselection_agent()
+
+
+def get_documentation_agent() -> Agent:
+    """Return a new instance of the Documentation Agent."""
+
+    return create_documentation_agent()
+
+
+def get_code_generation_agent() -> Agent:
+    """Return a new instance of the Code Generation Agent."""
+
+    return create_code_generation_agent()
+
+
+def get_code_validation_agent() -> Agent:
+    """Return a new instance of the Code Validation Agent."""
+
+    return create_code_validation_agent()
+
+
+def get_code_correction_agent() -> Agent:
+    """Return a new instance of the Code Correction Agent."""
+
+    return create_code_correction_agent()
+
+
+def get_runtime_error_correction_agent() -> Agent:
+    """Return a new instance of the Runtime Error Correction Agent."""
+
+    return create_runtime_error_correction_agent()
+
+
+def get_erc_handling_agent() -> Agent:
+    """Return a new instance of the ERC Handling Agent."""
+
+    return create_erc_handling_agent()
+
+
+__all__ = [
+    "get_planning_agent",
+    "get_plan_edit_agent",
+    "get_partfinder_agent",
+    "get_partselection_agent",
+    "get_documentation_agent",
+    "get_code_generation_agent",
+    "get_code_validation_agent",
+    "get_code_correction_agent",
+    "get_runtime_error_correction_agent",
+    "get_erc_handling_agent",
+    "create_planning_agent",
+    "create_plan_edit_agent",
+    "create_partfinder_agent",
+    "create_partselection_agent",
+    "create_documentation_agent",
+    "create_code_generation_agent",
+    "create_code_validation_agent",
+    "create_code_correction_agent",
+    "create_runtime_error_correction_agent",
+    "create_erc_handling_agent",
+]
