@@ -76,6 +76,7 @@ from circuitron.utils import (
     pretty_print_generated_code,
     validate_code_generation_results,
     format_docs_summary,
+    format_plan_summary,
 )
 from circuitron.ui.components import panel
 
@@ -561,7 +562,7 @@ async def pipeline(
         if ui:
             ui.display_found_parts(part_output.found_components)
         else:
-            pretty_print_found_parts(part_output.found_components)
+            pretty_print_found_parts(part_output)
         selection = await run_part_selector(
             plan,
             part_output,
@@ -579,7 +580,7 @@ async def pipeline(
             agent=documentation_agent,
         )
         if ui:
-            panel.show_panel(ui.console, "Documentation", utils.format_docs_summary(docs), ui.theme)
+            panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
         else:
             pretty_print_documentation(docs)
         code_out = await run_code_generation(
@@ -732,7 +733,7 @@ async def pipeline(
         agent=plan_edit_agent,
     )
     if ui:
-        panel.show_panel(ui.console, "Plan Updated", utils.format_plan_summary(edit_result.updated_plan), ui.theme)
+        panel.show_panel(ui.console, "Plan Updated", format_plan_summary(edit_result.updated_plan), ui.theme)
     else:
         pretty_print_edited_plan(edit_result)
     assert edit_result.updated_plan is not None
@@ -742,7 +743,7 @@ async def pipeline(
     if ui:
         ui.display_found_parts(part_output.found_components)
     else:
-        pretty_print_found_parts(part_output.found_components)
+        pretty_print_found_parts(part_output)
     selection = await run_part_selector(final_plan, part_output, agent=partselection_agent)
     if ui:
         ui.display_selected_parts(selection.selections)
@@ -750,7 +751,7 @@ async def pipeline(
         pretty_print_selected_parts(selection)
     docs = await run_documentation(final_plan, selection, agent=documentation_agent)
     if ui:
-        panel.show_panel(ui.console, "Documentation", utils.format_docs_summary(docs), ui.theme)
+        panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
     else:
         pretty_print_documentation(docs)
     code_out = await run_code_generation(final_plan, selection, docs, agent=codegen_agent)

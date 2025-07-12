@@ -10,6 +10,10 @@ from circuitron.models import (
     APIValidationResult,
     KnowledgeGraphValidationReport,
     CodeValidationOutput,
+    PartFinderOutput,
+    PartSearchResult,
+    FoundPart,
+    FoundFootprint,
 )
 
 
@@ -69,3 +73,15 @@ def test_code_validation_output() -> None:
     )
     assert out.status == "pass"
     assert out.issues[0].category == "syntax"
+
+
+def test_partfinder_output_with_footprints() -> None:
+    """Verify PartFinderOutput stores footprints and counts them."""
+    part = FoundPart(name="R", library="Device")
+    footprint = FoundFootprint(name="0603", library="Resistor_SMD")
+    result = PartFinderOutput(
+        found_components=[PartSearchResult(query="resistor", components=[part])],
+        found_footprints=[footprint],
+    )
+    assert result.get_total_components() == 1
+    assert result.get_total_footprints() == 1
