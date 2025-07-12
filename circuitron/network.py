@@ -6,7 +6,7 @@ import socket
 import httpx
 
 
-def is_connected(url: str = "https://api.openai.com", timeout: float = 3.0) -> bool:
+def is_connected(url: str = "https://api.openai.com", timeout: float = 10.0) -> bool:
     """Return ``True`` if ``url`` is reachable within ``timeout`` seconds.
 
     Args:

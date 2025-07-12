@@ -51,21 +51,20 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
         >>> await pcb_query_guardrail(ctx, agent, "Design a buck converter")
         GuardrailFunctionOutput(...)
     """
-    if not is_connected():
-        raise PipelineError(
-            "Internet connection lost. Please check your connection and try again."
-        )
-
     try:
         coro = Runner.run(pcb_query_agent, input_data, context=ctx.context)
         result = await asyncio.wait_for(coro, timeout=settings.network_timeout)
     except asyncio.TimeoutError:
+        if not is_connected(timeout=5.0):
+            raise PipelineError(
+                "Internet connection lost. Please check your connection and try again."
+            )
         raise PipelineError(
-            "Network operation timed out. Please check your connection and try again."
+            "Network operation timed out. Consider increasing CIRCUITRON_NETWORK_TIMEOUT."
         )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
         print(f"Network error: {exc}")
-        if not is_connected():
+        if not is_connected(timeout=5.0):
             raise PipelineError(
                 "Internet connection lost. Please check your connection and try again."
             ) from exc

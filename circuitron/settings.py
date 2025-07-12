@@ -40,6 +40,6 @@ class Settings:
         default_factory=lambda: int(os.getenv("CIRCUITRON_MAX_TURNS", "50"))
     )
     network_timeout: float = field(
-        default_factory=lambda: float(os.getenv("CIRCUITRON_NETWORK_TIMEOUT", "60"))
+        default_factory=lambda: float(os.getenv("CIRCUITRON_NETWORK_TIMEOUT", "300"))
     )
     dev_mode: bool = False
