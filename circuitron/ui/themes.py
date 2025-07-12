@@ -27,14 +27,14 @@ class ThemeManager:
 
     def __init__(self) -> None:
         self.themes: Dict[str, Theme] = {
-            name: Theme(name=name, gradient_colors=colors)
+            name: Theme(name=name, gradient_colors=colors, accent="cyan")
             for name, colors in logo.THEMES.items()
         }
         # Built-in additional themes
         self.themes.update(
             {
-                "dark": Theme("dark", ["#1E1E2E", "#89B4FA", "#CBA6F7"]),
-                "light": Theme("light", ["#FFFFFF", "#CCCCCC", "#666666"]),
+                "dark": Theme("dark", ["#1E1E2E", "#89B4FA", "#CBA6F7"], accent="#89B4FA"),
+                "light": Theme("light", ["#FFFFFF", "#CCCCCC", "#666666"], accent="#4682B4"),
             }
         )
         self.active_theme: Theme = self.themes["electric"]
@@ -59,7 +59,7 @@ class ThemeManager:
 
     def get_theme(self) -> Theme:
         if os.environ.get("NO_COLOR"):
-            return Theme("nocolor", ["white"])
+            return Theme("nocolor", ["white"], accent="white")
         return self.active_theme
 
     def set_theme(self, name: str) -> None:

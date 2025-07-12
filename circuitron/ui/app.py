@@ -1,22 +1,24 @@
 """Terminal UI implementation using Rich and prompt_toolkit."""
 
 from typing import Iterable
-from pathlib import Path
-
 from rich.console import Console
-from rich.text import Text
-from rich.panel import Panel
-from rich.markdown import Markdown
 import sys
 
-from prompt_toolkit import PromptSession  # type: ignore
-from prompt_toolkit.history import FileHistory  # type: ignore
 
-from circuitron.logo import LOGO_ART, apply_gradient
 from .themes import Theme, theme_manager
-from .components.progress import StageSpinner
+from .components.banner import Banner
+from .components.prompt import Prompt
+from .components.spinner import Spinner
+from .components.status_bar import StatusBar
+from .components import tables, panel
 from .. import utils
-from ..models import PlanOutput, UserFeedback, CodeGenerationOutput
+from ..models import (
+    PlanOutput,
+    UserFeedback,
+    CodeGenerationOutput,
+    FoundPart,
+    SelectedPart,
+)
 
 
 class TerminalUI:
@@ -25,37 +27,36 @@ class TerminalUI:
     def __init__(self, console: Console | None = None, theme: Theme | None = None) -> None:
         self.console = console or Console()
         self.theme = theme or theme_manager.get_theme()
-        self.spinner = StageSpinner(self.console)
-        history_file = Path.home() / ".circuitron_history"
-        self.session: PromptSession = PromptSession(
-            history=FileHistory(str(history_file))
-        )
+        self.banner = Banner(self.console)
+        self.spinner = Spinner(self.console, self.theme)
+        self.status_bar = StatusBar(self.console, self.theme)
+        self.prompt = Prompt(self.console, self.theme)
 
     def start_banner(self) -> None:
         """Render the Circuitron banner with gradient colors."""
-        logo_text = Text.from_ansi(LOGO_ART)
-        gradient_logo = apply_gradient(logo_text, self.theme.gradient_colors)
-        self.console.print(gradient_logo, justify="center")
+        self.banner.show(self.theme)
         self.console.print("[bold]Type /help for commands[/bold]\n")
 
     def set_theme(self, name: str) -> None:
         """Switch to a new theme."""
         theme_manager.set_theme(name)
         self.theme = theme_manager.get_theme()
+        self.spinner.theme = self.theme
+        self.status_bar.theme = self.theme
+        self.prompt.theme = self.theme
 
     def start_stage(self, name: str) -> None:
+        self.status_bar.update(stage=name, message="")
         self.spinner.start(name)
 
     def finish_stage(self, name: str) -> None:
         self.spinner.stop(name)
+        self.status_bar.update(stage="Idle", message="")
 
     def prompt_user(self, message: str) -> str:
-        """Prompt the user for input using prompt_toolkit."""
+        """Prompt the user for input using ``Prompt`` component."""
         while True:
-            if not sys.stdin.isatty():
-                text = input(f"{message}: ")
-            else:
-                text = self.session.prompt(f"{message}: ")
+            text = self.prompt.ask(message) if sys.stdin.isatty() else input(f"{message}: ")
             if text.strip() == "/help":
                 self.console.print("Available commands: /theme <name>, /help")
                 continue
@@ -71,14 +72,21 @@ class TerminalUI:
 
     def display_plan(self, plan: PlanOutput) -> None:
         """Pretty print the generated plan."""
-        utils.pretty_print_plan(plan, console=self.console)
+        text = utils.format_plan_summary(plan)
+        panel.show_panel(self.console, "Design Plan", text, self.theme)
 
     def collect_feedback(self, plan: PlanOutput) -> UserFeedback:
         return utils.collect_user_feedback(plan, input_func=self.prompt_user)
 
     def display_files(self, files: Iterable[str]) -> None:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        self.console.print(Panel(Markdown(links), title="Generated Files", expand=False))
+        panel.show_panel(self.console, "Generated Files", links, self.theme)
+
+    def display_found_parts(self, found: dict[str, list[FoundPart]]) -> None:
+        tables.show_found_parts(self.console, found, self.theme)
+
+    def display_selected_parts(self, parts: Iterable[SelectedPart]) -> None:
+        tables.show_selected_parts(self.console, parts, self.theme)
 
     async def run(
         self,
@@ -98,6 +106,7 @@ class TerminalUI:
 
         await mcp_manager.initialize()
         try:
+            self.status_bar.start()
             return await run_with_retry(
                 prompt,
                 show_reasoning=show_reasoning,
@@ -106,4 +115,5 @@ class TerminalUI:
                 ui=self,
             )
         finally:
+            self.status_bar.stop()
             await mcp_manager.cleanup()
