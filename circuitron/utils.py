@@ -22,6 +22,7 @@ from .models import (
     CodeGenerationOutput,
     CodeValidationOutput,
     FoundPart,
+    PartSearchResult,
 )
 from .correction_context import CorrectionContext
 
@@ -356,7 +357,7 @@ def format_part_selection_input(plan: PlanOutput, found: PartFinderOutput) -> st
 
     import json
 
-    found_json = json.dumps(found.found_components)
+    found_json = json.dumps(found.model_dump()["found_components"])
     parts.extend(["FOUND COMPONENTS JSON:", found_json, ""])
     parts.append("Select the best components and extract pin details.")
     return "\n".join(parts)
@@ -415,20 +416,22 @@ def pretty_print_edited_plan(edited_output: PlanEditorOutput) -> None:
         pretty_print_plan(edited_output.updated_plan)
 
 
-def pretty_print_found_parts(found_parts: dict[str, list[FoundPart]]) -> None:
+def pretty_print_found_parts(found_parts: list[PartSearchResult]) -> None:
     """Display the components found by the PartFinder agent.
 
     Args:
-        found_parts: Mapping from search query to lists of found parts.
+        found_parts: List of search results from the PartFinder agent.
 
     Example:
-        >>> pretty_print_found_parts({"ic": [FoundPart(name="LM324", library="linear")]})
+        >>> pretty_print_found_parts([
+        ...     PartSearchResult(query="ic", components=[FoundPart(name="LM324", library="linear")])
+        ... ])
     """
 
     import json
 
     print("\n=== FOUND COMPONENTS JSON ===\n")
-    print(json.dumps(found_parts))
+    print(json.dumps([res.model_dump() for res in found_parts]))
 
 
 def pretty_print_selected_parts(selection: PartSelectionOutput) -> None:

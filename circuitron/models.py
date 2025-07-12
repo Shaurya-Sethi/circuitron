@@ -134,23 +134,32 @@ class FoundFootprint(BaseModel):
     package_type: str | None = None
 
 
+class PartSearchResult(BaseModel):
+    """Components found for a given search query."""
+
+    model_config = ConfigDict(strict=True)
+
+    query: str
+    components: List[FoundPart] = Field(default_factory=list)
+
+
 class PartFinderOutput(BaseModel):
     """Output from the PartFinder agent."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    found_components: Dict[str, List[FoundPart]] = Field(
-        default_factory=dict,
-        description="Mapping from each search query to the list of components found.",
+    found_components: List[PartSearchResult] = Field(
+        default_factory=list,
+        description="Results for each component search query.",
     )
 
     def get_total_components(self) -> int:
         """Get total number of components found across all searches."""
-        return sum(len(comps) for comps in self.found_components.values() if comps)
-    
+        return sum(len(res.components) for res in self.found_components if res.components)
+
     def get_successful_searches(self) -> int:
         """Get number of searches that returned results."""
-        return sum(1 for comps in self.found_components.values() if comps)
+        return sum(1 for res in self.found_components if res.components)
 
 
 class PinDetail(BaseModel):
