@@ -87,13 +87,23 @@ class TerminalUI:
         retries: int = 0,
         output_dir: str | None = None,
     ) -> utils.CodeGenerationOutput | None:
-        """Execute the Circuitron pipeline with UI feedback."""
-        from ..pipeline import run_with_retry
+        """Execute the Circuitron pipeline with UI feedback.
 
-        return await run_with_retry(
-            prompt,
-            show_reasoning=show_reasoning,
-            retries=retries,
-            output_dir=output_dir,
-            ui=self,
-        )
+        This method now manages the MCP server connection lifecycle so that the
+        pipeline has an initialized server before any agents run.
+        """
+
+        from ..pipeline import run_with_retry
+        from ..mcp_manager import mcp_manager
+
+        await mcp_manager.initialize()
+        try:
+            return await run_with_retry(
+                prompt,
+                show_reasoning=show_reasoning,
+                retries=retries,
+                output_dir=output_dir,
+                ui=self,
+            )
+        finally:
+            await mcp_manager.cleanup()
