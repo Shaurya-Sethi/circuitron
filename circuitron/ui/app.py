@@ -16,8 +16,8 @@ from ..models import (
     PlanOutput,
     UserFeedback,
     CodeGenerationOutput,
-    FoundPart,
     SelectedPart,
+    PartSearchResult,
 )
 
 
@@ -82,8 +82,9 @@ class TerminalUI:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
         panel.show_panel(self.console, "Generated Files", links, self.theme)
 
-    def display_found_parts(self, found: dict[str, list[FoundPart]]) -> None:
-        tables.show_found_parts(self.console, found, self.theme)
+    def display_found_parts(self, found: Iterable[PartSearchResult]) -> None:
+        data = {res.query: res.components for res in found}
+        tables.show_found_parts(self.console, data, self.theme)
 
     def display_selected_parts(self, parts: Iterable[SelectedPart]) -> None:
         tables.show_selected_parts(self.console, parts, self.theme)

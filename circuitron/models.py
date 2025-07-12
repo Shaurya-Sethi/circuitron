@@ -3,7 +3,7 @@ Pydantic models for structured outputs in the Circuitron pipeline.
 Defines all BaseModels required for getting structured outputs from agents.
 """
 
-from typing import List, Literal, Dict
+from typing import List, Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
@@ -152,10 +152,18 @@ class PartFinderOutput(BaseModel):
         default_factory=list,
         description="Results for each component search query.",
     )
+    found_footprints: List[FoundFootprint] = Field(
+        default_factory=list,
+        description="Footprints discovered for the searched components.",
+    )
 
     def get_total_components(self) -> int:
         """Get total number of components found across all searches."""
         return sum(len(res.components) for res in self.found_components if res.components)
+
+    def get_total_footprints(self) -> int:
+        """Get total number of footprints found across all searches."""
+        return len(self.found_footprints)
 
     def get_successful_searches(self) -> int:
         """Get number of searches that returned results."""

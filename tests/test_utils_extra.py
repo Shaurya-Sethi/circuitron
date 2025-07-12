@@ -18,6 +18,9 @@ from circuitron.models import (
     CodeValidationOutput,
     DocumentationOutput,
     PartSelectionOutput,
+    PartFinderOutput,
+    PartSearchResult,
+    FoundFootprint,
     PinDetail,
     SelectedPart,
     ValidationIssue,
@@ -32,6 +35,7 @@ from circuitron.utils import (
     pretty_print_selected_parts,
     pretty_print_documentation,
     pretty_print_generated_code,
+    format_part_selection_input,
     collect_user_feedback,
     pretty_print_validation,
     write_temp_skidl_script,
@@ -99,6 +103,16 @@ def test_format_code_validation_and_correction_input() -> None:
     assert "erc_passed" in corr
 
 
+def test_format_part_selection_input_includes_footprints() -> None:
+    plan = PlanOutput(component_search_queries=["R"])
+    part_output = PartFinderOutput(
+        found_components=[PartSearchResult(query="R")],
+        found_footprints=[FoundFootprint(name="0603", library="Resistor_SMD")],
+    )
+    text = format_part_selection_input(plan, part_output)
+    assert "found_footprints" in text
+
+
 def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     from circuitron.models import (
         PlanEditDecision,
@@ -122,7 +136,7 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     # edited plan
     edit = PlanEditorOutput(decision=PlanEditDecision(reasoning="r"), updated_plan=plan)
     pretty_print_edited_plan(edit)
-    pretty_print_found_parts([])
+    pretty_print_found_parts(PartFinderOutput())
     selected = PartSelectionOutput(
         selections=[
             SelectedPart(name="U1", library="lib", footprint="fp", pin_details=[])
