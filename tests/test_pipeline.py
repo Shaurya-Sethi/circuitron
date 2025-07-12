@@ -29,7 +29,7 @@ async def fake_pipeline_no_feedback() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=[])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -56,7 +56,7 @@ async def fake_pipeline_edit_plan() -> None:
         decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -148,7 +148,7 @@ async def fake_pipeline_with_correction() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput()
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     code_out = CodeGenerationOutput(complete_skidl_code="init")
@@ -208,7 +208,7 @@ async def fake_pipeline_debug_show() -> None:
     from circuitron import pipeline as pl
     plan = PlanOutput(component_search_queries=["R"], calculation_codes=["print(1)"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     code_out = CodeGenerationOutput(complete_skidl_code="")
@@ -238,7 +238,7 @@ async def fake_pipeline_edit_plan_with_correction() -> None:
         decision=PlanEditDecision(reasoning="ok"),
         updated_plan=edited_plan,
     )
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     code_out = CodeGenerationOutput(complete_skidl_code="init")
@@ -285,7 +285,7 @@ async def fake_pipeline_warning_approval_flow() -> None:
 
     plan = PlanOutput()
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok")
     code_out = CodeGenerationOutput(complete_skidl_code="init")
@@ -421,7 +421,7 @@ async def fake_pipeline_validation_error() -> None:
 
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -450,7 +450,7 @@ async def fake_pipeline_erc_error() -> None:
 
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -500,7 +500,7 @@ async def fake_pipeline_debug_failure(capsys: pytest.CaptureFixture[str]) -> str
 
     plan = PlanOutput(component_search_queries=["R"])
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"
@@ -539,7 +539,7 @@ async def fake_pipeline_warning_approval(capsys: pytest.CaptureFixture[str]) -> 
 
     plan = PlanOutput()
     plan_result = SimpleNamespace(final_output=plan, new_items=[])
-    part_out = PartFinderOutput(found_components={})
+    part_out = PartFinderOutput()
     select_out = PartSelectionOutput()
     doc_out = DocumentationOutput(
         research_queries=[], documentation_findings=[], implementation_readiness="ok"

@@ -34,12 +34,12 @@ async def run_wrappers() -> None:
         await pl.run_plan_editor("p", PlanOutput(), UserFeedback())
         run_mock.reset_mock()
 
-        run_mock.return_value = SimpleNamespace(final_output=PartFinderOutput(found_components={}))
+        run_mock.return_value = SimpleNamespace(final_output=PartFinderOutput())
         await pl.run_part_finder(PlanOutput(component_search_queries=["Q"]))
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=PartSelectionOutput())
-        await pl.run_part_selector(PlanOutput(), PartFinderOutput(found_components={}))
+        await pl.run_part_selector(PlanOutput(), PartFinderOutput())
         run_mock.reset_mock()
 
         run_mock.return_value = SimpleNamespace(final_output=DocumentationOutput(research_queries=[], documentation_findings=[], implementation_readiness="ok"))
