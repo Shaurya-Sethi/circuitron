@@ -3,7 +3,10 @@ Utility functions for the Circuitron system.
 Contains formatting, printing, and other helper utilities.
 """
 
-from typing import List
+from typing import Callable, List
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
 import os
 import tempfile
 import re
@@ -80,57 +83,71 @@ def extract_reasoning_summary(run_result: RunResult) -> str:
 
 
 def print_section(
-    title: str, items: List[str], bullet: str = "•", numbered: bool = False
+    title: str, items: List[str], bullet: str = "•", numbered: bool = False, console: Console | None = None
 ) -> None:
-    """Helper function to print a section with consistent formatting."""
+    """Display a section of text within a styled panel."""
     if not items:
         return
 
-    print(f"\n=== {title} ===")
+    console = console or Console()
+    body_lines = []
     for i, item in enumerate(items):
-        if numbered:
-            print(f" {i + 1}. {item}")
-        else:
-            print(f" {bullet} {item}")
+        prefix = f"{i + 1}." if numbered else bullet
+        body_lines.append(f"{prefix} {item}")
+    content = "\n".join(body_lines)
+    console.print(Panel(Markdown(content), title=title, expand=False))
 
 
-def pretty_print_plan(plan: PlanOutput) -> None:
+def pretty_print_plan(plan: PlanOutput, console: Console | None = None) -> None:
     """Pretty print a structured plan output."""
+    console = console or Console()
     # Section 0: Design Rationale (if provided)
-    print_section("Design Rationale", plan.design_rationale)
+    print_section("Design Rationale", plan.design_rationale, console=console)
 
     # Section 1: Schematic Overview
-    print_section("Schematic Overview", plan.functional_blocks)
+    print_section("Schematic Overview", plan.functional_blocks, console=console)
 
     # Section 2: Design Equations & Calculations
     if plan.design_equations:
-        print_section("Design Equations & Calculations", plan.design_equations)
+        print_section(
+            "Design Equations & Calculations", plan.design_equations, console=console
+        )
 
         # Show calculation results if available
         if plan.calculation_results:
-            print("\n=== Calculated Values ===")
-            for i, result in enumerate(plan.calculation_results):
-                print(f" {i + 1}. {result}")
+            print_section(
+                "Calculated Values", plan.calculation_results, console=console
+            )
     else:
-        print("\n=== Design Equations & Calculations ===")
-        print("No calculations required for this design.")
+        console.print("\nNo calculations required for this design.")
 
     # Section 3: Implementation Actions
-    print_section("Implementation Steps", plan.implementation_actions, numbered=True)
+    print_section(
+        "Implementation Steps",
+        plan.implementation_actions,
+        numbered=True,
+        console=console,
+    )
 
     # Section 4: Component Search Queries
-    print_section("Components to Search", plan.component_search_queries)
+    print_section("Components to Search", plan.component_search_queries, console=console)
 
     # Section 5: SKiDL Notes
-    print_section("Implementation Notes (SKiDL)", plan.implementation_notes)
+    print_section(
+        "Implementation Notes (SKiDL)", plan.implementation_notes, console=console
+    )
 
     # Section 6: Limitations / Open Questions
-    print_section("Design Limitations / Open Questions", plan.design_limitations)
+    print_section(
+        "Design Limitations / Open Questions",
+        plan.design_limitations,
+        console=console,
+    )
 
-    print()  # trailing newline
 
-
-def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
+def collect_user_feedback(
+    plan: PlanOutput, input_func: Callable[[str], str] | None = None
+) -> UserFeedback:
     """
     Interactively collect user feedback on the design plan.
     This function prompts the user to answer open questions and request edits.
@@ -140,6 +157,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
     print("=" * 60)
 
     feedback = UserFeedback()
+    input_func = input_func or input
 
     # Handle open questions if they exist
     if plan.design_limitations:
@@ -150,7 +168,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
 
         for i, question in enumerate(plan.design_limitations, 1):
             print(f"\n{i}. {question}")
-            answer = sanitize_text(input("   Your answer: ").strip())
+            answer = sanitize_text(input_func("   Your answer: ").strip())
             if answer:
                 feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
 
@@ -165,7 +183,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
 
     edit_counter = 1
     while True:
-        edit = sanitize_text(input(f"Edit #{edit_counter}: ").strip())
+        edit = sanitize_text(input_func(f"Edit #{edit_counter}: ").strip())
         if not edit:
             break
         feedback.requested_edits.append(edit)
@@ -182,7 +200,7 @@ def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
 
     req_counter = 1
     while True:
-        req = sanitize_text(input(f"Additional requirement #{req_counter}: ").strip())
+        req = sanitize_text(input_func(f"Additional requirement #{req_counter}: ").strip())
         if not req:
             break
         feedback.additional_requirements.append(req)
