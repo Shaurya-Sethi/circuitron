@@ -23,17 +23,18 @@ from .network import check_internet_connection
 
 
 from circuitron.agents import (
-    planner,
-    plan_editor,
-    part_finder,
-    part_selector,
-    documentation,
-    code_generator,
-    code_validator,
-    code_corrector,
-    runtime_error_corrector,
-    erc_handler,
+    get_planning_agent,
+    get_plan_edit_agent,
+    get_partfinder_agent,
+    get_partselection_agent,
+    get_documentation_agent,
+    get_code_generation_agent,
+    get_code_validation_agent,
+    get_code_correction_agent,
+    get_runtime_error_correction_agent,
+    get_erc_handling_agent,
 )
+from agents import Agent
 from agents.result import RunResult
 from circuitron.models import (
     PlanOutput,
@@ -115,11 +116,17 @@ __all__ = [
     "settings",
 ]
 
-async def run_planner(prompt: str, ui: "TerminalUI" | None = None) -> RunResult:
+async def run_planner(
+    prompt: str,
+    ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
+) -> RunResult:
     """Run the planning agent and return the run result."""
+
+    agent = agent or get_planning_agent()
     if ui:
         ui.start_stage("Planning")
-    result = await run_agent(planner, sanitize_text(prompt))
+    result = await run_agent(agent, sanitize_text(prompt))
     if ui:
         ui.finish_stage("Planning")
         ui.display_plan(result.final_output)
@@ -127,13 +134,18 @@ async def run_planner(prompt: str, ui: "TerminalUI" | None = None) -> RunResult:
 
 
 async def run_plan_editor(
-    original_prompt: str, plan: PlanOutput, feedback: UserFeedback, ui: "TerminalUI" | None = None
+    original_prompt: str,
+    plan: PlanOutput,
+    feedback: UserFeedback,
+    ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> PlanEditorOutput:
     """Run the PlanEditor agent with formatted input."""
     if ui:
         ui.start_stage("Editing")
     input_msg = format_plan_edit_input(sanitize_text(original_prompt), plan, feedback)
-    result = await run_agent(plan_editor, input_msg)
+    agent = agent or get_plan_edit_agent()
+    result = await run_agent(agent, input_msg)
     if ui:
         ui.finish_stage("Editing")
         if result.final_output.updated_plan:
@@ -141,38 +153,51 @@ async def run_plan_editor(
     return cast(PlanEditorOutput, result.final_output)
 
 
-async def run_part_finder(plan: PlanOutput, ui: "TerminalUI" | None = None) -> PartFinderOutput:
+async def run_part_finder(
+    plan: PlanOutput,
+    ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
+) -> PartFinderOutput:
     """Search KiCad libraries for components from the plan."""
     if ui:
         ui.start_stage("Looking for Parts")
     query_text = "\n".join(plan.component_search_queries)
-    result = await run_agent(part_finder, sanitize_text(query_text))
+    agent = agent or get_partfinder_agent()
+    result = await run_agent(agent, sanitize_text(query_text))
     if ui:
         ui.finish_stage("Looking for Parts")
     return cast(PartFinderOutput, result.final_output)
 
 
 async def run_part_selector(
-    plan: PlanOutput, part_output: PartFinderOutput, ui: "TerminalUI" | None = None
+    plan: PlanOutput,
+    part_output: PartFinderOutput,
+    ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> PartSelectionOutput:
     """Select optimal parts using search results."""
     if ui:
         ui.start_stage("Selecting Parts")
     input_msg = format_part_selection_input(plan, part_output)
-    result = await run_agent(part_selector, sanitize_text(input_msg))
+    agent = agent or get_partselection_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     if ui:
         ui.finish_stage("Selecting Parts")
     return cast(PartSelectionOutput, result.final_output)
 
 
 async def run_documentation(
-    plan: PlanOutput, selection: PartSelectionOutput, ui: "TerminalUI" | None = None
+    plan: PlanOutput,
+    selection: PartSelectionOutput,
+    ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> DocumentationOutput:
     """Gather SKiDL documentation based on plan and selected parts."""
     if ui:
         ui.start_stage("Gathering Docs")
     input_msg = format_documentation_input(plan, selection)
-    result = await run_agent(documentation, sanitize_text(input_msg))
+    agent = agent or get_documentation_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     if ui:
         ui.finish_stage("Gathering Docs")
     return cast(DocumentationOutput, result.final_output)
@@ -183,12 +208,14 @@ async def run_code_generation(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Generate SKiDL code using plan, selected parts, and documentation."""
     if ui:
         ui.start_stage("Coding")
     input_msg = format_code_generation_input(plan, selection, docs)
-    result = await run_agent(code_generator, sanitize_text(input_msg))
+    agent = agent or get_code_generation_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
     pretty_print_generated_code(code_output)
     validate_code_generation_results(code_output)
@@ -203,6 +230,7 @@ async def run_code_validation(
     docs: DocumentationOutput,
     run_erc_flag: bool = True,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> tuple[CodeValidationOutput, dict[str, object] | None]:
     """Validate generated code and optionally run ERC.
 
@@ -225,9 +253,12 @@ async def run_code_validation(
         if ui:
             ui.start_stage("Validating")
         input_msg = format_code_validation_input(
-            code_output.complete_skidl_code, selection, docs
+            code_output.complete_skidl_code,
+            selection,
+            docs,
         )
-        result = await run_agent(code_validator, sanitize_text(input_msg))
+        agent = agent or get_code_validation_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
         pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
@@ -258,6 +289,7 @@ async def run_code_correction(
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None = None,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
     if ui:
@@ -270,7 +302,8 @@ async def run_code_correction(
         docs,
         erc_result,
     )
-    result = await run_agent(code_corrector, sanitize_text(input_msg))
+    agent = agent or get_code_correction_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
     code_output.complete_skidl_code = correction.corrected_code
     if ui:
@@ -286,6 +319,7 @@ async def run_validation_correction(
     docs: DocumentationOutput,
     context: CorrectionContext | None = None,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Run code correction to address validation errors only.
 
@@ -310,7 +344,8 @@ async def run_validation_correction(
         docs,
         context,
     )
-    result = await run_agent(code_corrector, sanitize_text(input_msg))
+    agent = agent or get_code_correction_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
     code_output.complete_skidl_code = correction.corrected_code
     if ui:
@@ -328,6 +363,7 @@ async def run_erc_handling(
     erc_result: dict[str, object] | None,
     context: CorrectionContext | None = None,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, ERCHandlingOutput]:
     """Run the ERC Handling agent and return updated code and ERC info."""
 
@@ -342,7 +378,8 @@ async def run_erc_handling(
         erc_result,
         context,
     )
-    result = await run_agent(erc_handler, sanitize_text(input_msg))
+    agent = agent or get_erc_handling_agent()
+    result = await run_agent(agent, sanitize_text(input_msg))
     erc_out = cast(ERCHandlingOutput, result.final_output)
     code_output.complete_skidl_code = erc_out.final_code
     if ui:
@@ -357,6 +394,7 @@ async def run_runtime_check_and_correction(
     docs: DocumentationOutput,
     context: CorrectionContext,
     ui: "TerminalUI" | None = None,
+    agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, bool]:
     """Check for runtime errors and correct them if needed."""
 
@@ -397,8 +435,9 @@ async def run_runtime_check_and_correction(
             context,
         )
         try:
+            agent = agent or get_runtime_error_correction_agent()
             result = await run_agent(
-                runtime_error_corrector, sanitize_text(input_msg)
+                agent, sanitize_text(input_msg)
             )
         except Exception as exc:  # pragma: no cover - unexpected errors
             print(f"Runtime correction agent failed: {exc}")
@@ -474,8 +513,19 @@ async def pipeline(
     final_output_dir = output_dir or os.path.join(os.getcwd(), "circuitron_output")
     print(f"📁 Generated files will be saved to: {os.path.abspath(final_output_dir)}")
     print()
-    
-    plan_result = await run_planner(prompt, ui=ui)
+
+    planner_agent = get_planning_agent()
+    plan_edit_agent = get_plan_edit_agent()
+    partfinder_agent = get_partfinder_agent()
+    partselection_agent = get_partselection_agent()
+    documentation_agent = get_documentation_agent()
+    codegen_agent = get_code_generation_agent()
+    validator_agent = get_code_validation_agent()
+    corrector_agent = get_code_correction_agent()
+    runtime_agent = get_runtime_error_correction_agent()
+    erc_agent = get_erc_handling_agent()
+
+    plan_result = await run_planner(prompt, ui=ui, agent=planner_agent)
     plan = plan_result.final_output
     pretty_print_plan(plan)
 
@@ -496,15 +546,36 @@ async def pipeline(
             feedback.additional_requirements,
         ]
     ):
-        part_output = await run_part_finder(plan, ui=ui)
+        part_output = await run_part_finder(plan, ui=ui, agent=partfinder_agent)
         pretty_print_found_parts(part_output.found_components_json)
-        selection = await run_part_selector(plan, part_output, ui=ui)
+        selection = await run_part_selector(
+            plan,
+            part_output,
+            ui=ui,
+            agent=partselection_agent,
+        )
         pretty_print_selected_parts(selection)
-        docs = await run_documentation(plan, selection, ui=ui)
+        docs = await run_documentation(
+            plan,
+            selection,
+            ui=ui,
+            agent=documentation_agent,
+        )
         pretty_print_documentation(docs)
-        code_out = await run_code_generation(plan, selection, docs, ui=ui)
+        code_out = await run_code_generation(
+            plan,
+            selection,
+            docs,
+            ui=ui,
+            agent=codegen_agent,
+        )
         validation, _ = await run_code_validation(
-            code_out, selection, docs, run_erc_flag=False, ui=ui
+            code_out,
+            selection,
+            docs,
+            run_erc_flag=False,
+            ui=ui,
+            agent=validator_agent,
         )
         correction_context = CorrectionContext()
         correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
@@ -514,10 +585,22 @@ async def pipeline(
             if validation_loop_count > 10:  # Safety net to prevent infinite loops
                 raise PipelineError("Validation correction loop exceeded maximum iterations")
             code_out = await run_validation_correction(
-                code_out, validation, plan, selection, docs, correction_context, ui=ui
+                code_out,
+                validation,
+                plan,
+                selection,
+                docs,
+                correction_context,
+                ui=ui,
+                agent=corrector_agent,
             )
             validation, _ = await run_code_validation(
-                code_out, selection, docs, run_erc_flag=False, ui=ui
+                code_out,
+                selection,
+                docs,
+                run_erc_flag=False,
+                ui=ui,
+                agent=validator_agent,
             )
             correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
 
@@ -528,7 +611,13 @@ async def pipeline(
             if runtime_loop_count > 5:
                 raise PipelineError("Runtime error correction loop exceeded maximum iterations")
             code_out, runtime_success = await run_runtime_check_and_correction(
-                code_out, plan, selection, docs, correction_context, ui=ui
+                code_out,
+                plan,
+                selection,
+                docs,
+                correction_context,
+                ui=ui,
+                agent=runtime_agent,
             )
 
         if validation.status == "pass" and not runtime_success:
@@ -539,7 +628,11 @@ async def pipeline(
         erc_result: dict[str, object] | None = None
         if validation.status == "pass":
             _, erc_result = await run_code_validation(
-                code_out, selection, docs, run_erc_flag=True
+                code_out,
+                selection,
+                docs,
+                run_erc_flag=True,
+                agent=validator_agent,
             )
             if erc_result is not None:
                 correction_context.add_erc_attempt(erc_result, [])
@@ -563,9 +656,14 @@ async def pipeline(
                     docs,
                     erc_result,
                     correction_context,
+                    agent=erc_agent,
                 )
                 _, erc_result = await run_code_validation(
-                    code_out, selection, docs, run_erc_flag=True
+                    code_out,
+                    selection,
+                    docs,
+                    run_erc_flag=True,
+                    agent=validator_agent,
                 )
                 if erc_result is not None:
                     # Add special marker for warnings approval if agent approved them
@@ -607,20 +705,29 @@ async def pipeline(
             print(f"\n📁 Files saved to: {out_dir}")
         return code_out
 
-    edit_result = await run_plan_editor(prompt, plan, feedback)
+    edit_result = await run_plan_editor(
+        prompt,
+        plan,
+        feedback,
+        agent=plan_edit_agent,
+    )
     pretty_print_edited_plan(edit_result)
     assert edit_result.updated_plan is not None
     final_plan = edit_result.updated_plan
 
-    part_output = await run_part_finder(final_plan)
+    part_output = await run_part_finder(final_plan, agent=partfinder_agent)
     pretty_print_found_parts(part_output.found_components_json)
-    selection = await run_part_selector(final_plan, part_output)
+    selection = await run_part_selector(final_plan, part_output, agent=partselection_agent)
     pretty_print_selected_parts(selection)
-    docs = await run_documentation(final_plan, selection)
+    docs = await run_documentation(final_plan, selection, agent=documentation_agent)
     pretty_print_documentation(docs)
-    code_out = await run_code_generation(final_plan, selection, docs)
+    code_out = await run_code_generation(final_plan, selection, docs, agent=codegen_agent)
     validation, _ = await run_code_validation(
-        code_out, selection, docs, run_erc_flag=False
+        code_out,
+        selection,
+        docs,
+        run_erc_flag=False,
+        agent=validator_agent,
     )
 
     correction_context = CorrectionContext()
@@ -631,10 +738,22 @@ async def pipeline(
         if validation_loop_count > 10:  # Safety net to prevent infinite loops
             raise PipelineError("Validation correction loop exceeded maximum iterations")
         code_out = await run_validation_correction(
-            code_out, validation, final_plan, selection, docs, correction_context, ui=ui
+            code_out,
+            validation,
+            final_plan,
+            selection,
+            docs,
+            correction_context,
+            ui=ui,
+            agent=corrector_agent,
         )
         validation, _ = await run_code_validation(
-            code_out, selection, docs, run_erc_flag=False, ui=ui
+            code_out,
+            selection,
+            docs,
+            run_erc_flag=False,
+            ui=ui,
+            agent=validator_agent,
         )
         correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
 
@@ -645,7 +764,12 @@ async def pipeline(
         if runtime_loop_count > 5:
             raise PipelineError("Runtime error correction loop exceeded maximum iterations")
         code_out, runtime_success = await run_runtime_check_and_correction(
-            code_out, final_plan, selection, docs, correction_context
+            code_out,
+            final_plan,
+            selection,
+            docs,
+            correction_context,
+            agent=runtime_agent,
         )
 
     if validation.status == "pass" and not runtime_success:
@@ -656,7 +780,12 @@ async def pipeline(
     erc_result = None
     if validation.status == "pass":
         _, erc_result = await run_code_validation(
-            code_out, selection, docs, run_erc_flag=True, ui=ui
+            code_out,
+            selection,
+            docs,
+            run_erc_flag=True,
+            ui=ui,
+            agent=validator_agent,
         )
         if erc_result is not None:
             correction_context.add_erc_attempt(erc_result, [])
@@ -681,9 +810,15 @@ async def pipeline(
                 erc_result,
                 correction_context,
                 ui=ui,
+                agent=erc_agent,
             )
             _, erc_result = await run_code_validation(
-                code_out, selection, docs, run_erc_flag=True, ui=ui
+                code_out,
+                selection,
+                docs,
+                run_erc_flag=True,
+                ui=ui,
+                agent=validator_agent,
             )
             if erc_result is not None:
                 # Add special marker for warnings approval if agent approved them
