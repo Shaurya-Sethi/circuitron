@@ -377,7 +377,7 @@ def test_run_code_correction_cleanup(tmp_path: Path) -> None:
 async def fake_run_with_retry_success() -> None:
     from circuitron import pipeline as pl
 
-    async def maybe_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None) -> CodeGenerationOutput:
+    async def maybe_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None, ui: object | None = None) -> CodeGenerationOutput:
         if not hasattr(maybe_fail, "called"):
             setattr(maybe_fail, "called", True)
             raise RuntimeError("boom")
@@ -391,7 +391,7 @@ async def fake_run_with_retry_success() -> None:
 async def fake_run_with_retry_fail() -> None:
     from circuitron import pipeline as pl
 
-    async def always_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None) -> CodeGenerationOutput:
+    async def always_fail(prompt: str, show_reasoning: bool = False, output_dir: str | None = None, ui: object | None = None) -> CodeGenerationOutput:
         raise RuntimeError("x")
 
     with patch.object(pl, "pipeline", AsyncMock(side_effect=always_fail)):
