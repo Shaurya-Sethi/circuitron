@@ -18,11 +18,11 @@ class Settings:
     planning_model: str = field(default="o4-mini")
     plan_edit_model: str = field(default="o4-mini")
     part_finder_model: str = field(default="o4-mini")
-    part_selection_model: str = field(default="o4-mini")  
+    part_selection_model: str = field(default="gpt-4.1") # Use a model that supports tool_choice="required"
     documentation_model: str = field(default="o4-mini")
-    code_generation_model: str = field(default="gpt-4.1")
+    code_generation_model: str = field(default="gpt-4.1") # Use a model that supports tool_choice="required"
     code_validation_model: str = field(default="o4-mini")
-    code_correction_model: str = field(default="o4-mini")  # Use a model that supports tool_choice="required"
+    code_correction_model: str = field(default="o4-mini") 
     erc_handling_model: str = field(default="o4-mini")
     runtime_correction_model: str = field(default="o4-mini")
     calculation_image: str = field(
