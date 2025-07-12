@@ -12,6 +12,18 @@ Our design will be guided by five core principles, inspired by the `gemini-cli-u
 4.  **Rich, Contextual Output:** Structure all output within styled panels. Leverage Markdown for formatted text, syntax highlighting for code, and custom components for displaying specific data types like part lists or validation results.
 5.  **Dynamic, Asynchronous Feedback:** Provide persistent, real-time feedback on the application's state through a dedicated status bar, dynamic spinners with context, and non-blocking notifications.
 
+## Current Implementation Issues
+
+Analysis of the existing codebase revealed several gaps that prevent the CLI from matching the blueprint:
+
+* **Theming only applied in a few places.** Many functions call `print()` directly so Rich styles are lost. The theme manager defaults all accents to cyan and only the banner component uses the gradient colors【F:circuitron/ui/themes.py†L20-L38】【F:circuitron/ui/app.py†L26-L38】.
+* **Prompt markup not rendered.** The prompt injects Rich markup into the prompt string but `prompt_toolkit` treats it as plain text so no colors appear【F:circuitron/ui/components/prompt.py†L20-L31】.
+* **Multiple Live contexts cause errors.** `StatusBar.start()` creates a `Live` display while the spinner uses `Console.status`, which internally allocates another Live instance, raising "Only one live display may be active" during pipeline execution【F:circuitron/ui/components/status_bar.py†L26-L35】【F:circuitron/ui/components/spinner.py†L22-L25】.
+* **Inconsistent output.** Pipeline stages print their own results and UI helpers also print them, leading to duplicated panels and plain text logs.
+* **Error handling and NO_COLOR fallback are minimal.** There is no graceful degradation when terminals lack color support beyond a simple environment check.
+
+The steps below address these shortcomings and align the CLI with the Gemini blueprint's recommendations for theming and input handling【F:gemini-cli-ui-ux-blueprint.md†L19-L25】【F:gemini-cli-ui-ux-blueprint.md†L42-L60】.
+
 ## 2. Proposed UI Architecture
 
 The new UI will be built around a central `TerminalUI` class in `circuitron/ui/app.py`. This class will manage the layout, theming, and rendering of all components.
@@ -125,24 +137,26 @@ ui.show_panel(
 ## 4. High-Level Implementation Plan
 
 1.  **Foundation (`app.py`, `themes.py`):**
-    *   Implement the `ThemeManager` and define the initial themes.
-    *   Create the main `TerminalUI` class and the basic layout structure.
-    *   Implement the startup banner, ensuring it displays *before* any prompts.
+    *   Implement the `ThemeManager` and define extended palettes.
+    *   Create the main `TerminalUI` with a single `Live` instance that manages banner, spinner and status bar.
+    *   Ensure the startup banner renders before any prompts.
 
 2.  **Output Refactoring (`panel.py`, `tables.py`):**
-    *   Create the generic `Panel` and `Table` components.
-    *   Go through the existing codebase and replace all `print()` statements with calls to the new `ui.show_panel()` or `ui.show_table()` methods.
+    *   Provide generic `Panel` and `Table` helpers.
+    *   Replace all direct `print()` calls so every message flows through `TerminalUI` exactly once.
 
 3.  **Input Refactoring (`prompt.py`):**
-    *   Implement the `prompt_toolkit`-based input component.
-    *   Replace all `input()` calls with the new `ui.prompt()` method.
+    *   Style the prompt using `prompt_toolkit`'s ``HTML`` class so Rich colors render correctly.
+    *   Replace `input()` calls with `ui.prompt()` and handle history and validation.
 
 4.  **Dynamic Feedback (`spinner.py`, `status_bar.py`):**
-    *   Enhance the `StageSpinner` with the new features.
-    *   Implement the persistent `StatusBar` and integrate it into the main layout.
+    *   Merge spinner updates into the status bar instead of creating a second Live display.
+    *   Show elapsed time and stage messages within the unified footer.
 
-5.  **Integration and Testing:**
-    *   Thoroughly test all new UI components and their integration with the core Circuitron logic.
-    *   Update documentation to reflect the new UI and its features.
+5.  **Robustness & Testing:**
+    *   Gracefully fall back to a plain `input()` prompt when `prompt_toolkit` fails.
+    *   Force Rich to disable colors when `NO_COLOR` is detected.
+    *   Add tests for theme switching and spinner lifecycle.
+    *   Update documentation to reflect the new UI.
 
 By following this plan, we will create a CLI experience for Circuitron that is not only highly functional but also a pleasure to use, setting a new standard for terminal-based AI agents.
