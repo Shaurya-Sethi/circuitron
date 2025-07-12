@@ -8,6 +8,7 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
+from circuitron.ui.components import panel
 
 
 async def run_circuitron(
@@ -81,12 +82,10 @@ def main() -> None:
         kicad_session.stop()
 
     if code_output:
-        print("\n=== GENERATED SKiDL CODE ===\n")
-        print(code_output.complete_skidl_code)
-        print("\n" + "=" * 60)
-        print("📁 Generated files have been saved to the output directory.")
-        print("💡 Use --output-dir to specify a custom location.")
-        print("💡 Default location: ./circuitron_output")
+        panel.show_panel(ui.console, "Generated SKiDL Code", code_output.complete_skidl_code, ui.theme)
+        ui.console.print("\n📁 Generated files have been saved to the output directory.")
+        ui.console.print("💡 Use --output-dir to specify a custom location.")
+        ui.console.print("💡 Default location: ./circuitron_output")
 
 
 if __name__ == "__main__":

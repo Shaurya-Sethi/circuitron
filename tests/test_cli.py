@@ -39,7 +39,7 @@ def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> No
          patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)):
         cli.main()
     captured = capsys.readouterr().out
-    assert "GENERATED SKiDL CODE" in captured
+    assert "Generated SKiDL Code" in captured
     assert "abc" in captured
 
 
