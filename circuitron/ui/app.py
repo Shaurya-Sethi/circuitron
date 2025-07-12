@@ -5,7 +5,7 @@ from typing import Iterable
 from rich.console import Console
 from rich.text import Text
 
-from logo import LOGO_ART, apply_gradient
+from circuitron.logo import LOGO_ART, apply_gradient
 from .themes import ELECTRIC_THEME, Theme
 from .components.progress import StageSpinner
 from .. import utils

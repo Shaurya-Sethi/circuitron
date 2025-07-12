@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-import logo
+import circuitron.logo as logo
 
 @dataclass
 class Theme:
