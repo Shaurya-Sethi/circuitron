@@ -547,7 +547,7 @@ async def pipeline(
         ]
     ):
         part_output = await run_part_finder(plan, ui=ui, agent=partfinder_agent)
-        pretty_print_found_parts(part_output.found_components_json)
+        pretty_print_found_parts(part_output.found_components)
         selection = await run_part_selector(
             plan,
             part_output,
@@ -716,7 +716,7 @@ async def pipeline(
     final_plan = edit_result.updated_plan
 
     part_output = await run_part_finder(final_plan, agent=partfinder_agent)
-    pretty_print_found_parts(part_output.found_components_json)
+    pretty_print_found_parts(part_output.found_components)
     selection = await run_part_selector(final_plan, part_output, agent=partselection_agent)
     pretty_print_selected_parts(selection)
     docs = await run_documentation(final_plan, selection, agent=documentation_agent)

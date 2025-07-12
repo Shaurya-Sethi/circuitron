@@ -19,7 +19,7 @@ def test_run_agent_handles_network_error(capsys: pytest.CaptureFixture[str]) -> 
 
     with pytest.raises(PipelineError):
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr(dbg.Runner, "run", fake_run)  # type: ignore[attr-defined]
+            mp.setattr(dbg.Runner, "run", fake_run)
             asyncio.run(dbg.run_agent(SimpleNamespace(name="a"), "x"))
     out = capsys.readouterr().out
     assert "network error" in out.lower()
@@ -36,7 +36,7 @@ def test_pcb_guardrail_handles_network_error(
     ctx = SimpleNamespace(context=None)
     with pytest.raises(PipelineError):
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr(dbg.Runner, "run", fake_run)  # type: ignore[attr-defined]
+            mp.setattr(dbg.Runner, "run", fake_run)
             asyncio.run(gr.pcb_query_guardrail.guardrail_function(ctx, None, "x"))  # type: ignore[arg-type]
     out = capsys.readouterr().out
     assert "network error" in out.lower()

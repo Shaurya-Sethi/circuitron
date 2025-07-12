@@ -16,7 +16,7 @@ from circuitron.logo import LOGO_ART, apply_gradient
 from .themes import Theme, theme_manager
 from .components.progress import StageSpinner
 from .. import utils
-from ..models import PlanOutput
+from ..models import PlanOutput, UserFeedback, CodeGenerationOutput
 
 
 class TerminalUI:
@@ -73,7 +73,7 @@ class TerminalUI:
         """Pretty print the generated plan."""
         utils.pretty_print_plan(plan, console=self.console)
 
-    def collect_feedback(self, plan: PlanOutput) -> utils.UserFeedback:
+    def collect_feedback(self, plan: PlanOutput) -> UserFeedback:
         return utils.collect_user_feedback(plan, input_func=self.prompt_user)
 
     def display_files(self, files: Iterable[str]) -> None:
@@ -86,7 +86,7 @@ class TerminalUI:
         show_reasoning: bool = False,
         retries: int = 0,
         output_dir: str | None = None,
-    ) -> utils.CodeGenerationOutput | None:
+    ) -> CodeGenerationOutput | None:
         """Execute the Circuitron pipeline with UI feedback.
 
         This method now manages the MCP server connection lifecycle so that the

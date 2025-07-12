@@ -131,26 +131,21 @@ class FoundFootprint(BaseModel):
 
 class PartFinderOutput(BaseModel):
     """Output from the PartFinder agent."""
+
     model_config = ConfigDict(extra="forbid", strict=True)
-    found_components_json: str = Field(description="JSON mapping search query to list of found components. Only include queries that returned useful results.")
+
+    found_components: dict[str, list[FoundPart]] = Field(
+        default_factory=dict,
+        description="Mapping from each search query to the list of components found.",
+    )
 
     def get_total_components(self) -> int:
         """Get total number of components found across all searches."""
-        import json
-        try:
-            data = json.loads(self.found_components_json)
-            return sum(len(components) for components in data.values() if components)
-        except Exception:
-            return 0
+        return sum(len(comps) for comps in self.found_components.values() if comps)
     
     def get_successful_searches(self) -> int:
         """Get number of searches that returned results."""
-        import json
-        try:
-            data = json.loads(self.found_components_json)
-            return sum(1 for components in data.values() if components)
-        except Exception:
-            return 0
+        return sum(1 for comps in self.found_components.values() if comps)
 
 
 class PinDetail(BaseModel):

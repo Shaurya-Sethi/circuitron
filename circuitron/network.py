@@ -42,4 +42,4 @@ def check_internet_connection() -> bool:
         return False
     return True
 
-__all__ = ["check_internet_connection", "is_connected"]
+__all__ = ["check_internet_connection", "is_connected", "httpx"]
