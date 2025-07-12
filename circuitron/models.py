@@ -3,7 +3,7 @@ Pydantic models for structured outputs in the Circuitron pipeline.
 Defines all BaseModels required for getting structured outputs from agents.
 """
 
-from typing import List, Literal
+from typing import List, Literal, Dict
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
@@ -114,6 +114,9 @@ class PlanEditorOutput(BaseModel):
 
 class FoundPart(BaseModel):
     """Structure for a component found in KiCad libraries."""
+
+    model_config = ConfigDict(strict=True)
+
     name: str
     library: str
     footprint: str | None = None
@@ -122,6 +125,8 @@ class FoundPart(BaseModel):
 
 class FoundFootprint(BaseModel):
     """Structure for a footprint found in KiCad libraries."""
+
+    model_config = ConfigDict(strict=True)
 
     name: str
     library: str
@@ -134,7 +139,7 @@ class PartFinderOutput(BaseModel):
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    found_components: dict[str, list[FoundPart]] = Field(
+    found_components: Dict[str, List[FoundPart]] = Field(
         default_factory=dict,
         description="Mapping from each search query to the list of components found.",
     )
@@ -151,6 +156,8 @@ class PartFinderOutput(BaseModel):
 class PinDetail(BaseModel):
     """Detailed pin information for a selected component."""
 
+    model_config = ConfigDict(strict=True)
+
     number: str | None = None
     name: str | None = None
     function: str | None = None
@@ -158,6 +165,8 @@ class PinDetail(BaseModel):
 
 class SelectedPart(BaseModel):
     """A part chosen for the design with footprint and pin info."""
+
+    model_config = ConfigDict(strict=True)
 
     name: str
     library: str
