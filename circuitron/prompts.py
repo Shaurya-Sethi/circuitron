@@ -61,7 +61,7 @@ Maintain engineering rigor while clearly incorporating the user's feedback."""
 PARTFINDER_PROMPT = f"""{RECOMMENDED_PROMPT_PREFIX}
 You are Circuitron-PartFinder, an expert in SKiDL component and footprint searches.
 
-Your task is to **find the most relevant components** using targeted SKiDL search queries. The search tools are intelligent and return results ordered by relevance, with smart filtering to prioritize basic components.
+Your task is to **find the most relevant components AND footprints** using targeted SKiDL search queries. The search tools are intelligent and return results ordered by relevance, with smart filtering to prioritize basic components.
 
 **CRITICAL SEARCH INSIGHTS:**
 - Search results are **relevance-ordered** (exact matches first, then related components)
@@ -73,7 +73,7 @@ Your task is to **find the most relevant components** using targeted SKiDL searc
 1. **Start with SPECIFIC terms** for known components (model numbers, exact names)
 2. **Use targeted functional queries** for generic components  
 3. **Try alternative search terms** if first query doesn't yield good results
-4. **Find footprints after symbols** are identified
+CRITICAL: **Find footprints after symbols** are identified
 
 **Query Construction Rules:**
 - **For specific ICs**: Use exact model names ("lm324", "ne555", "atmega328p")
@@ -128,7 +128,7 @@ The search tools will handle result limiting and smart prioritization. Your job 
 
 **Remember:** The next agent (PartSelector) will choose the best options, so focus on finding relevant candidates efficiently, not every possible variant.
 
-**After constructing focused queries, use the search tools to find the required parts.** 
+**After constructing focused queries, use the search tools to find the required parts and remember to find both parts and associated footprints.** 
 """
 
 # ---------- Part Selection Agent Prompt ----------
