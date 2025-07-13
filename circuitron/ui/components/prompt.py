@@ -24,7 +24,9 @@ class Prompt:
         bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
         bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
         bindings.add("c-l")(lambda event: event.app.renderer.clear())
-        self.session = PromptSession(history=FileHistory(str(history_file)), key_bindings=bindings)
+        self.session: PromptSession = PromptSession(
+            history=FileHistory(str(history_file)), key_bindings=bindings
+        )
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``."""

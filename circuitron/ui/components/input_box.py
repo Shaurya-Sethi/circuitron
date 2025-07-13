@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from rich.console import Console
-from rich.panel import Panel
-from rich.markdown import Markdown
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
 
@@ -15,12 +13,12 @@ class InputBox:
     def __init__(self, console: Console, theme: Theme) -> None:
         self.console = console
         self.theme = theme
-        self.session = PromptSession(history=InMemoryHistory())
+        self.session: PromptSession = PromptSession(history=InMemoryHistory())
 
     def ask(self, message: str) -> str:
-        panel = Panel(Markdown(message), border_style=self.theme.accent, expand=False)
-        self.console.print(panel)
+        """Return user input for ``message`` using prompt_toolkit."""
+        prompt_text = f"[{self.theme.accent}]{message}:[/] "
         try:
-            return self.session.prompt("")
+            return self.session.prompt(prompt_text)
         except Exception:
-            return input("{0} ".format(message))
+            return input(f"{message}: ")
