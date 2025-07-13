@@ -118,6 +118,10 @@ class TerminalUI:
             title="Generated SKiDL Code",
         )
 
+    def display_validation_summary(self, summary: str) -> None:
+        """Show code validation results in a panel."""
+        panel.show_panel(self.console, "Validation", summary, self.theme)
+
     def display_generated_files_summary(self, files: Iterable[str]) -> None:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
         MessagePanel.info(self.console, links, self.theme)
