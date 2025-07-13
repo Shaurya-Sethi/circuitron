@@ -19,3 +19,5 @@ memory-bank/
 .clinerules/
 .github/
 circuitron_output/
+architecture_diagram.mmd
+architecture_diagram.svg
