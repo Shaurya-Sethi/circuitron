@@ -38,12 +38,6 @@ The MCP server provides RAG capabilities and knowledge graph lookups. It require
 ## State Diagram
 
 ```mermaid
----
-config:
-  look: neo
-  theme: redux-dark
-  layout: elk
----
 stateDiagram
   direction TB
   [*] --> Planning:User requests a design
