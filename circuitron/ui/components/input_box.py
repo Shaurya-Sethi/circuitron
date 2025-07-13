@@ -3,6 +3,7 @@ from __future__ import annotations
 from rich.console import Console
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
+from prompt_toolkit.formatted_text import HTML  # type: ignore
 
 from ..themes import Theme
 
@@ -17,7 +18,7 @@ class InputBox:
 
     def ask(self, message: str) -> str:
         """Return user input for ``message`` using prompt_toolkit."""
-        prompt_text = f"[{self.theme.accent}]{message}[/] "
+        prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}</style> ')
         try:
             return self.session.prompt(prompt_text)
         except Exception:
