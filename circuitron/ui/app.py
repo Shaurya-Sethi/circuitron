@@ -7,6 +7,9 @@ from rich.console import Console
 from .themes import Theme, theme_manager
 from .components.banner import Banner
 from .components.prompt import Prompt
+from .components.input_box import InputBox
+from .components.code_panel import show_code
+from .components.message_panel import MessagePanel
 from .components.spinner import Spinner
 from .components.status_bar import StatusBar
 from .components import tables, panel
@@ -30,6 +33,7 @@ class TerminalUI:
         self.spinner = Spinner(self.console, self.theme)
         self.status_bar = StatusBar(self.console, self.theme)
         self.prompt = Prompt(self.console, self.theme)
+        self.input_box = InputBox(self.console, self.theme)
 
     def start_banner(self) -> None:
         """Render the Circuitron banner with gradient colors."""
@@ -43,6 +47,7 @@ class TerminalUI:
         self.spinner.theme = self.theme
         self.status_bar.theme = self.theme
         self.prompt.theme = self.theme
+        self.input_box.theme = self.theme
 
     def start_stage(self, name: str) -> None:
         self.status_bar.update(stage=name, message="")
@@ -55,7 +60,7 @@ class TerminalUI:
     def prompt_user(self, message: str) -> str:
         """Prompt the user for input using ``Prompt`` component."""
         while True:
-            text = self.prompt.ask(message)
+            text = self.input_box.ask(message)
             if text.strip() == "/help":
                 self.console.print("Available commands: /theme <name>, /help", style=self.theme.accent)
                 continue
@@ -94,6 +99,28 @@ class TerminalUI:
 
     def display_selected_parts(self, parts: Iterable[SelectedPart]) -> None:
         tables.show_selected_parts(self.console, parts, self.theme)
+
+    def display_info(self, message: str) -> None:
+        MessagePanel.info(self.console, message, self.theme)
+
+    def display_warning(self, message: str) -> None:
+        MessagePanel.warning(self.console, message, self.theme)
+
+    def display_error(self, message: str) -> None:
+        MessagePanel.error(self.console, message, self.theme)
+
+    def display_code(self, code: str, language: str = "python") -> None:
+        show_code(
+            self.console,
+            code,
+            self.theme,
+            language,
+            title="Generated SKiDL Code",
+        )
+
+    def display_generated_files_summary(self, files: Iterable[str]) -> None:
+        links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
+        MessagePanel.info(self.console, links, self.theme)
 
     async def run(
         self,
