@@ -37,33 +37,9 @@ The MCP server provides RAG capabilities and knowledge graph lookups. It require
 
 ## State Diagram
 
-```mermaid
----
-config:
-  look: neo
-  theme: redux-dark
-  layout: elk
----
-stateDiagram
-  direction TB
-  [*] --> Planning:User requests a design
-  Planning --> UserFeedback:Collect user feedback
-  UserFeedback --> EditPlan: Revise design plan
-  EditPlan --> PartFinder:Search for components
-  PartFinder --> PartSelector:Select components
-  PartSelector --> Documentation:Retrieve SKiDL examples
-  Documentation --> CodeGeneration:Generate SKiDL code
-  CodeGeneration --> Validation:Validate code
-  Validation --> CorrectionLoop:On validation failure
-  CorrectionLoop --> Validation:Retry validation
-  Validation --> RuntimeCheck:On validation success
-  RuntimeCheck --> RuntimeCorrection:On runtime failure
-  RuntimeCorrection --> RuntimeCheck:Retry runtime check
-  RuntimeCheck --> ERCHandling:On runtime success
-  ERCHandling --> ERCHandling:Loop on ERC failure
-  ERCHandling --> FinalExecution:On ERC success
-  FinalExecution --> [*]:Generate netlist, schematic SVG, schematic, and PCB layout
-```
+<p align="center">
+  <img src="assets/state_diagram.png" alt="Circuitron State Diagram" width="700"/>
+</p>
 
 ## Prerequisites
 
