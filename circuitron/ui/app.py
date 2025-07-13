@@ -2,7 +2,6 @@
 
 from typing import Iterable
 from rich.console import Console
-import sys
 
 
 from .themes import Theme, theme_manager
@@ -35,7 +34,7 @@ class TerminalUI:
     def start_banner(self) -> None:
         """Render the Circuitron banner with gradient colors."""
         self.banner.show(self.theme)
-        self.console.print("[bold]Type /help for commands[/bold]\n")
+        self.console.print("[bold]Type /help for commands[/bold]\n", style=self.theme.accent)
 
     def set_theme(self, name: str) -> None:
         """Switch to a new theme."""
@@ -56,17 +55,20 @@ class TerminalUI:
     def prompt_user(self, message: str) -> str:
         """Prompt the user for input using ``Prompt`` component."""
         while True:
-            text = self.prompt.ask(message) if sys.stdin.isatty() else input(f"{message}: ")
+            text = self.prompt.ask(message)
             if text.strip() == "/help":
-                self.console.print("Available commands: /theme <name>, /help")
+                self.console.print("Available commands: /theme <name>, /help", style=self.theme.accent)
                 continue
             if text.startswith("/theme"):
                 parts = text.split()
                 if len(parts) == 2 and parts[1] in theme_manager.available_themes():
                     self.set_theme(parts[1])
-                    self.console.print(f"Theme switched to {parts[1]}")
+                    self.console.print(f"Theme switched to {parts[1]}", style=self.theme.accent)
                 else:
-                    self.console.print(f"Available themes: {', '.join(theme_manager.available_themes())}")
+                    self.console.print(
+                        f"Available themes: {', '.join(theme_manager.available_themes())}",
+                        style=self.theme.accent,
+                    )
                 continue
             return text
 
@@ -76,7 +78,11 @@ class TerminalUI:
         panel.show_panel(self.console, "Design Plan", text, self.theme)
 
     def collect_feedback(self, plan: PlanOutput) -> UserFeedback:
-        return utils.collect_user_feedback(plan, input_func=self.prompt_user)
+        return utils.collect_user_feedback(
+            plan,
+            input_func=self.prompt_user,
+            console=self.console,
+        )
 
     def display_files(self, files: Iterable[str]) -> None:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)

@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
-
 from rich.console import Console
-from rich.live import Live
 from rich.text import Text
 
 from ..themes import Theme
@@ -27,23 +24,22 @@ class StatusBar:
         self.console = console
         self.theme = theme
         self.status = Status()
-        self._live: Optional[Live] = None
+        self.started = False
 
     def start(self) -> None:
-        self._live = Live(refresh_per_second=4, console=self.console)
-        self._live.__enter__()
+        self.started = True
         self.update()
 
     def stop(self) -> None:
-        if self._live:
-            self._live.__exit__(None, None, None)
-            self._live = None
+        if self.started:
+            self.console.print()
+            self.started = False
 
     def update(self, stage: str | None = None, message: str | None = None) -> None:
         if stage is not None:
             self.status.stage = stage
         if message is not None:
             self.status.message = message
-        if self._live:
+        if self.started:
             text = Text(f"{self.status.stage} - {self.status.message}", style=self.theme.accent)
-            self._live.update(text)
+            self.console.print(text)

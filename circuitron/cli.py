@@ -1,6 +1,7 @@
 """Command line interface for Circuitron."""
 
 import asyncio
+from rich.console import Console
 from .config import setup_environment
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
@@ -31,7 +32,7 @@ async def run_circuitron(
                 output_dir=output_dir,
             )
         except PipelineError as exc:
-            print(f"Fatal error: {exc}")
+            Console().print(f"Fatal error: {exc}", style="red")
             return None
     finally:
         await mcp_manager.cleanup()
@@ -43,7 +44,7 @@ def verify_containers() -> bool:
     try:
         kicad_session.start()
     except Exception as exc:
-        print(f"Failed to start KiCad container: {exc}")
+        Console().print(f"Failed to start KiCad container: {exc}", style="red")
         return False
     return True
 
@@ -75,9 +76,9 @@ def main() -> None:
                 ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir)
             )
         except KeyboardInterrupt:
-            print("\nExecution interrupted by user.")
+            ui.console.print("\nExecution interrupted by user.", style="red")
         except Exception as exc:
-            print(f"Error during execution: {exc}")
+            ui.console.print(f"Error during execution: {exc}", style="red")
     finally:
         kicad_session.stop()
 
