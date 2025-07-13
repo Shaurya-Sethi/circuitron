@@ -86,9 +86,9 @@ def main() -> None:
 
     if code_output:
         ui.display_code(code_output.complete_skidl_code)
-        ui.display_info("\n📁 Generated files have been saved to the output directory.")
-        ui.display_info("💡 Use --output-dir to specify a custom location.")
-        ui.display_info("💡 Default location: ./circuitron_output")
+        ui.display_info("\nGenerated files have been saved to the output directory.")
+        ui.display_info("Use --output-dir to specify a custom location.")
+        ui.display_info("Default location: ./circuitron_output")
 
 
 if __name__ == "__main__":

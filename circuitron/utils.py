@@ -155,9 +155,7 @@ def collect_user_feedback(
     This function prompts the user to answer open questions and request edits.
     """
     console = console or Console()
-    console.print("\n" + "=" * 60)
-    console.print("PLAN REVIEW & FEEDBACK")
-    console.print("=" * 60)
+    console.print(Panel("PLAN REVIEW & FEEDBACK", border_style="cyan"))
 
     feedback = UserFeedback()
     input_func = input_func or input
@@ -165,20 +163,20 @@ def collect_user_feedback(
     # Handle open questions if they exist
     if plan.design_limitations:
         console.print(
-            f"\nThe planner has identified {len(plan.design_limitations)} open questions that need your input:"
+            Panel(
+                f"The planner has identified {len(plan.design_limitations)} open questions that need your input:",
+                border_style="cyan",
+            )
         )
-        console.print("-" * 50)
 
         for i, question in enumerate(plan.design_limitations, 1):
-            console.print(f"\n{i}. {question}")
-            answer = sanitize_text(input_func("   Your answer: ").strip())
+            console.print(Panel(f"{i}. {question}", border_style="cyan"))
+            answer = sanitize_text(input_func("Answer: ").strip())
             if answer:
                 feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
 
     # Collect general edits and modifications
-    console.print("\n" + "-" * 50)
-    console.print("OPTIONAL EDITS & MODIFICATIONS")
-    console.print("-" * 50)
+    console.print(Panel("OPTIONAL EDITS & MODIFICATIONS", border_style="cyan"))
     console.print(
         "Do you have any specific changes, clarifications, or modifications to request?"
     )
@@ -193,9 +191,7 @@ def collect_user_feedback(
         edit_counter += 1
 
     # Collect additional requirements
-    console.print("\n" + "-" * 50)
-    console.print("ADDITIONAL REQUIREMENTS")
-    console.print("-" * 50)
+    console.print(Panel("ADDITIONAL REQUIREMENTS", border_style="cyan"))
     console.print(
         "Are there any new requirements or constraints not captured in the original design?"
     )
@@ -483,9 +479,7 @@ def format_plan_summary(plan: PlanOutput | None) -> str:
         lines.extend(f"- {blk}" for blk in plan.functional_blocks)
     if plan.implementation_actions:
         lines.append("Implementation Steps:")
-        lines.extend(
-            f"{idx + 1}. {step}" for idx, step in enumerate(plan.implementation_actions)
-        )
+        lines.extend(f"- {step}" for step in plan.implementation_actions)
     if plan.implementation_notes:
         lines.append("Implementation Notes:")
         lines.extend(f"- {note}" for note in plan.implementation_notes)

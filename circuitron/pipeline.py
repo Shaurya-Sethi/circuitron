@@ -277,8 +277,11 @@ async def run_code_validation(
                 erc_result = json.loads(erc_json)
             except (json.JSONDecodeError, TypeError) as e:
                 erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
-            print("\n=== ERC RESULT ===")
-            print(erc_result)
+            if ui:
+                panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2), ui.theme)
+            else:
+                print("\n=== ERC RESULT ===")
+                print(erc_result)
         if ui:
             ui.finish_stage("Validating")
         return validation, erc_result
@@ -449,7 +452,10 @@ async def run_runtime_check_and_correction(
                 agent, sanitize_text(input_msg)
             )
         except Exception as exc:  # pragma: no cover - unexpected errors
-            print(f"Runtime correction agent failed: {exc}")
+            if ui:
+                ui.display_error(f"Runtime correction agent failed: {exc}")
+            else:
+                print(f"Runtime correction agent failed: {exc}")
             context.add_runtime_attempt(runtime_result, [])
             if ui:
                 ui.finish_stage("Runtime Check")
@@ -492,11 +498,20 @@ async def run_with_retry(
             raise
         except Exception as exc:
             attempts += 1
-            print(f"Error during pipeline execution: {exc}")
+            if ui:
+                ui.display_error(f"Error during pipeline execution: {exc}")
+            else:
+                print(f"Error during pipeline execution: {exc}")
             if attempts > retries:
-                print("Maximum retries exceeded. Shutting down gracefully.")
+                if ui:
+                    ui.display_error("Maximum retries exceeded. Shutting down gracefully.")
+                else:
+                    print("Maximum retries exceeded. Shutting down gracefully.")
                 return None
-            print(f"Retrying ({attempts}/{retries})...")
+            if ui:
+                ui.display_warning(f"Retrying ({attempts}/{retries})...")
+            else:
+                print(f"Retrying ({attempts}/{retries})...")
 
 
 async def pipeline(
@@ -520,8 +535,12 @@ async def pipeline(
     """
     # Show where files will be saved at the start
     final_output_dir = output_dir or os.path.join(os.getcwd(), "circuitron_output")
-    print(f"📁 Generated files will be saved to: {os.path.abspath(final_output_dir)}")
-    print()
+    message = f"Generated files will be saved to: {os.path.abspath(final_output_dir)}"
+    if ui:
+        ui.display_info(message)
+    else:
+        print(f"{message}")
+        print()
 
     planner_agent = get_planning_agent()
     plan_edit_agent = get_plan_edit_agent()
@@ -542,13 +561,24 @@ async def pipeline(
         pretty_print_plan(plan)
 
     if settings.dev_mode and plan.calculation_codes:
-        print("\n=== Debug: Calculation Codes ===")
+        debug_msg = ["Debug: Calculation Codes"]
         for i, code in enumerate(plan.calculation_codes, 1):
-            print(f"\nCalculation #{i} code:\n{code}")
+            debug_msg.append(f"Calculation #{i} code:\n{code}")
+        message = "\n".join(debug_msg)
+        if ui:
+            panel.show_panel(ui.console, "Debug", message, ui.theme)
+        else:
+            print("\n=== Debug: Calculation Codes ===")
+            for i, code in enumerate(plan.calculation_codes, 1):
+                print(f"\nCalculation #{i} code:\n{code}")
 
     if show_reasoning:
-        print("\n=== Reasoning Summary ===\n")
-        print(extract_reasoning_summary(plan_result))
+        summary = extract_reasoning_summary(plan_result)
+        if ui:
+            panel.show_panel(ui.console, "Reasoning Summary", summary, ui.theme)
+        else:
+            print("\n=== Reasoning Summary ===\n")
+            print(summary)
 
     feedback = collect_user_feedback(plan, console=ui.console if ui else None)
     if not any(
@@ -697,12 +727,14 @@ async def pipeline(
                 # If the ERC Handling agent explicitly approved remaining warnings
                 # as acceptable, exit the loop to avoid further attempts.
                 if correction_context.agent_approved_warnings():
-                    print("\n=== ERC HANDLER DECISION ===")
-                    print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
-                    if erc_out.remaining_warnings:
-                        print("Remaining acceptable warnings:")
-                        for warning in erc_out.remaining_warnings:
-                            print(f"  - {warning}")
+                    decision = f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}"
+                    details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
+                    message = f"{decision}\n{details}" if details else decision
+                    if ui:
+                        panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
+                    else:
+                        print("\n=== ERC HANDLER DECISION ===")
+                        print(message)
                     break
 
         if validation.status != "pass":
@@ -723,7 +755,7 @@ async def pipeline(
         else:
             print("\n=== GENERATED FILES ===")
             print(files_json)
-            print(f"\n📁 Files saved to: {out_dir}")
+            print(f"\nFiles saved to: {out_dir}")
         return code_out
 
     edit_result = await run_plan_editor(
@@ -864,12 +896,14 @@ async def pipeline(
             # If the ERC Handling agent explicitly approved remaining warnings
             # as acceptable, exit the loop to avoid further attempts.
             if correction_context.agent_approved_warnings():
-                print("\n=== ERC HANDLER DECISION ===")
-                print(f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}")
-                if erc_out.remaining_warnings:
-                    print("Remaining acceptable warnings:")
-                    for warning in erc_out.remaining_warnings:
-                        print(f"  - {warning}")
+                decision = f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}"
+                details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
+                message = f"{decision}\n{details}" if details else decision
+                if ui:
+                    panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
+                else:
+                    print("\n=== ERC HANDLER DECISION ===")
+                    print(message)
                 break
 
     if validation.status != "pass":
@@ -890,7 +924,7 @@ async def pipeline(
     else:
         print("\n=== GENERATED FILES ===")
         print(files_json)
-        print(f"\n📁 Files saved to: {out_dir}")
+        print(f"\nFiles saved to: {out_dir}")
     return code_out
 
 
