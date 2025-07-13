@@ -17,7 +17,7 @@ class InputBox:
 
     def ask(self, message: str) -> str:
         """Return user input for ``message`` using prompt_toolkit."""
-        prompt_text = f"[{self.theme.accent}]{message}:[/] "
+        prompt_text = f"[{self.theme.accent}]{message}[/] "
         try:
             return self.session.prompt(prompt_text)
         except Exception:

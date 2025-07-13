@@ -264,7 +264,7 @@ async def run_code_validation(
         result = await run_agent(agent, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
         if ui:
-            panel.show_panel(ui.console, "Validation", validation.summary, ui.theme)
+            ui.display_validation_summary(validation.summary)
         else:
             pretty_print_validation(validation)
         erc_result: dict[str, object] | None = None
@@ -680,6 +680,7 @@ async def pipeline(
                 selection,
                 docs,
                 run_erc_flag=True,
+                ui=ui,
                 agent=validator_agent,
             )
             if erc_result is not None:
@@ -711,6 +712,7 @@ async def pipeline(
                     selection,
                     docs,
                     run_erc_flag=True,
+                    ui=ui,
                     agent=validator_agent,
                 )
                 if erc_result is not None:
@@ -770,27 +772,28 @@ async def pipeline(
     assert edit_result.updated_plan is not None
     final_plan = edit_result.updated_plan
 
-    part_output = await run_part_finder(final_plan, agent=partfinder_agent)
+    part_output = await run_part_finder(final_plan, ui=ui, agent=partfinder_agent)
     if ui:
         ui.display_found_parts(part_output.found_components)
     else:
         pretty_print_found_parts(part_output)
-    selection = await run_part_selector(final_plan, part_output, agent=partselection_agent)
+    selection = await run_part_selector(final_plan, part_output, ui=ui, agent=partselection_agent)
     if ui:
         ui.display_selected_parts(selection.selections)
     else:
         pretty_print_selected_parts(selection)
-    docs = await run_documentation(final_plan, selection, agent=documentation_agent)
+    docs = await run_documentation(final_plan, selection, ui=ui, agent=documentation_agent)
     if ui:
         panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
     else:
         pretty_print_documentation(docs)
-    code_out = await run_code_generation(final_plan, selection, docs, agent=codegen_agent)
+    code_out = await run_code_generation(final_plan, selection, docs, ui=ui, agent=codegen_agent)
     validation, _ = await run_code_validation(
         code_out,
         selection,
         docs,
         run_erc_flag=False,
+        ui=ui,
         agent=validator_agent,
     )
 
@@ -833,6 +836,7 @@ async def pipeline(
             selection,
             docs,
             correction_context,
+            ui=ui,
             agent=runtime_agent,
         )
 
@@ -943,7 +947,7 @@ async def main() -> None:
         return
     await mcp_manager.initialize()
     try:
-        prompt = args.prompt or input("Prompt: ")
+        prompt = args.prompt or input("What would you like me to design? ")
         try:
             await run_with_retry(
                 prompt,

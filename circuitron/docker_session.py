@@ -13,6 +13,9 @@ import threading
 from .utils import convert_windows_path_for_docker
 
 
+logger = logging.getLogger(__name__)
+
+
 def ensure_windows_tmp_directory() -> None:
     """Ensure C:\tmp exists on Windows to prevent Docker Desktop issues."""
     if platform.system() == "Windows":
@@ -20,9 +23,9 @@ def ensure_windows_tmp_directory() -> None:
         if not os.path.exists(tmp_dir):
             try:
                 os.makedirs(tmp_dir, exist_ok=True)
-                logging.info("Created Windows tmp directory: %s", tmp_dir)
+                logger.debug("Created Windows tmp directory: %s", tmp_dir)
             except OSError as e:
-                logging.warning("Could not create Windows tmp directory %s: %s", tmp_dir, e)
+                logger.debug("Could not create Windows tmp directory %s: %s", tmp_dir, e)
 
 
 def cleanup_stale_containers(prefix: str) -> None:
@@ -430,14 +433,18 @@ export KISYSMOD=/usr/share/kicad/modules
             try:
                 self._run_docker_cp_with_retry(f"{self.container_name}:{src}", dest)
                 files.append(dest)
-                logging.info("Successfully copied: %s -> %s", src, dest)
+                logger.debug("Successfully copied: %s -> %s", src, dest)
             except subprocess.CalledProcessError as e:
                 error_msg = f"Failed to copy {src} from container: {e}"
                 logging.error(error_msg)
                 copy_failures.append(error_msg)
         
         if copy_failures:
-            logging.warning("File copy summary: %d succeeded, %d failed", len(files), len(copy_failures))
+            logger.debug(
+                "File copy summary: %d succeeded, %d failed",
+                len(files),
+                len(copy_failures),
+            )
         else:
             logging.info("Successfully copied all %d file(s)", len(files))
             
@@ -472,9 +479,11 @@ export KISYSMOD=/usr/share/kicad/modules
                 
                 # Check for the specific Windows Docker Desktop error
                 if "CreateFile C:\\tmp" in error_msg and attempt < max_retries - 1:
-                    logging.warning(
-                        "Docker cp failed with Windows tmp error (attempt %d/%d): %s", 
-                        attempt + 1, max_retries, error_msg
+                    logger.debug(
+                        "Docker cp failed with Windows tmp error (attempt %d/%d): %s",
+                        attempt + 1,
+                        max_retries,
+                        error_msg,
                     )
                     # Ensure the Windows tmp directory exists and retry
                     ensure_windows_tmp_directory()

@@ -66,7 +66,7 @@ def main() -> None:
         return
 
     ui.start_banner()
-    prompt = args.prompt or ui.prompt_user("Prompt")
+    prompt = args.prompt or ui.prompt_user("What would you like me to design?")
     show_reasoning = args.reasoning
     retries = args.retries
     output_dir = args.output_dir
