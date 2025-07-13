@@ -356,7 +356,7 @@ def format_part_selection_input(plan: PlanOutput, found: PartFinderOutput) -> st
 
     import json
 
-    found_json = json.dumps(found.model_dump())
+    found_json = json.dumps(found.model_dump(exclude_none=True))
     parts.extend(["PART SEARCH RESULTS JSON:", found_json, ""])
     parts.append("Select the best components and extract pin details.")
     return "\n".join(parts)
@@ -437,9 +437,14 @@ def pretty_print_selected_parts(selection: PartSelectionOutput) -> None:
         print("\nNo parts selected.")
         return
 
+    from .config import settings
+
     print("\n=== SELECTED COMPONENTS ===")
     for part in selection.selections:
-        print(f"\n{part.name} ({part.library}) -> {part.footprint}")
+        headline = f"\n{part.name} ({part.library})"
+        if settings.footprint_search_enabled and part.footprint:
+            headline += f" -> {part.footprint}"
+        print(headline)
         if part.selection_reason:
             print(f"Reason: {part.selection_reason}")
         if part.pin_details:
@@ -504,10 +509,12 @@ def format_selection_summary(selection: PartSelectionOutput | None) -> str:
     if selection is None:
         return ""
 
+    from .config import settings
+
     lines: list[str] = []
     for part in selection.selections:
         headline = f"- {part.name} ({part.library})"
-        if part.footprint:
+        if settings.footprint_search_enabled and part.footprint:
             headline += f" -> {part.footprint}"
         lines.append(headline)
         for pin in part.pin_details:
@@ -564,10 +571,15 @@ def format_code_generation_input(
                 "",
             ]
         )
+    from .config import settings
+
     if selection.selections:
         parts.append("Selected Components:")
         for part in selection.selections:
-            parts.append(f"- {part.name} ({part.library}) -> {part.footprint}")
+            line = f"- {part.name} ({part.library})"
+            if settings.footprint_search_enabled and part.footprint:
+                line += f" -> {part.footprint}"
+            parts.append(line)
             for pin in part.pin_details:
                 parts.append(f"  pin {pin.number}: {pin.name} / {pin.function}")
         parts.append("")
@@ -591,10 +603,15 @@ def format_code_validation_input(
         script_content,
         "",
     ]
+    from .config import settings
+
     if selection.selections:
         parts.append("Selected Components:")
         for part in selection.selections:
-            parts.append(f"- {part.name} ({part.library}) -> {part.footprint}")
+            line = f"- {part.name} ({part.library})"
+            if settings.footprint_search_enabled and part.footprint:
+                line += f" -> {part.footprint}"
+            parts.append(line)
             for pin in part.pin_details:
                 parts.append(f"  pin {pin.number}: {pin.name}")
         parts.append("")
