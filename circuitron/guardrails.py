@@ -10,6 +10,8 @@ from agents import Agent, GuardrailFunctionOutput, Runner, input_guardrail
 import httpx
 import openai
 
+from .ui.app import TerminalUI
+
 from .network import is_connected
 from .exceptions import PipelineError
 from .config import settings
@@ -63,7 +65,7 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
             "Network operation timed out. Consider increasing CIRCUITRON_NETWORK_TIMEOUT."
         )
     except (httpx.HTTPError, openai.OpenAIError) as exc:
-        print(f"Network error: {exc}")
+        TerminalUI().display_error(f"Network error: {exc}")
         if not is_connected(timeout=5.0):
             raise PipelineError(
                 "Internet connection lost. Please check your connection and try again."

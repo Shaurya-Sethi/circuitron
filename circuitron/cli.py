@@ -1,7 +1,6 @@
 """Command line interface for Circuitron."""
 
 import asyncio
-from rich.console import Console
 from .config import setup_environment, settings
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
@@ -9,7 +8,6 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
-from circuitron.ui.components import panel
 
 
 async def run_circuitron(
@@ -17,11 +15,13 @@ async def run_circuitron(
     show_reasoning: bool = False,
     retries: int = 0,
     output_dir: str | None = None,
+    ui: TerminalUI | None = None,
 ) -> CodeGenerationOutput | None:
     """Execute the Circuitron workflow using the full pipeline with retries."""
 
     from circuitron.pipeline import run_with_retry
 
+    ui = ui or TerminalUI()
     await mcp_manager.initialize()
     try:
         try:
@@ -32,19 +32,19 @@ async def run_circuitron(
                 output_dir=output_dir,
             )
         except PipelineError as exc:
-            Console().print(f"Fatal error: {exc}", style="red")
+            ui.display_error(f"Fatal error: {exc}")
             return None
     finally:
         await mcp_manager.cleanup()
 
 
-def verify_containers() -> bool:
+def verify_containers(ui: TerminalUI | None = None) -> bool:
     """Ensure required Docker containers are running."""
 
     try:
         kicad_session.start()
     except Exception as exc:
-        Console().print(f"Failed to start KiCad container: {exc}", style="red")
+        (ui or TerminalUI()).display_error(f"Failed to start KiCad container: {exc}")
         return False
     return True
 
@@ -55,16 +55,16 @@ def main() -> None:
 
     args = parse_args()
     setup_environment(dev=args.dev)
+    ui = TerminalUI()
     if args.no_footprint_search:
         settings.footprint_search_enabled = False
 
     if not check_internet_connection():
         return
 
-    if not verify_containers():
+    if not verify_containers(ui=ui):
         return
 
-    ui = TerminalUI()
     ui.start_banner()
     prompt = args.prompt or ui.prompt_user("Prompt")
     show_reasoning = args.reasoning
@@ -85,10 +85,10 @@ def main() -> None:
         kicad_session.stop()
 
     if code_output:
-        panel.show_panel(ui.console, "Generated SKiDL Code", code_output.complete_skidl_code, ui.theme)
-        ui.console.print("\n📁 Generated files have been saved to the output directory.")
-        ui.console.print("💡 Use --output-dir to specify a custom location.")
-        ui.console.print("💡 Default location: ./circuitron_output")
+        ui.display_code(code_output.complete_skidl_code)
+        ui.display_info("\n📁 Generated files have been saved to the output directory.")
+        ui.display_info("💡 Use --output-dir to specify a custom location.")
+        ui.display_info("💡 Default location: ./circuitron_output")
 
 
 if __name__ == "__main__":

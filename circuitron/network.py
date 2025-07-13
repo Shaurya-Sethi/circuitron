@@ -5,6 +5,8 @@ from __future__ import annotations
 import socket
 import httpx
 
+from .ui.app import TerminalUI
+
 
 def is_connected(url: str = "https://api.openai.com", timeout: float = 10.0) -> bool:
     """Return ``True`` if ``url`` is reachable within ``timeout`` seconds.
@@ -38,7 +40,9 @@ def check_internet_connection() -> bool:
         True
     """
     if not is_connected():
-        print("No internet connection detected. Please connect and try again.")
+        TerminalUI().display_error(
+            "No internet connection detected. Please connect and try again."
+        )
         return False
     return True
 
