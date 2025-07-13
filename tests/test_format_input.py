@@ -12,6 +12,7 @@ from circuitron.utils import (
     format_plan_edit_input,
     format_documentation_input,
     format_code_generation_input,
+    format_code_validation_input,
     format_erc_handling_input,
 )
 
@@ -60,6 +61,28 @@ def test_format_code_generation_input_includes_docs() -> None:
     text = format_code_generation_input(plan, selection, docs)
     assert "CODE GENERATION CONTEXT" in text
     assert "example" in text
+
+
+def test_format_inputs_omit_footprints_when_disabled() -> None:
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+
+    plan = PlanOutput()
+    pin = PinDetail(number="1", name="VCC", function="POWER-IN")
+    part = SelectedPart(name="U1", library="lib", footprint="SOIC", pin_details=[pin])
+    selection = PartSelectionOutput(selections=[part])
+    docs = DocumentationOutput(
+        research_queries=[],
+        documentation_findings=["doc"],
+        implementation_readiness="ok",
+    )
+    gen_text = format_code_generation_input(plan, selection, docs)
+    val_text = format_code_validation_input("print()", selection, docs)
+
+    assert "SOIC" not in gen_text
+    assert "SOIC" not in val_text
 
 
 def test_format_erc_handling_input_provides_history() -> None:

@@ -21,6 +21,7 @@ from circuitron.models import (
     PartFinderOutput,
     PartSearchResult,
     FoundFootprint,
+    FoundPart,
     PinDetail,
     SelectedPart,
     ValidationIssue,
@@ -36,6 +37,7 @@ from circuitron.utils import (
     pretty_print_documentation,
     pretty_print_generated_code,
     format_part_selection_input,
+    format_selection_summary,
     collect_user_feedback,
     pretty_print_validation,
     write_temp_skidl_script,
@@ -113,6 +115,20 @@ def test_format_part_selection_input_includes_footprints() -> None:
     assert "found_footprints" in text
 
 
+def test_format_part_selection_input_omits_empty_footprints() -> None:
+    plan = PlanOutput()
+    part_output = PartFinderOutput(
+        found_components=[
+            PartSearchResult(
+                query="R",
+                components=[FoundPart(name="R1", library="Device")],
+            )
+        ]
+    )
+    text = format_part_selection_input(plan, part_output)
+    assert '"footprint":' not in text
+
+
 def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     from circuitron.models import (
         PlanEditDecision,
@@ -156,6 +172,23 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     pretty_print_validation(val)
     out = capsys.readouterr().out
     assert "SELECTED COMPONENTS" in out
+
+
+def test_print_and_summary_omit_footprints_when_disabled(capsys: pytest.CaptureFixture[str]) -> None:
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+
+    part = SelectedPart(name="U1", library="lib", footprint="SOIC", pin_details=[])
+    selection = PartSelectionOutput(selections=[part])
+
+    pretty_print_selected_parts(selection)
+    out = capsys.readouterr().out
+    assert "SOIC" not in out
+
+    summary = format_selection_summary(selection)
+    assert "SOIC" not in summary
 
 
 def test_collect_user_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
