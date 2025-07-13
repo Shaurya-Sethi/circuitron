@@ -1,9 +1,8 @@
-"""
-Utility functions for the Circuitron system.
-Contains formatting, printing, and other helper utilities.
-"""
+"""Utility functions for Circuitron."""
 
-from typing import Callable, List
+from __future__ import annotations
+
+from typing import Callable, List, TYPE_CHECKING
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -23,6 +22,9 @@ from .models import (
     CodeValidationOutput,
 )
 from .correction_context import CorrectionContext
+
+if TYPE_CHECKING:
+    from .ui.app import TerminalUI
 
 
 def sanitize_text(text: str, max_length: int = 10000) -> str:
@@ -604,8 +606,15 @@ def format_code_validation_input(
     return "\n".join(parts)
 
 
-def pretty_print_generated_code(code_output: CodeGenerationOutput) -> None:
-    """Display generated SKiDL code."""
+def pretty_print_generated_code(
+    code_output: CodeGenerationOutput, ui: "TerminalUI" | None = None
+) -> None:
+    """Display generated SKiDL code using the given UI if available."""
+
+    if ui is not None:
+        ui.display_code(code_output.complete_skidl_code)
+        return
+
     print("\n=== GENERATED SKiDL CODE ===\n")
     print(code_output.complete_skidl_code)
 

@@ -151,7 +151,7 @@ def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     pretty_print_documentation(docs)
     val = CodeValidationOutput(status="pass", summary="ok")
     pretty_print_generated_code(
-        CodeGenerationOutput(complete_skidl_code="from skidl import *")
+        CodeGenerationOutput(complete_skidl_code="from skidl import *"), ui=None
     )
     pretty_print_validation(val)
     out = capsys.readouterr().out
