@@ -43,3 +43,4 @@ class Settings:
         default_factory=lambda: float(os.getenv("CIRCUITRON_NETWORK_TIMEOUT", "300"))
     )
     dev_mode: bool = False
+    footprint_search_enabled: bool = True

@@ -2,7 +2,7 @@
 
 import asyncio
 from rich.console import Console
-from .config import setup_environment
+from .config import setup_environment, settings
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
 from .mcp_manager import mcp_manager
@@ -55,6 +55,8 @@ def main() -> None:
 
     args = parse_args()
     setup_environment(dev=args.dev)
+    if args.no_footprint_search:
+        settings.footprint_search_enabled = False
 
     if not check_internet_connection():
         return

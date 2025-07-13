@@ -88,6 +88,13 @@ def test_parse_args() -> None:
     assert not hasattr(args, "debug")
     assert args.dev is True
     assert args.retries == 2
+    assert args.no_footprint_search is False
+
+
+def test_parse_args_no_footprint_flag() -> None:
+    from circuitron import pipeline as pl
+    args = pl.parse_args(["p", "--no-footprint-search"])
+    assert args.no_footprint_search is True
 
 
 def test_run_code_validation_calls_erc() -> None:
