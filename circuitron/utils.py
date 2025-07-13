@@ -354,9 +354,13 @@ def format_part_selection_input(plan: PlanOutput, found: PartFinderOutput) -> st
             ]
         )
 
+    from .config import settings
     import json
 
-    found_json = json.dumps(found.model_dump(exclude_none=True))
+    found_dict = found.model_dump(exclude_none=True)
+    if not settings.footprint_search_enabled:
+        found_dict.pop("found_footprints", None)
+    found_json = json.dumps(found_dict)
     parts.extend(["PART SEARCH RESULTS JSON:", found_json, ""])
     parts.append("Select the best components and extract pin details.")
     return "\n".join(parts)

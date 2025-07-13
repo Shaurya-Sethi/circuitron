@@ -29,6 +29,7 @@ from circuitron.models import (
 from circuitron.utils import (
     extract_reasoning_summary,
     format_code_validation_input,
+    format_code_generation_input,
     format_code_correction_input,
     pretty_print_plan,
     pretty_print_edited_plan,
@@ -129,6 +130,21 @@ def test_format_part_selection_input_omits_empty_footprints() -> None:
     assert '"footprint":' not in text
 
 
+def test_format_part_selection_input_omits_footprints_when_disabled() -> None:
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+
+    plan = PlanOutput(component_search_queries=["R"])
+    part_output = PartFinderOutput(
+        found_components=[PartSearchResult(query="R")],
+        found_footprints=[FoundFootprint(name="0603", library="Resistor_SMD")],
+    )
+    text = format_part_selection_input(plan, part_output)
+    assert "found_footprints" not in text
+
+
 def test_pretty_print_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     from circuitron.models import (
         PlanEditDecision,
@@ -189,6 +205,28 @@ def test_print_and_summary_omit_footprints_when_disabled(capsys: pytest.CaptureF
 
     summary = format_selection_summary(selection)
     assert "SOIC" not in summary
+
+
+def test_code_inputs_omit_footprints_when_disabled() -> None:
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+
+    plan = PlanOutput()
+    part = SelectedPart(name="U1", library="lib", footprint="SOIC", pin_details=[])
+    selection = PartSelectionOutput(selections=[part])
+    docs = DocumentationOutput(
+        research_queries=[],
+        documentation_findings=["doc"],
+        implementation_readiness="ok",
+    )
+
+    gen_text = format_code_generation_input(plan, selection, docs)
+    val_text = format_code_validation_input("print()", selection, docs)
+
+    assert "SOIC" not in gen_text
+    assert "SOIC" not in val_text
 
 
 def test_collect_user_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
