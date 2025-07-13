@@ -52,6 +52,34 @@ def test_partfinder_disables_footprint_tool() -> None:
     assert agent.instructions == prompts.PARTFINDER_PROMPT_NO_FOOTPRINT
 
 
+def test_partselector_prompt_no_footprint() -> None:
+    import sys
+
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+    mod = importlib.import_module("circuitron.agents")
+    agent = mod.get_partselection_agent()
+    from circuitron import prompts
+    assert agent.instructions == prompts.PART_SELECTION_PROMPT_NO_FOOTPRINT
+
+
+def test_code_generation_prompt_no_footprint() -> None:
+    import sys
+
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+    mod = importlib.import_module("circuitron.agents")
+    agent = mod.get_code_generation_agent()
+    from circuitron import prompts
+    assert agent.instructions == prompts.CODE_GENERATION_PROMPT_NO_FOOTPRINT
+
+
 def test_partselector_includes_pin_tool() -> None:
     import sys
 

@@ -20,8 +20,10 @@ from .prompts import (
     PARTFINDER_PROMPT,
     PARTFINDER_PROMPT_NO_FOOTPRINT,
     PART_SELECTION_PROMPT,
+    PART_SELECTION_PROMPT_NO_FOOTPRINT,
     DOC_AGENT_PROMPT,
     CODE_GENERATION_PROMPT,
+    CODE_GENERATION_PROMPT_NO_FOOTPRINT,
     CODE_VALIDATION_PROMPT,
     CODE_CORRECTION_PROMPT,
     ERC_HANDLING_PROMPT,
@@ -125,9 +127,14 @@ def create_partselection_agent() -> Agent:
 
     tools: list[Tool] = [extract_pin_details]
 
+    prompt = (
+        PART_SELECTION_PROMPT
+        if settings.footprint_search_enabled
+        else PART_SELECTION_PROMPT_NO_FOOTPRINT
+    )
     return Agent(
         name="Circuitron-PartSelector",
-        instructions=PART_SELECTION_PROMPT,
+        instructions=prompt,
         model=settings.part_selection_model,
         output_type=PartSelectionOutput,
         tools=tools,
@@ -157,9 +164,14 @@ def create_code_generation_agent() -> Agent:
         tool_choice=_tool_choice_for_mcp(settings.code_generation_model)
     )
 
+    prompt = (
+        CODE_GENERATION_PROMPT
+        if settings.footprint_search_enabled
+        else CODE_GENERATION_PROMPT_NO_FOOTPRINT
+    )
     return Agent(
         name="Circuitron-Coder",
-        instructions=CODE_GENERATION_PROMPT,
+        instructions=prompt,
         model=settings.code_generation_model,
         output_type=CodeGenerationOutput,
         mcp_servers=[mcp_manager.get_server()],
