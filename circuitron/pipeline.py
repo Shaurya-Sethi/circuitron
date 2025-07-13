@@ -220,10 +220,7 @@ async def run_code_generation(
     agent = agent or get_code_generation_agent()
     result = await run_agent(agent, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
-    if ui:
-        panel.show_panel(ui.console, "Generated Code", code_output.complete_skidl_code, ui.theme)
-    else:
-        pretty_print_generated_code(code_output)
+    pretty_print_generated_code(code_output, ui)
     validate_code_generation_results(code_output)
     if ui:
         ui.finish_stage("Coding")
@@ -673,7 +670,7 @@ async def pipeline(
 
         if validation.status == "pass" and not runtime_success:
             if settings.dev_mode:
-                pretty_print_generated_code(code_out)
+                pretty_print_generated_code(code_out, ui)
             raise PipelineError("Runtime errors persist after maximum correction attempts")
 
         erc_result: dict[str, object] | None = None
@@ -739,14 +736,16 @@ async def pipeline(
 
         if validation.status != "pass":
             if settings.dev_mode:
-                pretty_print_generated_code(code_out)
+                pretty_print_generated_code(code_out, ui)
             raise PipelineError("Validation failed after maximum correction attempts")
 
         # Final check - only fail if there are actual errors (not warnings)
         if erc_result and not erc_result.get("erc_passed", False):
             if settings.dev_mode:
-                pretty_print_generated_code(code_out)
-            raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
+                pretty_print_generated_code(code_out, ui)
+            raise PipelineError(
+                "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
+            )
 
         out_dir = prepare_output_dir(output_dir)
         files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
@@ -837,10 +836,12 @@ async def pipeline(
             agent=runtime_agent,
         )
 
-    if validation.status == "pass" and not runtime_success:
-        if settings.dev_mode:
-            pretty_print_generated_code(code_out)
-        raise PipelineError("Runtime errors persist after maximum correction attempts")
+        if validation.status == "pass" and not runtime_success:
+            if settings.dev_mode:
+                pretty_print_generated_code(code_out, ui)
+            raise PipelineError(
+                "Runtime errors persist after maximum correction attempts"
+            )
 
     erc_result = None
     if validation.status == "pass":
@@ -908,14 +909,16 @@ async def pipeline(
 
     if validation.status != "pass":
         if settings.dev_mode:
-            pretty_print_generated_code(code_out)
+            pretty_print_generated_code(code_out, ui)
         raise PipelineError("Validation failed after maximum correction attempts")
 
     # Final check - only fail if there are actual errors (not warnings)
     if erc_result and not erc_result.get("erc_passed", False):
         if settings.dev_mode:
-            pretty_print_generated_code(code_out)
-        raise PipelineError("ERC failed after maximum correction attempts - errors remain (warnings are acceptable)")
+            pretty_print_generated_code(code_out, ui)
+        raise PipelineError(
+            "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
+        )
 
     out_dir = prepare_output_dir(output_dir)
     files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
