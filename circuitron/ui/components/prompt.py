@@ -7,6 +7,7 @@ from pathlib import Path
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import FileHistory  # type: ignore
 from prompt_toolkit.key_binding import KeyBindings  # type: ignore
+from prompt_toolkit.formatted_text import HTML  # type: ignore
 from rich.console import Console
 
 from ..themes import Theme
@@ -27,5 +28,8 @@ class Prompt:
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``."""
-        prompt_text = f"[{self.theme.accent}]{message}: [/bold]"
-        return self.session.prompt(prompt_text)
+        prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
+        try:
+            return self.session.prompt(prompt_text)
+        except Exception:
+            return input(f"{message}: ")

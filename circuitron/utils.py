@@ -146,40 +146,43 @@ def pretty_print_plan(plan: PlanOutput, console: Console | None = None) -> None:
 
 
 def collect_user_feedback(
-    plan: PlanOutput, input_func: Callable[[str], str] | None = None
+    plan: PlanOutput,
+    input_func: Callable[[str], str] | None = None,
+    console: Console | None = None,
 ) -> UserFeedback:
     """
     Interactively collect user feedback on the design plan.
     This function prompts the user to answer open questions and request edits.
     """
-    print("\n" + "=" * 60)
-    print("PLAN REVIEW & FEEDBACK")
-    print("=" * 60)
+    console = console or Console()
+    console.print("\n" + "=" * 60)
+    console.print("PLAN REVIEW & FEEDBACK")
+    console.print("=" * 60)
 
     feedback = UserFeedback()
     input_func = input_func or input
 
     # Handle open questions if they exist
     if plan.design_limitations:
-        print(
+        console.print(
             f"\nThe planner has identified {len(plan.design_limitations)} open questions that need your input:"
         )
-        print("-" * 50)
+        console.print("-" * 50)
 
         for i, question in enumerate(plan.design_limitations, 1):
-            print(f"\n{i}. {question}")
+            console.print(f"\n{i}. {question}")
             answer = sanitize_text(input_func("   Your answer: ").strip())
             if answer:
                 feedback.open_question_answers.append(f"Q{i}: {question}\nA: {answer}")
 
     # Collect general edits and modifications
-    print("\n" + "-" * 50)
-    print("OPTIONAL EDITS & MODIFICATIONS")
-    print("-" * 50)
-    print(
+    console.print("\n" + "-" * 50)
+    console.print("OPTIONAL EDITS & MODIFICATIONS")
+    console.print("-" * 50)
+    console.print(
         "Do you have any specific changes, clarifications, or modifications to request?"
     )
-    print("(Press Enter on empty line to finish)")
+    console.print("(Press Enter on empty line to finish)")
 
     edit_counter = 1
     while True:
@@ -190,13 +193,13 @@ def collect_user_feedback(
         edit_counter += 1
 
     # Collect additional requirements
-    print("\n" + "-" * 50)
-    print("ADDITIONAL REQUIREMENTS")
-    print("-" * 50)
-    print(
+    console.print("\n" + "-" * 50)
+    console.print("ADDITIONAL REQUIREMENTS")
+    console.print("-" * 50)
+    console.print(
         "Are there any new requirements or constraints not captured in the original design?"
     )
-    print("(Press Enter on empty line to finish)")
+    console.print("(Press Enter on empty line to finish)")
 
     req_counter = 1
     while True:

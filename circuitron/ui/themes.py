@@ -18,6 +18,9 @@ class Theme:
     name: str
     gradient_colors: List[str]
     accent: str = "cyan"
+    background: str = "black"
+    foreground: str = "white"
+    error: str = "red"
 
 
 class ThemeManager:
@@ -33,8 +36,22 @@ class ThemeManager:
         # Built-in additional themes
         self.themes.update(
             {
-                "dark": Theme("dark", ["#1E1E2E", "#89B4FA", "#CBA6F7"], accent="#89B4FA"),
-                "light": Theme("light", ["#FFFFFF", "#CCCCCC", "#666666"], accent="#4682B4"),
+                "dark": Theme(
+                    "dark",
+                    ["#1E1E2E", "#89B4FA", "#CBA6F7"],
+                    accent="#89B4FA",
+                    background="#1E1E2E",
+                    foreground="#CDD6F4",
+                    error="#F38BA8",
+                ),
+                "light": Theme(
+                    "light",
+                    ["#FFFFFF", "#CCCCCC", "#666666"],
+                    accent="#4682B4",
+                    background="#FFFFFF",
+                    foreground="#222222",
+                    error="red",
+                ),
             }
         )
         self.active_theme: Theme = self.themes["electric"]
@@ -59,7 +76,14 @@ class ThemeManager:
 
     def get_theme(self) -> Theme:
         if os.environ.get("NO_COLOR"):
-            return Theme("nocolor", ["white"], accent="white")
+            return Theme(
+                "nocolor",
+                ["white"],
+                accent="white",
+                background="black",
+                foreground="white",
+                error="white",
+            )
         return self.active_theme
 
     def set_theme(self, name: str) -> None:

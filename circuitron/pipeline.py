@@ -550,7 +550,7 @@ async def pipeline(
         print("\n=== Reasoning Summary ===\n")
         print(extract_reasoning_summary(plan_result))
 
-    feedback = collect_user_feedback(plan)
+    feedback = collect_user_feedback(plan, console=ui.console if ui else None)
     if not any(
         [
             feedback.open_question_answers,
