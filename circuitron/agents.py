@@ -18,6 +18,7 @@ from .prompts import (
     PLAN_PROMPT,
     PLAN_EDIT_PROMPT,
     PARTFINDER_PROMPT,
+    PARTFINDER_PROMPT_NO_FOOTPRINT,
     PART_SELECTION_PROMPT,
     DOC_AGENT_PROMPT,
     CODE_GENERATION_PROMPT,
@@ -90,15 +91,27 @@ def create_plan_edit_agent() -> Agent:
     )
 
 
-def create_partfinder_agent() -> Agent:
-    """Create and configure the PartFinder Agent."""
+def create_partfinder_agent(footprint_search_enabled: bool = True) -> Agent:
+    """Create and configure the PartFinder Agent.
+
+    Args:
+        footprint_search_enabled: Include footprint search tool when ``True``.
+
+    Returns:
+        Configured :class:`~agents.Agent` instance.
+    """
     model_settings = ModelSettings(tool_choice="required")
 
-    tools: list[Tool] = [search_kicad_libraries, search_kicad_footprints]
+    tools: list[Tool] = [search_kicad_libraries]
+    prompt = PARTFINDER_PROMPT
+    if footprint_search_enabled:
+        tools.append(search_kicad_footprints)
+    else:
+        prompt = PARTFINDER_PROMPT_NO_FOOTPRINT
 
     return Agent(
         name="Circuitron-PartFinder",
-        instructions=PARTFINDER_PROMPT,
+        instructions=prompt,
         model=settings.part_finder_model,
         output_type=PartFinderOutput,
         tools=tools,
@@ -246,7 +259,7 @@ def get_plan_edit_agent() -> Agent:
 def get_partfinder_agent() -> Agent:
     """Return a new instance of the PartFinder Agent."""
 
-    return create_partfinder_agent()
+    return create_partfinder_agent(settings.footprint_search_enabled)
 
 
 def get_partselection_agent() -> Agent:

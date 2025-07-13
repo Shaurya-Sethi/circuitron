@@ -32,7 +32,7 @@ def test_run_circuitron_handles_pipeline_error() -> None:
 
 def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> None:
     out = CodeGenerationOutput(complete_skidl_code="abc")
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
@@ -45,7 +45,7 @@ def test_cli_main_uses_args_and_prints(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_cli_main_prompts_for_input(monkeypatch: pytest.MonkeyPatch) -> None:
     out = CodeGenerationOutput(complete_skidl_code="xyz")
-    args = SimpleNamespace(prompt=None, reasoning=True, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt=None, reasoning=True, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
@@ -66,7 +66,7 @@ def test_module_main_called() -> None:
 
 def test_cli_main_stops_session() -> None:
     out = CodeGenerationOutput(complete_skidl_code="123")
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
@@ -78,7 +78,7 @@ def test_cli_main_stops_session() -> None:
 def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) -> None:
     import circuitron.config as cfg
     cfg.setup_environment()
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
@@ -90,7 +90,7 @@ def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) 
 
 
 def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
@@ -118,7 +118,7 @@ def test_verify_containers_failure(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt=None, reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt=None, reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     out = CodeGenerationOutput(complete_skidl_code="")
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
@@ -131,7 +131,7 @@ def test_cli_main_no_prompt_on_container_failure(monkeypatch: pytest.MonkeyPatch
 
 
 def test_cli_main_checks_internet(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.check_internet_connection", return_value=False), \
@@ -141,6 +141,20 @@ def test_cli_main_checks_internet(monkeypatch: pytest.MonkeyPatch) -> None:
         cli.main()
         run_mock.assert_not_called()
         stop_mock.assert_not_called()
+
+
+def test_cli_main_sets_footprint_flag() -> None:
+    import circuitron.config as cfg
+    cfg.setup_environment()
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=True)
+    out = CodeGenerationOutput(complete_skidl_code="")
+    with patch("circuitron.cli.setup_environment"), \
+         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(return_value=out)), \
+         patch("circuitron.tools.kicad_session.stop"):
+        cli.main()
+    assert cfg.settings.footprint_search_enabled is False
 
 
 def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> None:
@@ -169,7 +183,7 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
         await dbg.run_agent(SimpleNamespace(name="A"), "hi")
         return CodeGenerationOutput(complete_skidl_code="code")
 
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=True, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=True, output_dir=None, no_footprint_search=False)
     with patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.cli.setup_environment", side_effect=lambda dev: setattr(cfg.settings, "dev_mode", dev)), \
          patch("circuitron.debug.Runner.run", AsyncMock(return_value=run_result)), \

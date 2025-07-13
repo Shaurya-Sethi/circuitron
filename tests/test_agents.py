@@ -36,6 +36,22 @@ def test_partfinder_includes_footprint_tool() -> None:
     assert "search_kicad_footprints" in tool_names
 
 
+def test_partfinder_disables_footprint_tool() -> None:
+    import sys
+
+    sys.modules.pop("circuitron.agents", None)
+    import circuitron.config as cfg
+
+    cfg.setup_environment()
+    cfg.settings.footprint_search_enabled = False
+    mod = importlib.import_module("circuitron.agents")
+    agent = mod.get_partfinder_agent()
+    tool_names = [tool.name for tool in agent.tools]
+    assert "search_kicad_footprints" not in tool_names
+    from circuitron import prompts
+    assert agent.instructions == prompts.PARTFINDER_PROMPT_NO_FOOTPRINT
+
+
 def test_partselector_includes_pin_tool() -> None:
     import sys
 

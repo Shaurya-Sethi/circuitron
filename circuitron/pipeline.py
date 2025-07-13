@@ -897,9 +897,11 @@ async def pipeline(
 async def main() -> None:
     """CLI entry point for the Circuitron pipeline."""
     args = parse_args()
-    from circuitron.config import setup_environment
+    from circuitron.config import setup_environment, settings
 
     setup_environment(dev=args.dev)
+    if args.no_footprint_search:
+        settings.footprint_search_enabled = False
     if not check_internet_connection():
         return
     await mcp_manager.initialize()
@@ -945,6 +947,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=str,
         default=None,
         help="directory to save generated files (default: ./circuitron_output)",
+    )
+    parser.add_argument(
+        "--no-footprint-search",
+        action="store_true",
+        help="disable the agent's footprint search functionality",
     )
     return parser.parse_args(argv)
 

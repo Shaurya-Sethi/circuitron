@@ -95,7 +95,7 @@ def test_wrapper_functions() -> None:
 
 
 def test_pipeline_main(monkeypatch: pytest.MonkeyPatch) -> None:
-    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None)
+    args = SimpleNamespace(prompt="p", reasoning=False, retries=1, dev=False, output_dir=None, no_footprint_search=False)
     monkeypatch.setattr(pl, "parse_args", lambda _=None: args)
     monkeypatch.setattr(pl, "run_with_retry", AsyncMock())
     monkeypatch.setattr(pl, "check_internet_connection", lambda: False)
