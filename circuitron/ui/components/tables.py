@@ -13,19 +13,15 @@ from ...models import SelectedPart, FoundPart
 
 
 def show_found_parts(console: Console, parts: dict[str, list[FoundPart]], theme: Theme) -> None:
-    """Render table of found components."""
+    """Render a unified table of found components."""
+    table = Table(title="Found Components", border_style=theme.accent, box=box.SIMPLE)
+    table.add_column("Query", style=theme.accent)
+    table.add_column("Name")
+    table.add_column("Library")
     for query, plist in parts.items():
-        table = Table(
-            title=f"Results for {query}",
-            border_style=theme.accent,
-            box=box.SIMPLE,
-            expand=False,
-        )
-        table.add_column("Name", style=theme.accent)
-        table.add_column("Library")
         for part in plist:
-            table.add_row(part.name, part.library)
-        console.print(table)
+            table.add_row(query, part.name, part.library)
+    console.print(table)
 
 
 def show_selected_parts(console: Console, parts: Iterable[SelectedPart], theme: Theme) -> None:
