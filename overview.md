@@ -1,8 +1,4 @@
-# Circuitron### **1. Agentic, Reasoning-Driven Workflow**
-- **Orchestration:** Uses OpenAI Agents SDK for chaining LLM, RAG retrieval, code execution, and user feedback/approval.
-- **LLM "Brain":** Runs on OpenAI's reasoning-capable models (GPT-4o, GPT-4o-mini).
-- **RAG (Retrieval-Augmented Generation):** Critical to accuracy—a robust retrieval system surfaces relevant SKiDL documentation and usage examples to the LLM for every generation step utilising a MCP Server that exposes tools like `perform_rag_query` and `search_code_examples`.
-- **Chain-of-Thought Reasoning:** All design decisions are presented as transparent, stepwise plans (including calculations), which the user can review, approve, or edit before design files are generated.entic PCB Design Accelerator
+# Circuitron
 
 ## Project Goal
 
@@ -15,15 +11,15 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ## Key Features & Workflow
 
 ### **1. Agentic, Reasoning-Driven Workflow**
-- **Orchestration:** Uses OpenAI Agents SDK for chaining LLM, RAG retrieval, code execution, and user feedback/approval.
+- **Orchestration:** Uses OpenAI Agents SDK for chaining LLM, RAG via Model Context Protocol, code execution, and user feedback/approval.
 - **LLM “Brain”:** Runs on a reasoning-capable LLM (OpenAI API).
 - **RAG (Retrieval-Augmented Generation):** Critical to accuracy—a robust retrieval system surfaces relevant SKiDL documentation and usage examples to the LLM for every generation step utilising a MCP Server that exposes tools like `perform_rag_query` and `search_code_examples`.
 - **Chain-of-Thought Reasoning:** All design decisions are presented as transparent, stepwise plans (including calculations), which the user can review, approve, or edit before design files are generated.
 
 ### **2. SKiDL-Based Schematic and Netlist Generation**
 - **SKiDL Python code** is generated based on user prompt, design rationale, and retrieved part information, guided by the RAG system to ensure generation of accurate code that is consistent with SKiDL's API.
-- **Accurate Part Selection:** The agent queries the actual installed KiCad libraries (via SKiDL's built in search(), possibly in Dockerized environments) to ensure only real, available components are used.
-- **User Control:** Engineers may override or select preferred parts before code is finalized.
+- **Accurate Part Selection:** The agent queries the actual installed KiCad libraries (via SKiDL's built in search(), in Docker environment) to ensure only real, available components are used.
+- **User Control:** Engineers may override or select preferred parts before code is finalized. (Planned)
 - **Native Schematic Export:** SKiDL generates a `.sch` schematic file via `generate_schematic`, **directly openable and editable in KiCad**—the industry gold standard. **Note that as of June 2025, this can be opened only in KiCad V5.**
 - **Netlist and BOM Generation:** SKiDL also outputs netlists for BOM tools, SPICE simulation, or further processing.
 - **SVG Schematic Preview:** Instant schematic visualization in the UI for quick review using `generate_svg()`; fully compatible `.kicad_sch` available for advanced edits.
@@ -36,9 +32,10 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 ### **4. Engineer-First Interface**
 - **Interactive Approval Loop:** Engineers review the LLM’s chain-of-thought and the proposed design plan before code execution.
-- **UI/UX:** Circuitron exposes a modern UI, starting with Streamlit (for prototyping and demonstration) and later extending to a scalable React-based frontend.
+- **UI/UX:** Circuitron exposes a modern TUI, starting with rich (for prototyping and demonstration) and later extending to a scalable React-based frontend.
 - **All files downloadable in native KiCad formats**—ensuring seamless integration with professional toolchains.
 - **Session Memory / Project History**
+  - This is a planned feature for future releases.
   - Each design session is tied to a project.
   - The system stores all prompts, plans, netlists, and schematics for each project.
   - Users can review past designs and iterations, and RAG is used to recall relevant prior work for context
@@ -47,14 +44,13 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 ## Tech Stack
 
 - **Backend Orchestration:** OpenAI Agents SDK (Python)
-- **LLM:** OpenAI (GPT-4o, GPT-4o-mini)
+- **LLM:** Currently OpenAI with future plans for Local LLM support via Ollama, and support for other providers.
 - **RAG:** Via MCP (Model Context Protocol) server, indexing SKiDL docs, example designs
 - **Schematic & Netlist Generation:** SKiDL (Python)
 - **PCB Layout Generation:** SKiDL
- - **Autorouting:** Planned DeepPCB API integration (documentation still evolving)
-- **File Management:** Local or Dockerized KiCad install for part queries and file validation
-- **API Service:** FastAPI (Python)
-- **Frontend:** Streamlit (prototype), React/Next.js (production)
+- **Autorouting:** Planned DeepPCB API integration (documentation still evolving)
+- **File Management:** Dockerized KiCad install for part searches and file generation
+- **Frontend:** rich CLI (prototype), React/Next.js (production)
 - **Containerization:** Docker for reproducibility, dependency isolation
 
 ---
@@ -72,13 +68,13 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 4. **File Generation:**
    - SKiDL script can generate:
      - `.sch` schematic
-     - Netlist and BOM
+     - Netlist
      - SVG schematic for UI preview
      - `.kicad_pcb` layout file
 5. **Code Validation:**
-   - A dedicated agent checks the script for hallucinations and syntax issues using a knowledge graph.
+   - A dedicated agent checks the script for hallucinations and syntax issues using a knowledge graph via `query_knowledge_graph` (exposed by MCP server).
 6. **Code Correction Loop:**
-   - If validation fails or ERC reports errors, an automated agent iteratively fixes the code and re-runs checks.
+   - If validation fails or ERC reports errors, dedicated agents iteratively fix the code and re-run checks.
 7. **Electrical Rule Checking:**
    - SKiDL Performs electrical rules checking (ERC) for common mistakes (e.g., unconnected device I/O pins).
 8. **PCB Autorouting (future):**
@@ -105,14 +101,23 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 
 ## Stretch Goals & Roadmap
 
-- **Web-based Schematic Editor:**  
-  Allow engineers to make basic edits/annotations in-browser before downloading.
-- **Team Collaboration:**  
-  Multi-user projects, feedback, and iterative design history.
-- **AI-Driven Schematic Beautification:**  
-  Advanced auto-layout for prettier, more readable schematics.
-- **Integration with Compliance/Simulation Tools:**  
-  Auto-generate simulation files, DRC/EMC checks, and compliance reports.
+* **Sequential Thinking MCP Integration:**
+  Incorporate the `sequential thinking` MCP server at the initial planning stage to generate more comprehensive, high-quality design plans—improving overall project structure and reasoning quality.
+
+* **Reliable & User-Centric Footprint Search:**
+  Continue developing a dedicated agent for stable, accurate footprint searches. Extend this by integrating GUI-based search tools (e.g., `zyc`), allowing engineers to manually select footprints for increased control and trust in the design flow.
+
+* **Streamlined Web/Desktop App:**
+  Expand Circuitron beyond CLI by implementing a user-friendly web app or desktop application. This will make advanced features like manual footprint selection and visual design review easily accessible to all users.
+
+* **Schematic Beautification Agent:**
+  Build a schematic beautification agent leveraging powerful vision-language models to automatically review, enhance, and optimize schematic visuals for clarity, aesthetics, and adherence to best practices.
+
+* **Advanced Autorouting with DeepPCB API:**
+  Integrate DeepPCB’s public API for robust, AI-powered PCB autorouting, once their API is stable and fully documented, closing the loop from schematic to manufacturable PCB layout.
+
+* **Agentic Memory & Multi-Project Management:**
+  Architect a persistent, context-aware memory system to support multi-design projects, shared project context, design history, and smarter, session-aware agent workflows—drawing inspiration from advanced agentic frameworks like `cline`.
 
 ---
 
@@ -121,9 +126,4 @@ The tool acts as a productivity booster: it provides a high-quality, logically c
 - [SKiDL Documentation](https://devbisme.github.io/skidl/)
 - [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
 
-### Configuration
-
-Runtime models and Docker images are configured via environment variables read
-by ``circuitron.settings``. See ``README.md`` for details on the available
-variables.
 ---
