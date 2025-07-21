@@ -8,6 +8,8 @@
 
 Circuitron is an agent-driven PCB design accelerator that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with retrieval augmented generation to provide clear reasoning and fully traceable design artifacts. The system is built for professional power-electronics engineers who want to streamline routine design steps while retaining full control over final deliverables.
 
+![Demo of Circuitron in Action](assets/circuitron-demo.gif)
+
 ## Features
 
 - **Reasoning-driven workflow** – OpenAI Agents coordinate planning, part discovery, code generation, validation, and error correction with transparent chain-of-thought output.
