@@ -5,11 +5,14 @@
 </p>
 
 
+Circuitron is an agent-driven PCB design accelerator that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with advanced reasoning and retrieval-augmented capabilities.
 
-Circuitron is an agent-driven PCB design accelerator that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with retrieval augmented generation to provide clear reasoning and fully traceable design artifacts. The system is built for professional power-electronics engineers who want to streamline routine design steps while retaining full control over final deliverables.
+---
 
-**Seeing it in action**
+### **Seeing it in Action**
+
 ![Demo of Circuitron in Action](assets/circuitron-demo.gif)
+
 
 ## Features
 
