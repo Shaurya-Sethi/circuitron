@@ -1,18 +1,12 @@
 # Circuitron
 
-<p align="center">
-  <img src="assets/circuitron_logo.png" alt="Circuitron Logo" width="700"/>
-</p>
-
-
 Circuitron is an agent-driven PCB design accelerator that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with advanced reasoning and retrieval-augmented capabilities.
 
 ---
 
-### **Seeing it in Action**
-
 ![Demo of Circuitron in Action](assets/circuitron-demo.gif)
 
+---
 
 ## Features
 
@@ -41,10 +35,10 @@ The pipeline uses dedicated agents for each design step:
 
 The MCP server provides RAG capabilities and knowledge graph lookups. It requires a Supabase database and a Neo4j instance for storing crawled documentation and a knowledge graph of the SKiDL source code (for validating generated code). Circuitron communicates with this server during every run to retrieve accurate SKiDL references and to perform hallucination checks.
 
-## State Diagram
+## Architecture Diagram
 
 <p align="center">
-  <img src="assets/state_diagram.png" alt="Circuitron State Diagram" width="700"/>
+  <img src="assets/circuitron_architecture_light.png" alt="Circuitron Architecture Diagram" width="1400"/>
 </p>
 
 ## Prerequisites
