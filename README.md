@@ -51,6 +51,8 @@ Before installing Circuitron ensure the following tools and accounts are availab
 - **Supabase account** – used by the MCP server for storing crawled pages
 - **AuraDB (Neo4j) database** – free instances are available from [AuraDB](https://neo4j.com/cloud/platform/aura-graph-database/)
 
+> **Note:** Make sure that your OpenAI Account is topped up with some credits. Additionally, ensure that you finish [organization verification](https://help.openai.com/en/articles/10910291-api-organization-verification) to enable the utilization of OpenAI's reasoning models.
+
 ## Installation
 
 Clone the repository and install the package in editable mode so the CLI and tests use the local sources:
