@@ -69,6 +69,8 @@ A `requirements.txt` file matching the `pyproject.toml` dependencies is included
 
 ## Setup
 
+> **Note:** For more detailed set up instructions, please follow the [Detailed Setup Guide](SETUP.md) to get the dependencies for Circuitron up and running.
+
 1. **Pull required Docker images**
 
    ```bash
