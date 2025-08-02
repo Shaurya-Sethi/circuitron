@@ -483,14 +483,30 @@ async def run_with_retry(
     show_reasoning: bool = False,
     retries: int = 0,
     output_dir: str | None = None,
+    keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
 ) -> CodeGenerationOutput | None:
-    """Run :func:`pipeline` with retry and error handling."""
+    """Run :func:`pipeline` with retry and error handling.
+    
+    Args:
+        prompt: Natural language design request.
+        show_reasoning: Print the reasoning summary when ``True``.
+        retries: Maximum number of retry attempts on failure.
+        output_dir: Directory to save generated files. If None, uses current directory.
+        keep_skidl: If True, save generated SKiDL code files to the output directory 
+                   for debugging, education, and understanding how the circuit design 
+                   was generated. The script is saved as 'circuitron_skidl_script.py'.
+        ui: Optional terminal UI instance for progress feedback.
+        
+    Returns:
+        The :class:`CodeGenerationOutput` generated from the pipeline, or None if
+        all retry attempts failed.
+    """
 
     attempts = 0
     while True:
         try:
-            return await pipeline(prompt, show_reasoning=show_reasoning, output_dir=output_dir, ui=ui)
+            return await pipeline(prompt, show_reasoning=show_reasoning, output_dir=output_dir, keep_skidl=keep_skidl, ui=ui)
         except PipelineError:
             raise
         except Exception as exc:
@@ -515,6 +531,7 @@ async def pipeline(
     prompt: str,
     show_reasoning: bool = False,
     output_dir: str | None = None,
+    keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
 ) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
@@ -523,6 +540,7 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         output_dir: Directory to save generated files. If None, uses current directory.
+        keep_skidl: If True, keep generated SKiDL code files after execution.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -750,7 +768,7 @@ async def pipeline(
             )
 
         out_dir = prepare_output_dir(output_dir)
-        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
+        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
         if ui:
             ui.display_files(json.loads(files_json))
         else:
@@ -925,7 +943,7 @@ async def pipeline(
         )
 
     out_dir = prepare_output_dir(output_dir)
-    files_json = await execute_final_script(code_out.complete_skidl_code, out_dir)
+    files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
     if ui:
         ui.display_files(json.loads(files_json))
     else:
@@ -993,6 +1011,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-footprint-search",
         action="store_true",
         help="disable the agent's footprint search functionality",
+    )
+    parser.add_argument(
+        "--keep-skidl",
+        action="store_true",
+        help="keep generated SKiDL code files after execution",
     )
     return parser.parse_args(argv)
 

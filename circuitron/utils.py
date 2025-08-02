@@ -661,6 +661,21 @@ def write_temp_skidl_script(code: str) -> str:
     return path
 
 
+def keep_skidl_script(output_dir: str | None, script_content: str) -> None:
+    """Write the SKiDL script to the output directory.
+
+    Args:
+        output_dir: Directory to save the script. Abort if None.
+        script_content: The SKiDL code to write.
+    """
+    if output_dir is None:
+        return  # No output directory specified, skip saving
+
+    script_path = os.path.join(output_dir, "circuitron_skidl_script.py")
+    with open(script_path, "w", encoding="utf-8") as f:
+        f.write(script_content)
+
+
 def prepare_erc_only_script(full_script: str) -> str:
     """Return a modified script that only performs ``ERC()``.
 
