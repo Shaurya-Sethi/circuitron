@@ -506,8 +506,26 @@ async def run_erc(script_path: str) -> str:
 run_erc_tool = function_tool(run_erc)
 
 
-async def execute_final_script(script_content: str, output_dir: str, keep_skidl: bool) -> str:
-    """Execute a SKiDL script fully and return generated file paths as JSON."""
+async def execute_final_script(
+    script_content: str,
+    output_dir: str,
+    keep_skidl: bool = False,
+) -> str:
+    """Execute a SKiDL script and return generated file paths as JSON.
+
+    Args:
+        script_content: The SKiDL script to execute.
+        output_dir: Directory where generated files should be stored.
+        keep_skidl: If True, save the wrapped SKiDL script to ``output_dir``.
+
+    Returns:
+        A JSON string describing whether execution succeeded and listing
+        any generated files.
+
+    Example:
+        >>> asyncio.run(execute_final_script("from skidl import *", "/tmp/out"))
+        '{"success": false, ...}'
+    """
 
     output_dir = prepare_output_dir(output_dir)
     try:
