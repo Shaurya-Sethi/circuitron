@@ -486,7 +486,22 @@ async def run_with_retry(
     keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
 ) -> CodeGenerationOutput | None:
-    """Run :func:`pipeline` with retry and error handling."""
+    """Run :func:`pipeline` with retry and error handling.
+    
+    Args:
+        prompt: Natural language design request.
+        show_reasoning: Print the reasoning summary when ``True``.
+        retries: Maximum number of retry attempts on failure.
+        output_dir: Directory to save generated files. If None, uses current directory.
+        keep_skidl: If True, save generated SKiDL code files to the output directory 
+                   for debugging, education, and understanding how the circuit design 
+                   was generated. The script is saved as 'circuitron_skidl_script.py'.
+        ui: Optional terminal UI instance for progress feedback.
+        
+    Returns:
+        The :class:`CodeGenerationOutput` generated from the pipeline, or None if
+        all retry attempts failed.
+    """
 
     attempts = 0
     while True:
