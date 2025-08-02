@@ -377,6 +377,21 @@ r1 = Part('Device', 'R', value='1kΩ')  # Greek Omega
     assert saved_content == script_content
 
 
+def test_keep_skidl_script_creates_missing_dir(tmp_path: Path) -> None:
+    """Ensure keep_skidl_script creates output directory if it doesn't exist."""
+    from circuitron.utils import keep_skidl_script
+
+    output_dir = tmp_path / "missing"
+    script_content = "from skidl import *\n"
+
+    keep_skidl_script(str(output_dir), script_content)
+
+    expected_path = output_dir / "circuitron_skidl_script.py"
+    assert expected_path.exists()
+    with open(expected_path, encoding="utf-8") as f:
+        assert f.read() == script_content
+
+
 def test_convert_windows_path_for_docker() -> None:
     path = convert_windows_path_for_docker("C:\\Users\\bob")
     assert path == "/mnt/c/Users/bob"

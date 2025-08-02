@@ -662,15 +662,22 @@ def write_temp_skidl_script(code: str) -> str:
 
 
 def keep_skidl_script(output_dir: str | None, script_content: str) -> None:
-    """Write the SKiDL script to the output directory.
+    """Write the SKiDL script to ``output_dir`` creating the directory.
 
     Args:
-        output_dir: Directory to save the script. Abort if None.
-        script_content: The SKiDL code to write.
+        output_dir (str | None): Directory to save the script. Abort if ``None``.
+        script_content (str): The SKiDL code to write.
+
+    Returns:
+        None
+
+    Example:
+        >>> keep_skidl_script("/tmp/skidl", "from skidl import *\nERC()")
     """
     if output_dir is None:
         return  # No output directory specified, skip saving
 
+    os.makedirs(output_dir, exist_ok=True)
     script_path = os.path.join(output_dir, "circuitron_skidl_script.py")
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_content)

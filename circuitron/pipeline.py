@@ -501,12 +501,21 @@ async def run_with_retry(
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline, or None if
         all retry attempts failed.
+
+    Example:
+        >>> asyncio.run(run_with_retry("buck converter", retries=1))
     """
 
     attempts = 0
     while True:
         try:
-            return await pipeline(prompt, show_reasoning=show_reasoning, output_dir=output_dir, keep_skidl=keep_skidl, ui=ui)
+            kwargs = {
+                "show_reasoning": show_reasoning,
+                "output_dir": output_dir,
+                "ui": ui,
+                "keep_skidl": keep_skidl,
+            }
+            return await pipeline(prompt, **kwargs)
         except PipelineError:
             raise
         except Exception as exc:
