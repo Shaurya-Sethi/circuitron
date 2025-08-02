@@ -513,9 +513,8 @@ async def run_with_retry(
                 "show_reasoning": show_reasoning,
                 "output_dir": output_dir,
                 "ui": ui,
+                "keep_skidl": keep_skidl,
             }
-            if keep_skidl:
-                kwargs["keep_skidl"] = True
             return await pipeline(prompt, **kwargs)
         except PipelineError:
             raise
