@@ -307,6 +307,76 @@ def test_prepare_erc_only_script() -> None:
     assert "ERC()" in lines
 
 
+def test_keep_skidl_script(tmp_path: Path) -> None:
+    """Test that keep_skidl_script saves SKiDL scripts to output directory."""
+    from circuitron.utils import keep_skidl_script
+    
+    output_dir = str(tmp_path)
+    script_content = """from skidl import *
+
+# Test circuit
+r1 = Part('Device', 'R', value='1k')
+r2 = Part('Device', 'R', value='2k')
+net = Net('VCC')
+r1[1] += net
+r2[1] += net
+
+ERC()
+generate_netlist()
+"""
+    
+    # Test saving the script
+    keep_skidl_script(output_dir, script_content)
+    
+    # Verify the file was created with correct name and content
+    expected_path = tmp_path / "circuitron_skidl_script.py"
+    assert expected_path.exists(), "SKiDL script file should be created"
+    
+    # Verify content is correctly written
+    with open(expected_path, encoding="utf-8") as f:
+        saved_content = f.read()
+    
+    assert saved_content == script_content, "Saved content should match original script"
+    assert "from skidl import *" in saved_content
+    assert "Test circuit" in saved_content
+    assert "Part('Device', 'R'" in saved_content
+
+
+def test_keep_skidl_script_with_none_output_dir() -> None:
+    """Test that keep_skidl_script handles None output_dir gracefully."""
+    from circuitron.utils import keep_skidl_script
+    
+    # Should not raise an exception when output_dir is None
+    keep_skidl_script(None, "some script content")
+    # No assertion needed - just verify it doesn't crash
+
+
+def test_keep_skidl_script_unicode_content(tmp_path: Path) -> None:
+    """Test that keep_skidl_script handles Unicode content correctly."""
+    from circuitron.utils import keep_skidl_script
+    
+    output_dir = str(tmp_path)
+    script_content = """from skidl import *
+
+# Test circuit with Unicode: Ω resistor
+r1 = Part('Device', 'R', value='1kΩ')  # Greek Omega
+# Comment with emoji: ⚡ 
+"""
+    
+    keep_skidl_script(output_dir, script_content)
+    
+    expected_path = tmp_path / "circuitron_skidl_script.py"
+    assert expected_path.exists()
+    
+    # Verify Unicode content is preserved
+    with open(expected_path, encoding="utf-8") as f:
+        saved_content = f.read()
+    
+    assert "1kΩ" in saved_content
+    assert "⚡" in saved_content
+    assert saved_content == script_content
+
+
 def test_convert_windows_path_for_docker() -> None:
     path = convert_windows_path_for_docker("C:\\Users\\bob")
     assert path == "/mnt/c/Users/bob"

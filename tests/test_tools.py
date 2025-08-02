@@ -265,7 +265,7 @@ def test_execute_final_script_windows_path() -> None:
             args=[], returncode=0, stdout="ok", stderr=""
         )
         ctx = ToolContext(context=None, tool_call_id="tfw")
-        args = json.dumps({"script_content": "code", "output_dir": "C:\\out"})
+        args = json.dumps({"script_content": "code", "output_dir": "C:\\out", "keep_skidl": False})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
         )
@@ -277,6 +277,83 @@ def test_execute_final_script_windows_path() -> None:
             volumes={"C:\\out": "/mnt/c/out"},
         )
         sess.exec_full_script_with_env.assert_called_once()
+
+
+def test_execute_final_script_with_keep_skidl() -> None:
+    """Test that execute_final_script calls keep_skidl_script when keep_skidl=True."""
+    cfg.setup_environment()
+    from circuitron.tools import execute_final_script_tool
+
+    with (
+        patch("circuitron.tools.DockerSession") as sess_cls,
+        patch("circuitron.tools.prepare_output_dir", return_value="/tmp/out"),
+        patch("circuitron.tools.write_temp_skidl_script", return_value="/tmp/s.py"),
+        patch("circuitron.tools.keep_skidl_script") as keep_skidl_mock,
+        patch("circuitron.tools.os.listdir", return_value=["file.net"]),
+    ):
+        sess = sess_cls.return_value
+        sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="ok", stderr=""
+        )
+        
+        script_content = "from skidl import *\nprint('test')"
+        ctx = ToolContext(context=None, tool_call_id="tks")
+        args = json.dumps({
+            "script_content": script_content, 
+            "output_dir": "/tmp/out", 
+            "keep_skidl": True
+        })
+        
+        result: str = asyncio.run(
+            cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
+        )
+        
+        data = json.loads(result)
+        assert data["success"] is True
+        
+        # Verify keep_skidl_script was called with correct parameters
+        keep_skidl_mock.assert_called_once()
+        call_args = keep_skidl_mock.call_args
+        assert call_args[0][0] == "/tmp/out"  # output_dir argument
+        # The wrapped script should contain the original content
+        wrapped_script = call_args[0][1]
+        assert script_content in wrapped_script
+        assert "from skidl import *" in wrapped_script
+
+
+def test_execute_final_script_without_keep_skidl() -> None:
+    """Test that execute_final_script does not call keep_skidl_script when keep_skidl=False."""
+    cfg.setup_environment()
+    from circuitron.tools import execute_final_script_tool
+
+    with (
+        patch("circuitron.tools.DockerSession") as sess_cls,
+        patch("circuitron.tools.prepare_output_dir", return_value="/tmp/out"),
+        patch("circuitron.tools.write_temp_skidl_script", return_value="/tmp/s.py"),
+        patch("circuitron.tools.keep_skidl_script") as keep_skidl_mock,
+        patch("circuitron.tools.os.listdir", return_value=["file.net"]),
+    ):
+        sess = sess_cls.return_value
+        sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="ok", stderr=""
+        )
+        
+        ctx = ToolContext(context=None, tool_call_id="tnks")
+        args = json.dumps({
+            "script_content": "from skidl import *", 
+            "output_dir": "/tmp/out", 
+            "keep_skidl": False
+        })
+        
+        result: str = asyncio.run(
+            cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
+        )
+        
+        data = json.loads(result)
+        assert data["success"] is True
+        
+        # Verify keep_skidl_script was NOT called
+        keep_skidl_mock.assert_not_called()
 
 
 def test_prepare_runtime_check_script() -> None:
