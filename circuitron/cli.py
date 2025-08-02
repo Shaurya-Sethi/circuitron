@@ -70,12 +70,13 @@ def main() -> None:
     show_reasoning = args.reasoning
     retries = args.retries
     output_dir = args.output_dir
+    keep_skidl = args.keep_skidl
 
     code_output: CodeGenerationOutput | None = None
     try:
         try:
             code_output = asyncio.run(
-                ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir)
+                ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir, keep_skidl=keep_skidl)
             )
         except KeyboardInterrupt:
             ui.console.print("\nExecution interrupted by user.", style="red")

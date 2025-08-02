@@ -18,6 +18,7 @@ from .config import settings
 from .docker_session import DockerSession
 from .utils import (
     write_temp_skidl_script,
+    keep_skidl_script,
     prepare_output_dir,
     convert_windows_path_for_docker,
 )
@@ -505,7 +506,7 @@ async def run_erc(script_path: str) -> str:
 run_erc_tool = function_tool(run_erc)
 
 
-async def execute_final_script(script_content: str, output_dir: str) -> str:
+async def execute_final_script(script_content: str, output_dir: str, keep_skidl: bool) -> str:
     """Execute a SKiDL script fully and return generated file paths as JSON."""
 
     output_dir = prepare_output_dir(output_dir)
@@ -537,6 +538,9 @@ set_default_tool(KICAD5)
 {script_content}
 """
     
+    if keep_skidl:
+        keep_skidl_script(output_dir, wrapped_script)
+
     script_path = write_temp_skidl_script(wrapped_script)
     try:
         proc = await asyncio.to_thread(
