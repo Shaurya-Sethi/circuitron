@@ -1,0 +1,26 @@
+### Title: Add Support for Free Local Models via LiteLLM and Ollama (OpenAI gpt-oss Series)
+
+**Description:**
+
+With the release of OpenAI's new open weights models (gpt-oss series: 20B and 120B), and their compatibility with the responses API, it's now possible to add support for free local models in Circuitron.
+
+**Proposal:**
+
+- Integrate LiteLLM as per the official OpenAI Agents SDK documentation.
+- Enable support for running gpt-oss models locally using Ollama, leveraging LiteLLM's Ollama backend.
+- Allow users to select and run local models (gpt-oss 20B/120B) seamlessly within Circuitron.
+- Ensure compatibility with the existing prompt and circuit-generation workflows.
+- Add configuration/documentation for setting up LiteLLM with Ollama and gpt-oss models locally.
+
+**Benefits:**
+
+- Users can run powerful models locally for free.
+- No dependency on paid API keys for core functionality.
+- Increases accessibility and flexibility for offline or privacy-sensitive use cases.
+
+**References:**
+
+- https://github.com/BerriAI/litellm
+- https://github.com/openai/openai-agents
+- https://openai.com/blog/open-weight-models
+- https://github.com/jmorganca/ollama
