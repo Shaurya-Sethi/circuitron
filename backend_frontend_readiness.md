@@ -27,16 +27,19 @@
 - Pure checks: Refactor `network.check_internet_connection()` to return bool/raise, no UI calls.
 - Non-interactive feedback: Add optional `feedback_provider: Callable | None` to `pipeline.pipeline()` (or `run_with_retry`) so headless runs can skip prompting or receive provided feedback. Default to skip when not supplied.
 - Progress interface: Define a minimal `ProgressSink` protocol (start_stage, finish_stage, info/warn/error, display_plan/parts/docs/validation/files) implemented by `TerminalUI` and a `NullSink`. Use it instead of directly printing when `ui is None`.
+- branch: `feat/headless-mode-progress-interface`
 
 2) Container Safety for Concurrency
 - Unique scoping: Update `DockerSession` call sites to accept a per-job container name and unique temp file paths (`/tmp/script-{job_id}.py`).
 - Final execution: Ensure `execute_final_script` uses a per-job container (e.g., `circuitron-final-{job_id}`) and job-scoped volume mounts.
 - Guard rails: Keep thread locks for `start()` and consider a lightweight queue if SKiDL/KiCad operations must be serialized.
+- branch: `feat/container-concurrency-safety`
 
 3) Job Orchestration Layer
 - Job model: Add `jobs/manager.py` maintaining job records (id, prompt, options, status, timestamps, errors, artifacts, logs). In-memory first; file-backed or DB later.
 - Event bus: Introduce `events.py` with a simple pub/sub sink (async generator) that `ProgressSink` implementations can write to. Persist a ring buffer per job for replay.
 - Artifacts: Normalize the `execute_final_script` manifest into a first-class “artifacts” list on the job.
+- branch: `feat/job-orchestration`
 
 4) FastAPI Service (Web-first API)
 - App lifecycle: Initialize MCP at startup and shut down on exit; pre-warm or pool KiCad containers if desired.
@@ -48,19 +51,23 @@
   - GET `/jobs/{id}/artifacts/{name}` → file download.
   - GET `/health` → service/MCP/KiCad checks.
 - Execution: Run pipeline in a background `asyncio.Task` per job, passing a job-scoped `ProgressSink` that publishes events.
+- branch: `feat/fastapi-service`
 
 5) Frontend Integration (React/Next.js/Electron)
 - Client patterns: Use WebSocket/SSE stream for live progress and a polling or event-driven artifacts list for downloads.
 - UX affordances: Expose reasoning toggles, retries, options (`--keep-skidl`, `--no-footprint-search`), and show agent summaries and ERC results as structured panels.
+- branch: `feat/frontend-integration`
 
 6) Preserve CLI and Backward Compatibility
 - Keep `TerminalUI` for interactive runs; have CLI share the same `ProgressSink` and job orchestration, or continue to call pipeline directly with `TerminalUI`.
 - Ensure CLI paths still work without starting the web server.
+- branch: `feat/cli-backward-compatibility`
 
 7) Testing & Hardening
 - Unit tests: Mock MCP/Docker; verify job lifecycle, event streaming, and endpoint contracts. Add tests to ensure no blocking prompts in headless mode.
 - Concurrency tests: Launch multiple jobs; verify unique container names and no temp path collisions.
 - Integration tests: End-to-end job submission → streamed progress → artifacts available.
+- branch: `feat/testing-hardening`
 
 Notes
 - The current async pipeline, Pydantic outputs, and small `run_*` wrappers are already API-friendly. The primary work is decoupling interactivity and making execution job-scoped and concurrent-safe.
