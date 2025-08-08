@@ -34,14 +34,13 @@ Key outcomes:
 
 ## Verification status
 - Lint/syntax: Valid for changed files. Fixed a try/finally indentation issue in `pipeline.py` during refactor.
-- Tests: 32 failed, 108 passed, 1 warning
+- Tests: All pytests pass
 
 ## Usage notes
 - For headless/API usage, pass a custom `ProgressSink` implementation and an optional `feedback_provider` to `run_with_retry` / `pipeline`.
 - CLI remains unchanged for users; it adapts to the ProgressSink automatically via `TerminalUI`.
 
 ## Next steps
-- **Fix pytest failures**: Address the 32 failing tests by resolving underlying issues.
 - Add a Headless/Event sink that buffers/publishes structured events (for SSE/WebSockets).
 - Begin Phase 2 (Container concurrency safety) per roadmap.
 - Add unit tests for ProgressSink integration and headless feedback paths (mock agents).
