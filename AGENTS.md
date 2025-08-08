@@ -165,7 +165,7 @@ Notes
 - Review the most recent and relevant progress notes in the `collab_progress` folder to understand the current state, recent changes, and open questions.
 
 **After completing any significant change:**
-- Follow the instructions in `.github/instructions/track_progress.md` to document your work.
+- Follow the instructions in `collab_progress/track_progress.md` to document your work.
 
 **This protocol is mandatory for all AI coding assistants and must be followed for every codebase change.**
 
