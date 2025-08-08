@@ -8,6 +8,7 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
+from .progress import ProgressSink
 
 
 async def run_circuitron(
@@ -43,10 +44,10 @@ def verify_containers(ui: TerminalUI | None = None) -> bool:
 
     try:
         kicad_session.start()
+        return True
     except Exception as exc:
         (ui or TerminalUI()).display_error(f"Failed to start KiCad container: {exc}")
         return False
-    return True
 
 
 def main() -> None:
@@ -60,6 +61,7 @@ def main() -> None:
         settings.footprint_search_enabled = False
 
     if not check_internet_connection():
+        ui.display_error("No internet connection detected. Please connect and try again.")
         return
 
     if not verify_containers(ui=ui):

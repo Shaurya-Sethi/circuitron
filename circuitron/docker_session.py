@@ -432,7 +432,8 @@ export KISYSMOD=/usr/share/kicad/modules
             dest = os.path.join(host_dir, os.path.basename(src))
             try:
                 self._run_docker_cp_with_retry(f"{self.container_name}:{src}", dest)
-                files.append(dest)
+                # Normalize to POSIX-style paths for consistent test expectations
+                files.append(dest.replace("\\", "/"))
                 logger.debug("Successfully copied: %s -> %s", src, dest)
             except subprocess.CalledProcessError as e:
                 error_msg = f"Failed to copy {src} from container: {e}"

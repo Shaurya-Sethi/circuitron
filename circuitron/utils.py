@@ -22,6 +22,7 @@ from .models import (
     CodeValidationOutput,
 )
 from .correction_context import CorrectionContext
+from .progress import ProgressSink, NullProgressSink
 
 if TYPE_CHECKING:
     from .ui.app import TerminalUI
@@ -640,12 +641,20 @@ def pretty_print_generated_code(
     print(code_output.complete_skidl_code)
 
 
-def validate_code_generation_results(code_output: CodeGenerationOutput) -> bool:
-    """Basic validation of the generated code output."""
+def validate_code_generation_results(
+    code_output: CodeGenerationOutput, sink: ProgressSink | None = None
+) -> bool:
+    """Basic validation of the generated code output.
+
+    Reports issues via the provided ProgressSink (no direct printing).
+    """
+    sink = sink or NullProgressSink()
     required_phrases = ["from skidl import"]
     for phrase in required_phrases:
         if phrase not in code_output.complete_skidl_code:
-            print(f"Warning: expected phrase '{phrase}' not found in code")
+            sink.display_warning(
+                f"Expected phrase '{phrase}' not found in code"
+            )
             return False
     return True
 

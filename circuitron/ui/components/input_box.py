@@ -14,12 +14,18 @@ class InputBox:
     def __init__(self, console: Console, theme: Theme) -> None:
         self.console = console
         self.theme = theme
-        self.session: PromptSession = PromptSession(history=InMemoryHistory())
+        # Avoid hard dependency on a real Windows console in tests/CI.
+        try:
+            self.session: PromptSession | None = PromptSession(history=InMemoryHistory())
+        except Exception:
+            self.session = None
 
     def ask(self, message: str) -> str:
         """Return user input for ``message`` using prompt_toolkit."""
         prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}</style> ')
-        try:
-            return self.session.prompt(prompt_text)
-        except Exception:
-            return input(f"{message}: ")
+        if self.session is not None:
+            try:
+                return self.session.prompt(prompt_text)
+            except Exception:
+                pass
+        return input(f"{message}: ")

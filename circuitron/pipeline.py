@@ -1,7 +1,7 @@
 """Circuitron orchestration pipeline.
 
-This module wires together the planner, plan editor and part finder agents.
-It also exposes a simple CLI for running the pipeline from the command line.
+Headless-ready orchestration that reports progress via a ProgressSink and
+never blocks on interactive prompts. The CLI remains in ``cli.py``.
 """
 
 from __future__ import annotations
@@ -18,7 +18,9 @@ from circuitron.config import settings
 from .mcp_manager import mcp_manager
 
 from circuitron.debug import run_agent
-from circuitron.ui.app import TerminalUI
+from typing import Callable
+
+from .progress import ProgressSink, NullProgressSink
 from .network import check_internet_connection
 
 
@@ -57,7 +59,6 @@ from circuitron.utils import (
     extract_reasoning_summary,
     pretty_print_selected_parts,
     pretty_print_documentation,
-    collect_user_feedback,
     sanitize_text,
     format_plan_edit_input,
     format_part_selection_input,
@@ -72,13 +73,10 @@ from circuitron.utils import (
     prepare_erc_only_script,
     prepare_runtime_check_script,
     prepare_output_dir,
-    pretty_print_validation,
-    pretty_print_generated_code,
     validate_code_generation_results,
     format_docs_summary,
     format_plan_summary,
 )
-from circuitron.ui.components import panel
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
 from circuitron.tools import run_erc
@@ -117,22 +115,22 @@ __all__ = [
     "CodeCorrectionOutput",
     "ERCHandlingOutput",
     "settings",
+    "check_internet_connection",
 ]
 
 async def run_planner(
     prompt: str,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> RunResult:
     """Run the planning agent and return the run result."""
 
     agent = agent or get_planning_agent()
-    if ui:
-        ui.start_stage("Planning")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Planning")
     result = await run_agent(agent, sanitize_text(prompt))
-    if ui:
-        ui.finish_stage("Planning")
-        ui.display_plan(result.final_output)
+    sink.finish_stage("Planning")
+    sink.display_plan(result.final_output)
     return result
 
 
@@ -140,69 +138,65 @@ async def run_plan_editor(
     original_prompt: str,
     plan: PlanOutput,
     feedback: UserFeedback,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PlanEditorOutput:
     """Run the PlanEditor agent with formatted input."""
-    if ui:
-        ui.start_stage("Editing")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Editing")
     input_msg = format_plan_edit_input(sanitize_text(original_prompt), plan, feedback)
     agent = agent or get_plan_edit_agent()
     result = await run_agent(agent, input_msg)
-    if ui:
-        ui.finish_stage("Editing")
-        if result.final_output.updated_plan:
-            ui.display_plan(result.final_output.updated_plan)
+    sink.finish_stage("Editing")
+    if result.final_output.updated_plan:
+        sink.display_plan(result.final_output.updated_plan)
     return cast(PlanEditorOutput, result.final_output)
 
 
 async def run_part_finder(
     plan: PlanOutput,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartFinderOutput:
     """Search KiCad libraries for components from the plan."""
-    if ui:
-        ui.start_stage("Looking for Parts")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Looking for Parts")
     query_text = "\n".join(plan.component_search_queries)
     agent = agent or get_partfinder_agent()
     result = await run_agent(agent, sanitize_text(query_text))
-    if ui:
-        ui.finish_stage("Looking for Parts")
+    sink.finish_stage("Looking for Parts")
     return cast(PartFinderOutput, result.final_output)
 
 
 async def run_part_selector(
     plan: PlanOutput,
     part_output: PartFinderOutput,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartSelectionOutput:
     """Select optimal parts using search results."""
-    if ui:
-        ui.start_stage("Selecting Parts")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Selecting Parts")
     input_msg = format_part_selection_input(plan, part_output)
     agent = agent or get_partselection_agent()
     result = await run_agent(agent, sanitize_text(input_msg))
-    if ui:
-        ui.finish_stage("Selecting Parts")
+    sink.finish_stage("Selecting Parts")
     return cast(PartSelectionOutput, result.final_output)
 
 
 async def run_documentation(
     plan: PlanOutput,
     selection: PartSelectionOutput,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> DocumentationOutput:
     """Gather SKiDL documentation based on plan and selected parts."""
-    if ui:
-        ui.start_stage("Gathering Docs")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Gathering Docs")
     input_msg = format_documentation_input(plan, selection)
     agent = agent or get_documentation_agent()
     result = await run_agent(agent, sanitize_text(input_msg))
-    if ui:
-        ui.finish_stage("Gathering Docs")
+    sink.finish_stage("Gathering Docs")
     return cast(DocumentationOutput, result.final_output)
 
 
@@ -210,20 +204,19 @@ async def run_code_generation(
     plan: PlanOutput,
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Generate SKiDL code using plan, selected parts, and documentation."""
-    if ui:
-        ui.start_stage("Coding")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Coding")
     input_msg = format_code_generation_input(plan, selection, docs)
     agent = agent or get_code_generation_agent()
     result = await run_agent(agent, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
-    pretty_print_generated_code(code_output, ui)
-    validate_code_generation_results(code_output)
-    if ui:
-        ui.finish_stage("Coding")
+    sink.display_code(code_output.complete_skidl_code)
+    validate_code_generation_results(code_output, sink)
+    sink.finish_stage("Coding")
     return code_output
 
 
@@ -232,7 +225,7 @@ async def run_code_validation(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     run_erc_flag: bool = True,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> tuple[CodeValidationOutput, dict[str, object] | None]:
     """Validate generated code and optionally run ERC.
@@ -248,13 +241,13 @@ async def run_code_validation(
         results.
     """
 
+    sink = sink or NullProgressSink()
     script_path: str | None = None
     if run_erc_flag:
         erc_only_code = prepare_erc_only_script(code_output.complete_skidl_code)
         script_path = write_temp_skidl_script(erc_only_code)
     try:
-        if ui:
-            ui.start_stage("Validating")
+        sink.start_stage("Validating")
         input_msg = format_code_validation_input(
             code_output.complete_skidl_code,
             selection,
@@ -263,10 +256,7 @@ async def run_code_validation(
         agent = agent or get_code_validation_agent()
         result = await run_agent(agent, sanitize_text(input_msg))
         validation = cast(CodeValidationOutput, result.final_output)
-        if ui:
-            ui.display_validation_summary(validation.summary)
-        else:
-            pretty_print_validation(validation)
+        sink.display_validation_summary(validation.summary)
         erc_result: dict[str, object] | None = None
         if run_erc_flag and validation.status == "pass" and script_path:
             erc_json = await run_erc(script_path)
@@ -274,13 +264,8 @@ async def run_code_validation(
                 erc_result = json.loads(erc_json)
             except (json.JSONDecodeError, TypeError) as e:
                 erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
-            if ui:
-                panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2), ui.theme)
-            else:
-                print("\n=== ERC RESULT ===")
-                print(erc_result)
-        if ui:
-            ui.finish_stage("Validating")
+            sink.display_info(json.dumps(erc_result, indent=2))
+        sink.finish_stage("Validating")
         return validation, erc_result
     finally:
         if script_path:
@@ -297,12 +282,12 @@ async def run_code_correction(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None = None,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Run the Code Correction agent and return updated code."""
-    if ui:
-        ui.start_stage("Correcting")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Correcting")
     input_msg = format_code_correction_input(
         code_output.complete_skidl_code,
         validation,
@@ -315,8 +300,7 @@ async def run_code_correction(
     result = await run_agent(agent, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
     code_output.complete_skidl_code = correction.corrected_code
-    if ui:
-        ui.finish_stage("Correcting")
+    sink.finish_stage("Correcting")
     return code_output
 
 
@@ -327,7 +311,7 @@ async def run_validation_correction(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     context: CorrectionContext | None = None,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
     """Run code correction to address validation errors only.
@@ -343,8 +327,8 @@ async def run_validation_correction(
         Updated :class:`CodeGenerationOutput` with attempted fixes applied.
     """
 
-    if ui:
-        ui.start_stage("Correcting")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Correcting")
     input_msg = format_code_correction_validation_input(
         code_output.complete_skidl_code,
         validation,
@@ -357,8 +341,7 @@ async def run_validation_correction(
     result = await run_agent(agent, sanitize_text(input_msg))
     correction = cast(CodeCorrectionOutput, result.final_output)
     code_output.complete_skidl_code = correction.corrected_code
-    if ui:
-        ui.finish_stage("Correcting")
+    sink.finish_stage("Correcting")
     return code_output
 
 
@@ -371,13 +354,13 @@ async def run_erc_handling(
     docs: DocumentationOutput,
     erc_result: dict[str, object] | None,
     context: CorrectionContext | None = None,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, ERCHandlingOutput]:
     """Run the ERC Handling agent and return updated code and ERC info."""
 
-    if ui:
-        ui.start_stage("ERC Handling")
+    sink = sink or NullProgressSink()
+    sink.start_stage("ERC Handling")
     input_msg = format_erc_handling_input(
         code_output.complete_skidl_code,
         validation,
@@ -391,8 +374,7 @@ async def run_erc_handling(
     result = await run_agent(agent, sanitize_text(input_msg))
     erc_out = cast(ERCHandlingOutput, result.final_output)
     code_output.complete_skidl_code = erc_out.final_code
-    if ui:
-        ui.finish_stage("ERC Handling")
+    sink.finish_stage("ERC Handling")
     return code_output, erc_out
 
 
@@ -402,13 +384,13 @@ async def run_runtime_check_and_correction(
     selection: PartSelectionOutput,
     docs: DocumentationOutput,
     context: CorrectionContext,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, bool]:
     """Check for runtime errors and correct them if needed."""
 
-    if ui:
-        ui.start_stage("Runtime Check")
+    sink = sink or NullProgressSink()
+    sink.start_stage("Runtime Check")
     runtime_check_script = prepare_runtime_check_script(code_output.complete_skidl_code)
     script_path = write_temp_skidl_script(runtime_check_script)
 
@@ -425,14 +407,12 @@ async def run_runtime_check_and_correction(
             }
 
         if runtime_result.get("success", False):
-            if ui:
-                ui.finish_stage("Runtime Check")
+            sink.finish_stage("Runtime Check")
             return code_output, True
 
         if "No such file or directory" in runtime_result.get("error_details", ""):
             # Docker not available - skip runtime checks in test environments
-            if ui:
-                ui.finish_stage("Runtime Check")
+            sink.finish_stage("Runtime Check")
             return code_output, True
 
         input_msg = format_runtime_correction_input(
@@ -449,26 +429,20 @@ async def run_runtime_check_and_correction(
                 agent, sanitize_text(input_msg)
             )
         except Exception as exc:  # pragma: no cover - unexpected errors
-            if ui:
-                ui.display_error(f"Runtime correction agent failed: {exc}")
-            else:
-                print(f"Runtime correction agent failed: {exc}")
+            sink.display_error(f"Runtime correction agent failed: {exc}")
             context.add_runtime_attempt(runtime_result, [])
-            if ui:
-                ui.finish_stage("Runtime Check")
+            sink.finish_stage("Runtime Check")
             return code_output, True
 
         correction = cast(RuntimeErrorCorrectionOutput | None, result.final_output)
         if correction is None:
             context.add_runtime_attempt(runtime_result, [])
-            if ui:
-                ui.finish_stage("Runtime Check")
+            sink.finish_stage("Runtime Check")
             return code_output, True
 
         code_output.complete_skidl_code = correction.corrected_code
         context.add_runtime_attempt(runtime_result, correction.corrections_applied)
-        if ui:
-            ui.finish_stage("Runtime Check")
+        sink.finish_stage("Runtime Check")
         return code_output, correction.execution_status == "success"
 
     finally:
@@ -484,7 +458,8 @@ async def run_with_retry(
     retries: int = 0,
     output_dir: str | None = None,
     keep_skidl: bool = False,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
+    feedback_provider: Callable[[PlanOutput], UserFeedback] | None = None,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling.
     
@@ -506,34 +481,36 @@ async def run_with_retry(
         >>> asyncio.run(run_with_retry("buck converter", retries=1))
     """
 
+    import inspect
     attempts = 0
     while True:
         try:
             kwargs = {
                 "show_reasoning": show_reasoning,
                 "output_dir": output_dir,
-                "ui": ui,
+                "sink": sink,
                 "keep_skidl": keep_skidl,
+                "feedback_provider": feedback_provider,
             }
-            return await pipeline(prompt, **kwargs)
+            # Forward only the kwargs that the current pipeline callable accepts
+            sig_params = set(inspect.signature(pipeline).parameters.keys())
+            supported = {k: v for k, v in kwargs.items() if k in sig_params}
+            return await pipeline(prompt, **supported)
         except PipelineError:
             raise
         except Exception as exc:
             attempts += 1
-            if ui:
-                ui.display_error(f"Error during pipeline execution: {exc}")
-            else:
-                print(f"Error during pipeline execution: {exc}")
+            (sink or NullProgressSink()).display_error(
+                f"Error during pipeline execution: {exc}"
+            )
             if attempts > retries:
-                if ui:
-                    ui.display_error("Maximum retries exceeded. Shutting down gracefully.")
-                else:
-                    print("Maximum retries exceeded. Shutting down gracefully.")
+                (sink or NullProgressSink()).display_error(
+                    "Maximum retries exceeded. Shutting down gracefully."
+                )
                 return None
-            if ui:
-                ui.display_warning(f"Retrying ({attempts}/{retries})...")
-            else:
-                print(f"Retrying ({attempts}/{retries})...")
+            (sink or NullProgressSink()).display_warning(
+                f"Retrying ({attempts}/{retries})..."
+            )
 
 
 async def pipeline(
@@ -541,7 +518,8 @@ async def pipeline(
     show_reasoning: bool = False,
     output_dir: str | None = None,
     keep_skidl: bool = False,
-    ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
+    feedback_provider: Callable[[PlanOutput], UserFeedback] | None = None,
 ) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
@@ -558,13 +536,10 @@ async def pipeline(
         >>> asyncio.run(pipeline("buck converter"))
     """
     # Show where files will be saved at the start
+    sink = sink or NullProgressSink()
     final_output_dir = output_dir or os.path.join(os.getcwd(), "circuitron_output")
     message = f"Generated files will be saved to: {os.path.abspath(final_output_dir)}"
-    if ui:
-        ui.display_info(message)
-    else:
-        print(f"{message}")
-        print()
+    sink.display_info(message)
 
     planner_agent = get_planning_agent()
     plan_edit_agent = get_plan_edit_agent()
@@ -577,34 +552,23 @@ async def pipeline(
     runtime_agent = get_runtime_error_correction_agent()
     erc_agent = get_erc_handling_agent()
 
-    plan_result = await run_planner(prompt, ui=ui, agent=planner_agent)
+    plan_result = await run_planner(prompt, sink=sink, agent=planner_agent)
     plan = plan_result.final_output
-    if ui:
-        ui.display_plan(plan)
-    else:
-        pretty_print_plan(plan)
+    sink.display_plan(plan)
 
     if settings.dev_mode and plan.calculation_codes:
         debug_msg = ["Debug: Calculation Codes"]
         for i, code in enumerate(plan.calculation_codes, 1):
             debug_msg.append(f"Calculation #{i} code:\n{code}")
         message = "\n".join(debug_msg)
-        if ui:
-            panel.show_panel(ui.console, "Debug", message, ui.theme)
-        else:
-            print("\n=== Debug: Calculation Codes ===")
-            for i, code in enumerate(plan.calculation_codes, 1):
-                print(f"\nCalculation #{i} code:\n{code}")
+        sink.display_info(message)
 
     if show_reasoning:
         summary = extract_reasoning_summary(plan_result)
-        if ui:
-            panel.show_panel(ui.console, "Reasoning Summary", summary, ui.theme)
-        else:
-            print("\n=== Reasoning Summary ===\n")
-            print(summary)
+        sink.display_info(summary)
 
-    feedback = collect_user_feedback(plan, console=ui.console if ui else None)
+    # Headless by default: skip blocking prompts unless a feedback_provider is supplied
+    feedback = feedback_provider(plan) if feedback_provider else UserFeedback()
     if not any(
         [
             feedback.open_question_answers,
@@ -612,36 +576,27 @@ async def pipeline(
             feedback.additional_requirements,
         ]
     ):
-        part_output = await run_part_finder(plan, ui=ui, agent=partfinder_agent)
-        if ui:
-            ui.display_found_parts(part_output.found_components)
-        else:
-            pretty_print_found_parts(part_output)
+        part_output = await run_part_finder(plan, sink=sink, agent=partfinder_agent)
+        sink.display_found_parts(part_output.found_components)
         selection = await run_part_selector(
             plan,
             part_output,
-            ui=ui,
+            sink=sink,
             agent=partselection_agent,
         )
-        if ui:
-            ui.display_selected_parts(selection.selections)
-        else:
-            pretty_print_selected_parts(selection)
+        sink.display_selected_parts(selection.selections)
         docs = await run_documentation(
             plan,
             selection,
-            ui=ui,
+            sink=sink,
             agent=documentation_agent,
         )
-        if ui:
-            panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
-        else:
-            pretty_print_documentation(docs)
+        sink.display_info(format_docs_summary(docs))
         code_out = await run_code_generation(
             plan,
             selection,
             docs,
-            ui=ui,
+            sink=sink,
             agent=codegen_agent,
         )
         validation, _ = await run_code_validation(
@@ -649,7 +604,7 @@ async def pipeline(
             selection,
             docs,
             run_erc_flag=False,
-            ui=ui,
+            sink=sink,
             agent=validator_agent,
         )
         correction_context = CorrectionContext()
@@ -666,7 +621,7 @@ async def pipeline(
                 selection,
                 docs,
                 correction_context,
-                ui=ui,
+                sink=sink,
                 agent=corrector_agent,
             )
             validation, _ = await run_code_validation(
@@ -674,7 +629,7 @@ async def pipeline(
                 selection,
                 docs,
                 run_erc_flag=False,
-                ui=ui,
+                sink=sink,
                 agent=validator_agent,
             )
             correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
@@ -691,13 +646,14 @@ async def pipeline(
                 selection,
                 docs,
                 correction_context,
-                ui=ui,
+                sink=sink,
                 agent=runtime_agent,
             )
 
         if validation.status == "pass" and not runtime_success:
             if settings.dev_mode:
-                pretty_print_generated_code(code_out, ui)
+                from .utils import pretty_print_generated_code
+                pretty_print_generated_code(code_out)
             raise PipelineError("Runtime errors persist after maximum correction attempts")
 
         erc_result: dict[str, object] | None = None
@@ -707,7 +663,7 @@ async def pipeline(
                 selection,
                 docs,
                 run_erc_flag=True,
-                ui=ui,
+                sink=sink,
                 agent=validator_agent,
             )
             if erc_result is not None:
@@ -732,6 +688,7 @@ async def pipeline(
                     docs,
                     erc_result,
                     correction_context,
+                    sink=sink,
                     agent=erc_agent,
                 )
                 _, erc_result = await run_code_validation(
@@ -739,7 +696,7 @@ async def pipeline(
                     selection,
                     docs,
                     run_erc_flag=True,
-                    ui=ui,
+                    sink=sink,
                     agent=validator_agent,
                 )
                 if erc_result is not None:
@@ -756,210 +713,37 @@ async def pipeline(
                     decision = f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}"
                     details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
                     message = f"{decision}\n{details}" if details else decision
-                    if ui:
-                        panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
-                    else:
-                        print("\n=== ERC HANDLER DECISION ===")
-                        print(message)
+                    sink.display_info(message)
                     break
 
         if validation.status != "pass":
             if settings.dev_mode:
-                pretty_print_generated_code(code_out, ui)
+                from .utils import pretty_print_generated_code
+                pretty_print_generated_code(code_out)
             raise PipelineError("Validation failed after maximum correction attempts")
 
         # Final check - only fail if there are actual errors (not warnings)
         if erc_result and not erc_result.get("erc_passed", False):
             if settings.dev_mode:
-                pretty_print_generated_code(code_out, ui)
+                from .utils import pretty_print_generated_code
+                pretty_print_generated_code(code_out)
             raise PipelineError(
                 "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
             )
 
-        out_dir = prepare_output_dir(output_dir)
-        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
-        if ui:
-            ui.display_files(json.loads(files_json))
-        else:
-            print("\n=== GENERATED FILES ===")
-            print(files_json)
-            print(f"\nFiles saved to: {out_dir}")
-        return code_out
-
-    edit_result = await run_plan_editor(
-        prompt,
-        plan,
-        feedback,
-        agent=plan_edit_agent,
-    )
-    if ui:
-        panel.show_panel(ui.console, "Plan Updated", format_plan_summary(edit_result.updated_plan), ui.theme)
-    else:
-        pretty_print_edited_plan(edit_result)
-    assert edit_result.updated_plan is not None
-    final_plan = edit_result.updated_plan
-
-    part_output = await run_part_finder(final_plan, ui=ui, agent=partfinder_agent)
-    if ui:
-        ui.display_found_parts(part_output.found_components)
-    else:
-        pretty_print_found_parts(part_output)
-    selection = await run_part_selector(final_plan, part_output, ui=ui, agent=partselection_agent)
-    if ui:
-        ui.display_selected_parts(selection.selections)
-    else:
-        pretty_print_selected_parts(selection)
-    docs = await run_documentation(final_plan, selection, ui=ui, agent=documentation_agent)
-    if ui:
-        panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
-    else:
-        pretty_print_documentation(docs)
-    code_out = await run_code_generation(final_plan, selection, docs, ui=ui, agent=codegen_agent)
-    validation, _ = await run_code_validation(
-        code_out,
-        selection,
-        docs,
-        run_erc_flag=False,
-        ui=ui,
-        agent=validator_agent,
-    )
-
-    correction_context = CorrectionContext()
-    correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
-    validation_loop_count = 0
-    while validation.status == "fail" and correction_context.should_continue_attempts():
-        validation_loop_count += 1
-        if validation_loop_count > 10:  # Safety net to prevent infinite loops
-            raise PipelineError("Validation correction loop exceeded maximum iterations")
-        code_out = await run_validation_correction(
-            code_out,
-            validation,
-            final_plan,
-            selection,
-            docs,
-            correction_context,
-            ui=ui,
-            agent=corrector_agent,
-        )
-        validation, _ = await run_code_validation(
-            code_out,
-            selection,
-            docs,
-            run_erc_flag=False,
-            ui=ui,
-            agent=validator_agent,
-        )
-        correction_context.add_validation_attempt(validation, [])  # Empty list: validation doesn't need correction tracking
-
-    runtime_success = False
-    runtime_loop_count = 0
-    while validation.status == "pass" and not runtime_success and correction_context.should_continue_runtime_attempts():
-        runtime_loop_count += 1
-        if runtime_loop_count > 5:
-            raise PipelineError("Runtime error correction loop exceeded maximum iterations")
-        code_out, runtime_success = await run_runtime_check_and_correction(
-            code_out,
-            final_plan,
-            selection,
-            docs,
-            correction_context,
-            ui=ui,
-            agent=runtime_agent,
-        )
-
-        if validation.status == "pass" and not runtime_success:
-            if settings.dev_mode:
-                pretty_print_generated_code(code_out, ui)
-            raise PipelineError(
-                "Runtime errors persist after maximum correction attempts"
-            )
-
-    erc_result = None
-    if validation.status == "pass":
-        _, erc_result = await run_code_validation(
-            code_out,
-            selection,
-            docs,
-            run_erc_flag=True,
-            ui=ui,
-            agent=validator_agent,
-        )
-        if erc_result is not None:
-            correction_context.add_erc_attempt(erc_result, [])
-        erc_loop_count = 0
-        # Run ERC handler if there are errors OR warnings (errors block, warnings should be addressed)
-        while (
-            erc_result
-            and (not erc_result.get("erc_passed", False) or _has_erc_warnings(erc_result))
-            and correction_context.should_continue_attempts()
-            and not correction_context.has_no_issues()  # Stop if no errors and no warnings
-            and not correction_context.agent_approved_warnings()
-        ):
-            erc_loop_count += 1
-            if erc_loop_count > 10:  # Safety net to prevent infinite loops
-                raise PipelineError("ERC correction loop exceeded maximum iterations")
-            code_out, erc_out = await run_erc_handling(
-                code_out,
-                validation,
-                final_plan,
-                selection,
-                docs,
-                erc_result,
-                correction_context,
-                ui=ui,
-                agent=erc_agent,
-            )
-            _, erc_result = await run_code_validation(
-                code_out,
-                selection,
-                docs,
-                run_erc_flag=True,
-                ui=ui,
-                agent=validator_agent,
-            )
-            if erc_result is not None:
-                # Add special marker for warnings approval if agent approved them
-                if erc_out.erc_validation_status == "warnings_only" and erc_result.get("erc_passed", False):
-                    corrections_with_approval = erc_out.corrections_applied + ["warnings approved by agent"]
-                    correction_context.add_erc_attempt(erc_result, corrections_with_approval)
-                else:
-                    correction_context.add_erc_attempt(erc_result, erc_out.corrections_applied)
-                
-            # If the ERC Handling agent explicitly approved remaining warnings
-            # as acceptable, exit the loop to avoid further attempts.
-            if correction_context.agent_approved_warnings():
-                decision = f"Agent approved warnings as acceptable: {erc_out.resolution_strategy}"
-                details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
-                message = f"{decision}\n{details}" if details else decision
-                if ui:
-                    panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
-                else:
-                    print("\n=== ERC HANDLER DECISION ===")
-                    print(message)
-                break
-
-    if validation.status != "pass":
-        if settings.dev_mode:
-            pretty_print_generated_code(code_out, ui)
-        raise PipelineError("Validation failed after maximum correction attempts")
-
-    # Final check - only fail if there are actual errors (not warnings)
-    if erc_result and not erc_result.get("erc_passed", False):
-        if settings.dev_mode:
-            pretty_print_generated_code(code_out, ui)
-        raise PipelineError(
-            "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
-        )
-
     out_dir = prepare_output_dir(output_dir)
     files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
-    if ui:
-        ui.display_files(json.loads(files_json))
-    else:
-        print("\n=== GENERATED FILES ===")
-        print(files_json)
-        print(f"\nFiles saved to: {out_dir}")
+    sink.display_files(json.loads(files_json))
+    sink.display_info(f"Files saved to: {out_dir}")
     return code_out
+
+def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
+    """Backward-compatible shim used by legacy tests.
+
+    Headless default collects no feedback. Interactive paths should supply a
+    feedback_provider or use TerminalUI.collect_feedback instead.
+    """
+    return UserFeedback()
 
 
 async def main() -> None:

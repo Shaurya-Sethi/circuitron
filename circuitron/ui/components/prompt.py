@@ -19,19 +19,28 @@ class Prompt:
     def __init__(self, console: Console, theme: Theme) -> None:
         self.console = console
         self.theme = theme
-        history_file = Path.home() / ".circuitron_history"
-        bindings = KeyBindings()
-        bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
-        bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
-        bindings.add("c-l")(lambda event: event.app.renderer.clear())
-        self.session: PromptSession = PromptSession(
-            history=FileHistory(str(history_file)), key_bindings=bindings
-        )
+        # Lazily create a prompt_toolkit session; fall back to input() when no console
+        self.session: PromptSession | None = None
+        try:
+            history_file = Path.home() / ".circuitron_history"
+            bindings = KeyBindings()
+            bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
+            bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
+            bindings.add("c-l")(lambda event: event.app.renderer.clear())
+            self.session = PromptSession(
+                history=FileHistory(str(history_file)), key_bindings=bindings
+            )
+        except Exception:
+            # Environments without an interactive console (e.g., pytest on Windows)
+            # will fail to construct PromptSession; we fallback to plain input().
+            self.session = None
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``."""
         prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
-        try:
-            return self.session.prompt(prompt_text)
-        except Exception:
-            return input(f"{message}: ")
+        if self.session is not None:
+            try:
+                return self.session.prompt(prompt_text)
+            except Exception:
+                pass
+        return input(f"{message}: ")

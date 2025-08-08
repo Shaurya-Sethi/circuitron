@@ -21,9 +21,10 @@ from ..models import (
     SelectedPart,
     PartSearchResult,
 )
+from ..progress import ProgressSink
 
 
-class TerminalUI:
+class TerminalUI(ProgressSink):
     """Interactive terminal UI using Rich and prompt_toolkit."""
 
     def __init__(self, console: Console | None = None, theme: Theme | None = None) -> None:
@@ -152,7 +153,7 @@ class TerminalUI:
                 retries=retries,
                 output_dir=output_dir,
                 keep_skidl=keep_skidl,
-                ui=self,
+                sink=self,
             )
         finally:
             self.status_bar.stop()

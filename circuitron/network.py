@@ -1,11 +1,12 @@
-"""Network utilities for Circuitron."""
+"""Network utilities for Circuitron.
+
+Pure helpers suitable for headless environments. No UI side-effects here.
+"""
 
 from __future__ import annotations
 
 import socket
 import httpx
-
-from .ui.app import TerminalUI
 
 
 def is_connected(url: str = "https://api.openai.com", timeout: float = 10.0) -> bool:
@@ -30,20 +31,11 @@ def is_connected(url: str = "https://api.openai.com", timeout: float = 10.0) -> 
 
 
 def check_internet_connection() -> bool:
-    """Check for internet connectivity and print a message when absent.
+    """Return ``True`` if an outbound connection to the default URL succeeds.
 
-    Returns:
-        ``True`` if :func:`is_connected` succeeds, otherwise ``False``.
-
-    Example:
-        >>> check_internet_connection()
-        True
+    This function intentionally performs no UI/printing to support headless use.
+    Callers should decide how to surface connectivity errors.
     """
-    if not is_connected():
-        TerminalUI().display_error(
-            "No internet connection detected. Please connect and try again."
-        )
-        return False
-    return True
+    return is_connected()
 
 __all__ = ["check_internet_connection", "is_connected", "httpx"]

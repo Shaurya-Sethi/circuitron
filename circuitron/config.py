@@ -26,21 +26,26 @@ def _check_mcp_health(url: str) -> None:
         print(f"Warning: MCP server {url} unreachable: {exc}")
 
 
-def setup_environment(dev: bool = False) -> Settings:
+def setup_environment(dev: bool = False, use_dotenv: bool = False) -> Settings:
     """Initialize environment variables and optionally configure tracing.
 
     Exits the program if required variables are missing.
 
     Args:
         dev: Enable logfire tracing when ``True``. Requires ``logfire`` to be installed.
+        use_dotenv: When ``True``, load variables from a .env file. Defaults to False
+            so tests and strict environments aren't masked by .env contents.
     """
-    load_dotenv()
+    # Load .env file only when explicitly requested so tests can assert missing envs
+    if use_dotenv:
+        load_dotenv(override=False)
 
     required = [
         "OPENAI_API_KEY",
         "MCP_URL",
     ]
-    missing = [var for var in required if not os.getenv(var)]
+    # Re-read from process env each call; treat empty strings as missing
+    missing = [var for var in required if not os.environ.get(var)]
     if missing:
         msg = ", ".join(missing)
         sys.exit(f"Missing required environment variables: {msg}")
