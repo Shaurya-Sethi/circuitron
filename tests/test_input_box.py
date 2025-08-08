@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 from rich.console import Console
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 
@@ -7,7 +8,7 @@ from circuitron.ui.components.input_box import InputBox
 from circuitron.ui.themes import Theme
 
 
-def test_input_box_ask_uses_html(monkeypatch):
+def test_input_box_ask_uses_html(monkeypatch: pytest.MonkeyPatch) -> None:
     session = MagicMock()
     monkeypatch.setattr(
         "circuitron.ui.components.input_box.PromptSession", lambda *a, **k: session

@@ -11,7 +11,7 @@ import asyncio
 import json
 import os
 import re
-from typing import cast
+from typing import cast, Any
 from collections.abc import Mapping
 
 from circuitron.config import settings
@@ -53,12 +53,7 @@ from circuitron.models import (
 )
 from circuitron.correction_context import CorrectionContext
 from circuitron.utils import (
-    pretty_print_plan,
-    pretty_print_edited_plan,
-    pretty_print_found_parts,
     extract_reasoning_summary,
-    pretty_print_selected_parts,
-    pretty_print_documentation,
     sanitize_text,
     format_plan_edit_input,
     format_part_selection_input,
@@ -75,7 +70,6 @@ from circuitron.utils import (
     prepare_output_dir,
     validate_code_generation_results,
     format_docs_summary,
-    format_plan_summary,
 )
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
@@ -123,7 +117,19 @@ async def run_planner(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> RunResult:
-    """Run the planning agent and return the run result."""
+    """Run the planning agent and return the run result.
+
+    Args:
+        prompt: Natural language design request.
+        sink: Progress sink used for reporting progress.
+        agent: Optional planning agent override.
+
+    Returns:
+        The planning agent run result.
+
+    Example:
+        >>> asyncio.run(run_planner("buck converter"))
+    """
 
     agent = agent or get_planning_agent()
     sink = sink or NullProgressSink()
@@ -143,7 +149,22 @@ async def run_plan_editor(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PlanEditorOutput:
-    """Run the PlanEditor agent with formatted input."""
+    """Run the PlanEditor agent with formatted input.
+
+    Args:
+        original_prompt: The original natural language request.
+        plan: Initial plan produced by the planner.
+        feedback: User feedback to apply.
+        sink: Progress sink used for reporting progress.
+        agent: Optional plan-editing agent override.
+
+    Returns:
+        The updated plan from the plan editor.
+
+    Example:
+        >>> asyncio.run(run_plan_editor("req", PlanOutput(), UserFeedback()))
+    """
+
     sink = sink or NullProgressSink()
     sink.start_stage("Editing")
     try:
@@ -162,7 +183,20 @@ async def run_part_finder(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartFinderOutput:
-    """Search KiCad libraries for components from the plan."""
+    """Search KiCad libraries for components from the plan.
+
+    Args:
+        plan: Planning result containing component search queries.
+        sink: Progress sink used for reporting progress.
+        agent: Optional part-finder agent override.
+
+    Returns:
+        Components found during search.
+
+    Example:
+        >>> asyncio.run(run_part_finder(PlanOutput(component_search_queries=["R1"])))
+    """
+
     sink = sink or NullProgressSink()
     sink.start_stage("Looking for Parts")
     try:
@@ -180,7 +214,21 @@ async def run_part_selector(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartSelectionOutput:
-    """Select optimal parts using search results."""
+    """Select optimal parts using search results.
+
+    Args:
+        plan: Original plan from the planner.
+        part_output: Components returned from :func:`run_part_finder`.
+        sink: Progress sink used for reporting progress.
+        agent: Optional part-selection agent override.
+
+    Returns:
+        Selected parts.
+
+    Example:
+        >>> asyncio.run(run_part_selector(PlanOutput(), PartFinderOutput()))
+    """
+
     sink = sink or NullProgressSink()
     sink.start_stage("Selecting Parts")
     try:
@@ -198,7 +246,21 @@ async def run_documentation(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> DocumentationOutput:
-    """Gather SKiDL documentation based on plan and selected parts."""
+    """Gather SKiDL documentation based on plan and selected parts.
+
+    Args:
+        plan: Original plan from the planner.
+        selection: Selected parts to document.
+        sink: Progress sink used for reporting progress.
+        agent: Optional documentation agent override.
+
+    Returns:
+        Documentation information for the design.
+
+    Example:
+        >>> asyncio.run(run_documentation(PlanOutput(), PartSelectionOutput()))
+    """
+
     sink = sink or NullProgressSink()
     sink.start_stage("Gathering Docs")
     try:
@@ -217,7 +279,29 @@ async def run_code_generation(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
-    """Generate SKiDL code using plan, selected parts, and documentation."""
+    """Generate SKiDL code using plan, selected parts, and documentation.
+
+    Args:
+        plan: Original plan from the planner.
+        selection: Selected components for the design.
+        docs: Documentation gathered for the design.
+        sink: Progress sink used for reporting progress.
+        agent: Optional code-generation agent override.
+
+    Returns:
+        The generated SKiDL code output.
+
+    Example:
+        >>> asyncio.run(
+        ...     run_code_generation(
+        ...         PlanOutput(),
+        ...         PartSelectionOutput(),
+        ...         DocumentationOutput(
+        ...             research_queries=[], documentation_findings=[], implementation_readiness="ok"
+        ...         ),
+        ...     )
+        ... )
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Coding")
     try:
@@ -520,7 +604,7 @@ async def run_with_retry(
             }
             # Forward only the kwargs that the current pipeline callable accepts
             sig_params = set(inspect.signature(pipeline).parameters.keys())
-            supported = {k: v for k, v in kwargs.items() if k in sig_params}
+            supported: dict[str, Any] = {k: v for k, v in kwargs.items() if k in sig_params}
             return await pipeline(prompt, **supported)
         except PipelineError:
             raise
@@ -553,9 +637,9 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         output_dir: Directory to save generated files. If None, uses current directory.
-    keep_skidl: If True, keep generated SKiDL code files after execution.
-    sink: Progress sink for reporting progress/messages.
-    feedback_provider: Optional callback to provide plan edits headlessly.
+        keep_skidl: If True, keep generated SKiDL code files after execution.
+        sink: Progress sink for reporting progress/messages.
+        feedback_provider: Optional callback to provide plan edits headlessly.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -570,7 +654,6 @@ async def pipeline(
     sink.display_info(message)
 
     planner_agent = get_planning_agent()
-    plan_edit_agent = get_plan_edit_agent()
     partfinder_agent = get_partfinder_agent()
     partselection_agent = get_partselection_agent()
     documentation_agent = get_documentation_agent()

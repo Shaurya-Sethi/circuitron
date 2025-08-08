@@ -9,6 +9,7 @@ from prompt_toolkit.history import FileHistory  # type: ignore
 from prompt_toolkit.key_binding import KeyBindings  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 from rich.console import Console
+from typing import cast
 
 from ..themes import Theme
 
@@ -40,7 +41,7 @@ class Prompt:
         prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
         if self.session is not None:
             try:
-                return self.session.prompt(prompt_text)
+                return cast(str, self.session.prompt(prompt_text))
             except Exception:
                 pass
         return input(f"{message}: ")
