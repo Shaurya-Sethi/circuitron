@@ -53,12 +53,7 @@ from circuitron.models import (
 )
 from circuitron.correction_context import CorrectionContext
 from circuitron.utils import (
-    pretty_print_plan,
-    pretty_print_edited_plan,
-    pretty_print_found_parts,
     extract_reasoning_summary,
-    pretty_print_selected_parts,
-    pretty_print_documentation,
     sanitize_text,
     format_plan_edit_input,
     format_part_selection_input,
@@ -75,7 +70,6 @@ from circuitron.utils import (
     prepare_output_dir,
     validate_code_generation_results,
     format_docs_summary,
-    format_plan_summary,
 )
 
 # ``run_erc_tool`` is the FunctionTool named "run_erc" used by agents.
@@ -123,7 +117,19 @@ async def run_planner(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> RunResult:
-    """Run the planning agent and return the run result."""
+    """Run the planning agent and return the run result.
+
+    Args:
+        prompt: Natural language design request.
+        sink: Optional progress sink for reporting status.
+        agent: Planning agent to execute. Defaults to the standard planner.
+
+    Returns:
+        RunResult: Execution result from the planning agent.
+
+    Example:
+        >>> asyncio.run(run_planner("buck converter"))
+    """
 
     agent = agent or get_planning_agent()
     sink = sink or NullProgressSink()
@@ -143,7 +149,21 @@ async def run_plan_editor(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PlanEditorOutput:
-    """Run the PlanEditor agent with formatted input."""
+    """Run the PlanEditor agent with formatted input.
+
+    Args:
+        original_prompt: The initial user design request.
+        plan: The plan produced by the planner.
+        feedback: User feedback for plan modifications.
+        sink: Optional progress sink for status updates.
+        agent: Plan editing agent to use.
+
+    Returns:
+        PlanEditorOutput: Updated plan information.
+
+    Example:
+        >>> asyncio.run(run_plan_editor("p", PlanOutput(), UserFeedback()))
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Editing")
     try:
@@ -162,7 +182,16 @@ async def run_part_finder(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartFinderOutput:
-    """Search KiCad libraries for components from the plan."""
+    """Search KiCad libraries for components from the plan.
+
+    Args:
+        plan: The design plan specifying required components.
+        sink: Optional progress sink for reporting search status.
+        agent: Agent that performs the part search.
+
+    Returns:
+        PartFinderOutput: Found components from KiCad libraries.
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Looking for Parts")
     try:
@@ -180,7 +209,17 @@ async def run_part_selector(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> PartSelectionOutput:
-    """Select optimal parts using search results."""
+    """Select optimal parts using search results.
+
+    Args:
+        plan: Original design plan.
+        part_output: Components discovered by the part finder.
+        sink: Optional progress sink for reporting progress.
+        agent: Agent that selects components.
+
+    Returns:
+        PartSelectionOutput: Chosen components for the design.
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Selecting Parts")
     try:
@@ -198,7 +237,17 @@ async def run_documentation(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> DocumentationOutput:
-    """Gather SKiDL documentation based on plan and selected parts."""
+    """Gather SKiDL documentation based on plan and selected parts.
+
+    Args:
+        plan: The finalized plan to document.
+        selection: Selected components used in the design.
+        sink: Optional progress sink for documentation status.
+        agent: Agent responsible for documentation retrieval.
+
+    Returns:
+        DocumentationOutput: Retrieved documentation context.
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Gathering Docs")
     try:
@@ -217,7 +266,18 @@ async def run_code_generation(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
-    """Generate SKiDL code using plan, selected parts, and documentation."""
+    """Generate SKiDL code using plan, selected parts, and documentation.
+
+    Args:
+        plan: Design plan guiding code generation.
+        selection: Chosen components.
+        docs: Documentation context for the generator.
+        sink: Optional progress sink for reporting status.
+        agent: Code generation agent to execute.
+
+    Returns:
+        CodeGenerationOutput: Generated SKiDL code.
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Coding")
     try:
@@ -226,8 +286,9 @@ async def run_code_generation(
         result = await run_agent(agent, sanitize_text(input_msg))
         code_output = cast(CodeGenerationOutput, result.final_output)
         sink.display_code(code_output.complete_skidl_code)
-        # Act on validation result; warn already sent via sink
-        _ = validate_code_generation_results(code_output, sink)
+        is_valid = validate_code_generation_results(code_output, sink)
+        if not is_valid:
+            sink.display_warning("Generated code failed basic validation checks")
         return code_output
     finally:
         sink.finish_stage("Coding")
@@ -248,6 +309,8 @@ async def run_code_validation(
         selection: Component selections used in the design.
         docs: Documentation context for the validator.
         run_erc_flag: When ``True`` run ERC after validation passes.
+        sink: Optional progress sink for validation status.
+        agent: Agent performing the validation.
 
     Returns:
         Tuple containing the :class:`CodeValidationOutput` and optional ERC
@@ -304,7 +367,21 @@ async def run_code_correction(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> CodeGenerationOutput:
-    """Run the Code Correction agent and return updated code."""
+    """Run the Code Correction agent and return updated code.
+
+    Args:
+        code_output: The current generated code.
+        validation: Validator output describing issues.
+        plan: Original design plan.
+        selection: Selected components.
+        docs: Documentation context for correction.
+        erc_result: ERC result from previous validation.
+        sink: Optional progress sink for reporting correction status.
+        agent: Agent responsible for code correction.
+
+    Returns:
+        CodeGenerationOutput: Updated code after correction.
+    """
     sink = sink or NullProgressSink()
     sink.start_stage("Correcting")
     try:
@@ -343,6 +420,9 @@ async def run_validation_correction(
         plan: The original design plan.
         selection: Chosen components for the design.
         docs: Documentation context.
+        context: Optional correction context for retry tracking.
+        sink: Optional progress sink for reporting correction steps.
+        agent: Agent performing the correction.
 
     Returns:
         Updated :class:`CodeGenerationOutput` with attempted fixes applied.
@@ -380,7 +460,22 @@ async def run_erc_handling(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, ERCHandlingOutput]:
-    """Run the ERC Handling agent and return updated code and ERC info."""
+    """Run the ERC Handling agent and return updated code and ERC info.
+
+    Args:
+        code_output: Current code requiring ERC fixes.
+        validation: Latest validation results.
+        plan: Original design plan.
+        selection: Selected components.
+        docs: Documentation context for ERC.
+        erc_result: Previous ERC result to address.
+        context: Optional correction context for retry tracking.
+        sink: Optional progress sink for reporting ERC handling.
+        agent: Agent performing ERC handling.
+
+    Returns:
+        Tuple of updated :class:`CodeGenerationOutput` and :class:`ERCHandlingOutput`.
+    """
 
     sink = sink or NullProgressSink()
     sink.start_stage("ERC Handling")
@@ -412,7 +507,20 @@ async def run_runtime_check_and_correction(
     sink: ProgressSink | None = None,
     agent: Agent | None = None,
 ) -> tuple[CodeGenerationOutput, bool]:
-    """Check for runtime errors and correct them if needed."""
+    """Check for runtime errors and correct them if needed.
+
+    Args:
+        code_output: Generated code to execute.
+        plan: Original design plan.
+        selection: Selected components.
+        docs: Documentation context.
+        context: CorrectionContext tracking runtime attempts.
+        sink: Optional progress sink for runtime status.
+        agent: Agent handling runtime corrections.
+
+    Returns:
+        Tuple of updated :class:`CodeGenerationOutput` and success flag.
+    """
 
     sink = sink or NullProgressSink()
     sink.start_stage("Runtime Check")
@@ -566,7 +674,6 @@ async def pipeline(
     sink.display_info(message)
 
     planner_agent = get_planning_agent()
-    plan_edit_agent = get_plan_edit_agent()
     partfinder_agent = get_partfinder_agent()
     partselection_agent = get_partselection_agent()
     documentation_agent = get_documentation_agent()
