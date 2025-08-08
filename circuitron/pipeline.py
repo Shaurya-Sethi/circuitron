@@ -226,8 +226,12 @@ async def run_code_generation(
         result = await run_agent(agent, sanitize_text(input_msg))
         code_output = cast(CodeGenerationOutput, result.final_output)
         sink.display_code(code_output.complete_skidl_code)
-        # Act on validation result; warn already sent via sink
-        _ = validate_code_generation_results(code_output, sink)
+        # Act on validation result; surface an explicit warning if basic checks fail
+        is_basic_valid = validate_code_generation_results(code_output, sink)
+        if not is_basic_valid:
+            sink.display_warning(
+                "Basic code checks failed; proceeding to full validation and correction."
+            )
         return code_output
     finally:
         sink.finish_stage("Coding")
