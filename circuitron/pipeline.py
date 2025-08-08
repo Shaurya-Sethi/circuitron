@@ -128,10 +128,12 @@ async def run_planner(
     agent = agent or get_planning_agent()
     sink = sink or NullProgressSink()
     sink.start_stage("Planning")
-    result = await run_agent(agent, sanitize_text(prompt))
-    sink.finish_stage("Planning")
-    sink.display_plan(result.final_output)
-    return result
+    try:
+        result = await run_agent(agent, sanitize_text(prompt))
+        return result
+    finally:
+        # Ensure spinner/state resets even on exceptions
+        sink.finish_stage("Planning")
 
 
 async def run_plan_editor(
@@ -144,13 +146,15 @@ async def run_plan_editor(
     """Run the PlanEditor agent with formatted input."""
     sink = sink or NullProgressSink()
     sink.start_stage("Editing")
-    input_msg = format_plan_edit_input(sanitize_text(original_prompt), plan, feedback)
-    agent = agent or get_plan_edit_agent()
-    result = await run_agent(agent, input_msg)
-    sink.finish_stage("Editing")
-    if result.final_output.updated_plan:
-        sink.display_plan(result.final_output.updated_plan)
-    return cast(PlanEditorOutput, result.final_output)
+    try:
+        input_msg = format_plan_edit_input(sanitize_text(original_prompt), plan, feedback)
+        agent = agent or get_plan_edit_agent()
+        result = await run_agent(agent, input_msg)
+        if result.final_output.updated_plan:
+            sink.display_plan(result.final_output.updated_plan)
+        return cast(PlanEditorOutput, result.final_output)
+    finally:
+        sink.finish_stage("Editing")
 
 
 async def run_part_finder(
@@ -161,11 +165,13 @@ async def run_part_finder(
     """Search KiCad libraries for components from the plan."""
     sink = sink or NullProgressSink()
     sink.start_stage("Looking for Parts")
-    query_text = "\n".join(plan.component_search_queries)
-    agent = agent or get_partfinder_agent()
-    result = await run_agent(agent, sanitize_text(query_text))
-    sink.finish_stage("Looking for Parts")
-    return cast(PartFinderOutput, result.final_output)
+    try:
+        query_text = "\n".join(plan.component_search_queries)
+        agent = agent or get_partfinder_agent()
+        result = await run_agent(agent, sanitize_text(query_text))
+        return cast(PartFinderOutput, result.final_output)
+    finally:
+        sink.finish_stage("Looking for Parts")
 
 
 async def run_part_selector(
@@ -177,11 +183,13 @@ async def run_part_selector(
     """Select optimal parts using search results."""
     sink = sink or NullProgressSink()
     sink.start_stage("Selecting Parts")
-    input_msg = format_part_selection_input(plan, part_output)
-    agent = agent or get_partselection_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    sink.finish_stage("Selecting Parts")
-    return cast(PartSelectionOutput, result.final_output)
+    try:
+        input_msg = format_part_selection_input(plan, part_output)
+        agent = agent or get_partselection_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        return cast(PartSelectionOutput, result.final_output)
+    finally:
+        sink.finish_stage("Selecting Parts")
 
 
 async def run_documentation(
@@ -193,11 +201,13 @@ async def run_documentation(
     """Gather SKiDL documentation based on plan and selected parts."""
     sink = sink or NullProgressSink()
     sink.start_stage("Gathering Docs")
-    input_msg = format_documentation_input(plan, selection)
-    agent = agent or get_documentation_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    sink.finish_stage("Gathering Docs")
-    return cast(DocumentationOutput, result.final_output)
+    try:
+        input_msg = format_documentation_input(plan, selection)
+        agent = agent or get_documentation_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        return cast(DocumentationOutput, result.final_output)
+    finally:
+        sink.finish_stage("Gathering Docs")
 
 
 async def run_code_generation(
@@ -210,14 +220,17 @@ async def run_code_generation(
     """Generate SKiDL code using plan, selected parts, and documentation."""
     sink = sink or NullProgressSink()
     sink.start_stage("Coding")
-    input_msg = format_code_generation_input(plan, selection, docs)
-    agent = agent or get_code_generation_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    code_output = cast(CodeGenerationOutput, result.final_output)
-    sink.display_code(code_output.complete_skidl_code)
-    validate_code_generation_results(code_output, sink)
-    sink.finish_stage("Coding")
-    return code_output
+    try:
+        input_msg = format_code_generation_input(plan, selection, docs)
+        agent = agent or get_code_generation_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        code_output = cast(CodeGenerationOutput, result.final_output)
+        sink.display_code(code_output.complete_skidl_code)
+        # Act on validation result; warn already sent via sink
+        _ = validate_code_generation_results(code_output, sink)
+        return code_output
+    finally:
+        sink.finish_stage("Coding")
 
 
 async def run_code_validation(
@@ -263,11 +276,17 @@ async def run_code_validation(
             try:
                 erc_result = json.loads(erc_json)
             except (json.JSONDecodeError, TypeError) as e:
-                erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
+                erc_result = {
+                    "success": False,
+                    "erc_passed": False,
+                    "stderr": f"JSON parsing error: {str(e)}",
+                    "stdout": erc_json,
+                }
             sink.display_info(json.dumps(erc_result, indent=2))
-        sink.finish_stage("Validating")
         return validation, erc_result
     finally:
+        # Always end the stage and clean up temp files
+        sink.finish_stage("Validating")
         if script_path:
             try:
                 os.remove(script_path)
@@ -288,20 +307,22 @@ async def run_code_correction(
     """Run the Code Correction agent and return updated code."""
     sink = sink or NullProgressSink()
     sink.start_stage("Correcting")
-    input_msg = format_code_correction_input(
-        code_output.complete_skidl_code,
-        validation,
-        plan,
-        selection,
-        docs,
-        erc_result,
-    )
-    agent = agent or get_code_correction_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    correction = cast(CodeCorrectionOutput, result.final_output)
-    code_output.complete_skidl_code = correction.corrected_code
-    sink.finish_stage("Correcting")
-    return code_output
+    try:
+        input_msg = format_code_correction_input(
+            code_output.complete_skidl_code,
+            validation,
+            plan,
+            selection,
+            docs,
+            erc_result,
+        )
+        agent = agent or get_code_correction_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        correction = cast(CodeCorrectionOutput, result.final_output)
+        code_output.complete_skidl_code = correction.corrected_code
+        return code_output
+    finally:
+        sink.finish_stage("Correcting")
 
 
 async def run_validation_correction(
@@ -329,20 +350,22 @@ async def run_validation_correction(
 
     sink = sink or NullProgressSink()
     sink.start_stage("Correcting")
-    input_msg = format_code_correction_validation_input(
-        code_output.complete_skidl_code,
-        validation,
-        plan,
-        selection,
-        docs,
-        context,
-    )
-    agent = agent or get_code_correction_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    correction = cast(CodeCorrectionOutput, result.final_output)
-    code_output.complete_skidl_code = correction.corrected_code
-    sink.finish_stage("Correcting")
-    return code_output
+    try:
+        input_msg = format_code_correction_validation_input(
+            code_output.complete_skidl_code,
+            validation,
+            plan,
+            selection,
+            docs,
+            context,
+        )
+        agent = agent or get_code_correction_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        correction = cast(CodeCorrectionOutput, result.final_output)
+        code_output.complete_skidl_code = correction.corrected_code
+        return code_output
+    finally:
+        sink.finish_stage("Correcting")
 
 
 
@@ -361,21 +384,23 @@ async def run_erc_handling(
 
     sink = sink or NullProgressSink()
     sink.start_stage("ERC Handling")
-    input_msg = format_erc_handling_input(
-        code_output.complete_skidl_code,
-        validation,
-        plan,
-        selection,
-        docs,
-        erc_result,
-        context,
-    )
-    agent = agent or get_erc_handling_agent()
-    result = await run_agent(agent, sanitize_text(input_msg))
-    erc_out = cast(ERCHandlingOutput, result.final_output)
-    code_output.complete_skidl_code = erc_out.final_code
-    sink.finish_stage("ERC Handling")
-    return code_output, erc_out
+    try:
+        input_msg = format_erc_handling_input(
+            code_output.complete_skidl_code,
+            validation,
+            plan,
+            selection,
+            docs,
+            erc_result,
+            context,
+        )
+        agent = agent or get_erc_handling_agent()
+        result = await run_agent(agent, sanitize_text(input_msg))
+        erc_out = cast(ERCHandlingOutput, result.final_output)
+        code_output.complete_skidl_code = erc_out.final_code
+        return code_output, erc_out
+    finally:
+        sink.finish_stage("ERC Handling")
 
 
 async def run_runtime_check_and_correction(
@@ -407,12 +432,10 @@ async def run_runtime_check_and_correction(
             }
 
         if runtime_result.get("success", False):
-            sink.finish_stage("Runtime Check")
             return code_output, True
 
         if "No such file or directory" in runtime_result.get("error_details", ""):
             # Docker not available - skip runtime checks in test environments
-            sink.finish_stage("Runtime Check")
             return code_output, True
 
         input_msg = format_runtime_correction_input(
@@ -431,21 +454,20 @@ async def run_runtime_check_and_correction(
         except Exception as exc:  # pragma: no cover - unexpected errors
             sink.display_error(f"Runtime correction agent failed: {exc}")
             context.add_runtime_attempt(runtime_result, [])
-            sink.finish_stage("Runtime Check")
             return code_output, True
 
         correction = cast(RuntimeErrorCorrectionOutput | None, result.final_output)
         if correction is None:
             context.add_runtime_attempt(runtime_result, [])
-            sink.finish_stage("Runtime Check")
             return code_output, True
 
         code_output.complete_skidl_code = correction.corrected_code
         context.add_runtime_attempt(runtime_result, correction.corrections_applied)
-        sink.finish_stage("Runtime Check")
         return code_output, correction.execution_status == "success"
 
     finally:
+        # Always end the stage and clean up temp files
+        sink.finish_stage("Runtime Check")
         try:
             os.remove(script_path)
         except OSError:
@@ -462,19 +484,19 @@ async def run_with_retry(
     feedback_provider: Callable[[PlanOutput], UserFeedback] | None = None,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling.
-    
+
     Args:
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         retries: Maximum number of retry attempts on failure.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, save generated SKiDL code files to the output directory 
-                   for debugging, education, and understanding how the circuit design 
-                   was generated. The script is saved as 'circuitron_skidl_script.py'.
-        ui: Optional terminal UI instance for progress feedback.
-        
+        keep_skidl: If True, save generated SKiDL code files to the output directory
+            for debugging and education.
+        sink: Progress sink for reporting progress/messages.
+        feedback_provider: Optional callback to provide plan edits headlessly.
+
     Returns:
-        The :class:`CodeGenerationOutput` generated from the pipeline, or None if
+        The :class:`CodeGenerationOutput` generated from the pipeline, or ``None`` if
         all retry attempts failed.
 
     Example:
@@ -527,7 +549,9 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, keep generated SKiDL code files after execution.
+    keep_skidl: If True, keep generated SKiDL code files after execution.
+    sink: Progress sink for reporting progress/messages.
+    feedback_provider: Optional callback to provide plan edits headlessly.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -554,6 +578,7 @@ async def pipeline(
 
     plan_result = await run_planner(prompt, sink=sink, agent=planner_agent)
     plan = plan_result.final_output
+    # Display once at the pipeline level (remove duplicate display in run_planner)
     sink.display_plan(plan)
 
     if settings.dev_mode and plan.calculation_codes:

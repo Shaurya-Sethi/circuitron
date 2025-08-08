@@ -6,11 +6,12 @@ from any specific UI. A NullProgressSink is provided for headless runs.
 
 from __future__ import annotations
 
-from typing import Iterable, Protocol
+from typing import Iterable, Protocol, runtime_checkable
 
 from .models import PlanOutput, SelectedPart, PartSearchResult
 
 
+@runtime_checkable
 class ProgressSink(Protocol):
     """Protocol for reporting progress, messages, and artifacts.
 
@@ -39,37 +40,37 @@ class NullProgressSink:
     """No-op sink for headless or silent operation."""
 
     def start_stage(self, name: str) -> None:  # pragma: no cover - trivial no-op
-        return
+        pass
 
     def finish_stage(self, name: str) -> None:  # pragma: no cover - trivial no-op
-        return
+        pass
 
     def display_plan(self, plan: PlanOutput) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_found_parts(self, found: Iterable[PartSearchResult]) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_selected_parts(self, parts: Iterable[SelectedPart]) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_validation_summary(self, summary: str) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_files(self, files: Iterable[str]) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_code(self, code: str, language: str = "python") -> None:  # pragma: no cover
-        return
+        pass
 
     def display_info(self, message: str) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_warning(self, message: str) -> None:  # pragma: no cover
-        return
+        pass
 
     def display_error(self, message: str) -> None:  # pragma: no cover
-        return
+        pass
 
 
 __all__ = ["ProgressSink", "NullProgressSink"]

@@ -154,6 +154,7 @@ class TerminalUI(ProgressSink):
                 output_dir=output_dir,
                 keep_skidl=keep_skidl,
                 sink=self,
+                feedback_provider=self.collect_feedback,
             )
         finally:
             self.status_bar.stop()

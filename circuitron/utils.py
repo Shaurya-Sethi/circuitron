@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, TYPE_CHECKING
+from typing import Callable, Iterable, TYPE_CHECKING
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -86,7 +86,7 @@ def extract_reasoning_summary(run_result: RunResult) -> str:
 
 
 def print_section(
-    title: str, items: List[str], bullet: str = "•", numbered: bool = False, console: Console | None = None
+    title: str, items: Iterable[str], bullet: str = "•", numbered: bool = False, console: Console | None = None
 ) -> None:
     """Display a section of text within a styled panel."""
     if not items:
@@ -94,7 +94,7 @@ def print_section(
 
     console = console or Console()
     body_lines = []
-    for i, item in enumerate(items):
+    for i, item in enumerate(list(items)):
         prefix = f"{i + 1}." if numbered else bullet
         body_lines.append(f"{prefix} {item}")
     content = "\n".join(body_lines)

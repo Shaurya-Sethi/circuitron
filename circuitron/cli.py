@@ -8,7 +8,6 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
-from .progress import ProgressSink
 
 
 async def run_circuitron(
@@ -26,12 +25,24 @@ async def run_circuitron(
     await mcp_manager.initialize()
     try:
         try:
-            return await run_with_retry(
-                prompt,
-                show_reasoning=show_reasoning,
-                retries=retries,
-                output_dir=output_dir,
-            )
+            # Prefer passing UI sink and feedback provider; fall back if not supported
+            try:
+                return await run_with_retry(
+                    prompt,
+                    show_reasoning=show_reasoning,
+                    retries=retries,
+                    output_dir=output_dir,
+                    sink=ui,
+                    feedback_provider=ui.collect_feedback,
+                )
+            except TypeError:
+                # Older/test shims may not accept extra kwargs
+                return await run_with_retry(
+                    prompt,
+                    show_reasoning=show_reasoning,
+                    retries=retries,
+                    output_dir=output_dir,
+                )
         except PipelineError as exc:
             ui.display_error(f"Fatal error: {exc}")
             return None
