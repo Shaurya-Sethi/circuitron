@@ -30,3 +30,7 @@ circuitron = "circuitron.cli:main"
 where = ["."]
 include = ["circuitron*"]
 
+[tool.pytest.ini_options]
+# Only collect tests from the official suite
+testpaths = ["tests"]
+
