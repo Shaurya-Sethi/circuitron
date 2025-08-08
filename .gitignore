@@ -3,9 +3,7 @@ circuitron_venv/
 __pycache__/
 *.log
 *.erc
-lib_pickle_dir
-openai_agents_sdk_docs.md
-src/
+lib_pickle_dir/
 .pytest_cache/
 *.egg-info/
 prototype.ipynb
@@ -19,7 +17,5 @@ memory-bank/
 .clinerules/
 .github/
 circuitron_output/
-architecture_diagram.mmd
-architecture_diagram.svg
 research-paper/
 task.md
