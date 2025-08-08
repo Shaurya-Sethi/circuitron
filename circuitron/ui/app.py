@@ -51,10 +51,22 @@ class TerminalUI(ProgressSink):
         self.input_box.theme = self.theme
 
     def start_stage(self, name: str) -> None:
+        """Begin a pipeline stage and start the spinner/status.
+
+        Side effects:
+            - Updates the status bar with the current stage name.
+            - Starts a spinner labeled with the stage.
+        """
         self.status_bar.update(stage=name, message="")
         self.spinner.start(name)
 
     def finish_stage(self, name: str) -> None:
+        """Complete a pipeline stage and stop the spinner/status.
+
+        Side effects:
+            - Stops the active spinner.
+            - Resets the status bar to idle.
+        """
         self.spinner.stop(name)
         self.status_bar.update(stage="Idle", message="")
 
@@ -124,8 +136,8 @@ class TerminalUI(ProgressSink):
         panel.show_panel(self.console, "Validation", summary, self.theme)
 
     def display_generated_files_summary(self, files: Iterable[str]) -> None:
-        links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        MessagePanel.info(self.console, links, self.theme)
+        """Deprecated: use display_files. Delegates to display_files for compat."""
+        self.display_files(files)
 
     async def run(
         self,

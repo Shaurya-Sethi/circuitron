@@ -44,3 +44,11 @@ class Settings:
     )
     dev_mode: bool = False
     footprint_search_enabled: bool = True
+    # Optional: allow configuring basic codegen validation phrases via env (comma-separated)
+    codegen_required_phrases: list[str] = field(
+        default_factory=lambda: [
+            p.strip()
+            for p in os.getenv("CIRCUITRON_CODEGEN_REQUIRED_PHRASES", "from skidl import").split(",")
+            if p.strip()
+        ]
+    )

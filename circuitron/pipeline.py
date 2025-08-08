@@ -592,6 +592,7 @@ async def run_with_retry(
     """
 
     import inspect
+    import sys
     attempts = 0
     while True:
         try:
@@ -610,17 +611,25 @@ async def run_with_retry(
             raise
         except Exception as exc:
             attempts += 1
-            (sink or NullProgressSink()).display_error(
-                f"Error during pipeline execution: {exc}"
-            )
+            if sink is not None:
+                sink.display_error(f"Error during pipeline execution: {exc}")
+            else:
+                print(f"Error during pipeline execution: {exc}", file=sys.stderr)
             if attempts > retries:
-                (sink or NullProgressSink()).display_error(
-                    "Maximum retries exceeded. Shutting down gracefully."
-                )
+                if sink is not None:
+                    sink.display_error(
+                        "Maximum retries exceeded. Shutting down gracefully."
+                    )
+                else:
+                    print(
+                        "Maximum retries exceeded. Shutting down gracefully.",
+                        file=sys.stderr,
+                    )
                 return None
-            (sink or NullProgressSink()).display_warning(
-                f"Retrying ({attempts}/{retries})..."
-            )
+            if sink is not None:
+                sink.display_warning(f"Retrying ({attempts}/{retries})...")
+            else:
+                print(f"Retrying ({attempts}/{retries})...", file=sys.stderr)
 
 
 async def pipeline(
@@ -850,10 +859,9 @@ async def pipeline(
     return code_out
 
 def collect_user_feedback(plan: PlanOutput) -> UserFeedback:
-    """Backward-compatible shim used by legacy tests.
+    """Legacy shim kept for tests; returns empty feedback in headless mode.
 
-    Headless default collects no feedback. Interactive paths should supply a
-    feedback_provider or use TerminalUI.collect_feedback instead.
+    New code paths should supply a feedback_provider or use TerminalUI.
     """
     return UserFeedback()
 

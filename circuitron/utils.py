@@ -23,6 +23,7 @@ from .models import (
 )
 from .correction_context import CorrectionContext
 from .progress import ProgressSink, NullProgressSink
+from .settings import Settings
 
 if TYPE_CHECKING:
     from .ui.app import TerminalUI
@@ -646,17 +647,30 @@ def validate_code_generation_results(
 ) -> bool:
     """Basic validation of the generated code output.
 
+    Uses a configurable rule set from ``settings`` if available. Falls back to a
+    minimal default rule set requiring an import of SKiDL.
+
     Reports issues via the provided ProgressSink (no direct printing).
     """
     sink = sink or NullProgressSink()
-    required_phrases = ["from skidl import"]
+
+    # Prefer a settings-driven ruleset if present on the global settings object
+    try:
+        from .config import settings
+
+        required_phrases: list[str] = getattr(
+            settings, "codegen_required_phrases", ["from skidl import"]
+        )
+    except Exception:
+        required_phrases = ["from skidl import"]
+
+    code_text = code_output.complete_skidl_code
+    ok = True
     for phrase in required_phrases:
-        if phrase not in code_output.complete_skidl_code:
-            sink.display_warning(
-                f"Expected phrase '{phrase}' not found in code"
-            )
-            return False
-    return True
+        if phrase not in code_text:
+            sink.display_warning(f"Expected phrase '{phrase}' not found in code")
+            ok = False
+    return ok
 
 
 def write_temp_skidl_script(code: str) -> str:

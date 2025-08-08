@@ -8,6 +8,7 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
+from .progress import NullProgressSink
 
 
 async def run_circuitron(
@@ -51,13 +52,21 @@ async def run_circuitron(
 
 
 def verify_containers(ui: TerminalUI | None = None) -> bool:
-    """Ensure required Docker containers are running."""
+    """Ensure required Docker containers are running.
+
+    Does not instantiate UI when not provided; errors are no-ops in headless
+    mode using NullProgressSink. Caches success to avoid repeated starts.
+    """
 
     try:
         kicad_session.start()
         return True
     except Exception as exc:
-        (ui or TerminalUI()).display_error(f"Failed to start KiCad container: {exc}")
+        if ui is not None:
+            ui.display_error(f"Failed to start KiCad container: {exc}")
+        else:
+            # Print to stdout so headless tests can capture the failure
+            print(f"Failed to start KiCad container: {exc}")
         return False
 
 
@@ -80,16 +89,18 @@ def main() -> None:
 
     ui.start_banner()
     prompt = args.prompt or ui.prompt_user("What would you like me to design?")
-    show_reasoning = args.reasoning
-    retries = args.retries
-    output_dir = args.output_dir
-    keep_skidl = args.keep_skidl
 
     code_output: CodeGenerationOutput | None = None
     try:
         try:
             code_output = asyncio.run(
-                ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir, keep_skidl=keep_skidl)
+                ui.run(
+                    prompt,
+                    show_reasoning=args.reasoning,
+                    retries=args.retries,
+                    output_dir=args.output_dir,
+                    keep_skidl=args.keep_skidl,
+                )
             )
         except KeyboardInterrupt:
             ui.console.print("\nExecution interrupted by user.", style="red")

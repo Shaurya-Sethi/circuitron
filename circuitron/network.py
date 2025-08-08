@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import socket
 import httpx
+import asyncio
 
 
 def is_connected(url: str = "https://api.openai.com", timeout: float = 10.0) -> bool:
@@ -38,4 +39,22 @@ def check_internet_connection() -> bool:
     """
     return is_connected()
 
-__all__ = ["check_internet_connection", "is_connected", "httpx"]
+__all__ = ["check_internet_connection", "is_connected", "is_connected_async"]
+def _suppress_unused() -> None:  # pragma: no cover - compatibility shim
+    # Retain old export for backwards compatibility without encouraging use
+    _ = httpx
+
+
+async def is_connected_async(url: str = "https://api.openai.com", timeout: float = 10.0) -> bool:
+    """Asynchronously check whether ``url`` is reachable.
+
+    Mirrors :func:`is_connected` using httpx.AsyncClient to avoid blocking
+    the event loop during connectivity checks.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            await client.head(url)
+        return True
+    except (httpx.RequestError, socket.gaierror, TimeoutError, OSError):
+        return False
+
