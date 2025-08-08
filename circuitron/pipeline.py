@@ -11,7 +11,7 @@ import asyncio
 import json
 import os
 import re
-from typing import cast
+from typing import Any, Callable, Protocol, cast
 from collections.abc import Mapping
 
 from circuitron.config import settings
@@ -119,12 +119,28 @@ __all__ = [
     "settings",
 ]
 
+
+class ProgressSink(Protocol):
+    """Protocol for logging progress messages."""
+
+    def warning(self, message: str, /) -> None:
+        """Log a warning message."""
+
+
 async def run_planner(
     prompt: str,
     ui: "TerminalUI" | None = None,
     agent: Agent | None = None,
+    sink: ProgressSink | None = None,
 ) -> RunResult:
-    """Run the planning agent and return the run result."""
+    """Run the planning agent and return the run result.
+
+    Args:
+        prompt: Prompt describing the desired circuit.
+        ui: Optional terminal UI instance for progress feedback.
+        agent: Optional agent to execute the planning stage.
+        sink: Optional progress sink for logging.
+    """
 
     agent = agent or get_planning_agent()
     if ui:
@@ -212,8 +228,18 @@ async def run_code_generation(
     docs: DocumentationOutput,
     ui: "TerminalUI" | None = None,
     agent: Agent | None = None,
+    sink: ProgressSink | None = None,
 ) -> CodeGenerationOutput:
-    """Generate SKiDL code using plan, selected parts, and documentation."""
+    """Generate SKiDL code using plan, selected parts, and documentation.
+
+    Args:
+        plan: Design plan produced by the planner.
+        selection: Chosen components for the design.
+        docs: Documentation context for the generator.
+        ui: Optional terminal UI instance for progress feedback.
+        agent: Optional agent override for code generation.
+        sink: Optional progress sink for logging warnings.
+    """
     if ui:
         ui.start_stage("Coding")
     input_msg = format_code_generation_input(plan, selection, docs)
@@ -221,7 +247,9 @@ async def run_code_generation(
     result = await run_agent(agent, sanitize_text(input_msg))
     code_output = cast(CodeGenerationOutput, result.final_output)
     pretty_print_generated_code(code_output, ui)
-    validate_code_generation_results(code_output)
+    valid = validate_code_generation_results(code_output)
+    if not valid and sink is not None:
+        sink.warning("Basic validation failed; generated code may be invalid")
     if ui:
         ui.finish_stage("Coding")
     return code_output
@@ -485,6 +513,8 @@ async def run_with_retry(
     output_dir: str | None = None,
     keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
+    feedback_provider: Callable[[PlanOutput], UserFeedback] | None = None,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling.
     
@@ -493,10 +523,13 @@ async def run_with_retry(
         show_reasoning: Print the reasoning summary when ``True``.
         retries: Maximum number of retry attempts on failure.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, save generated SKiDL code files to the output directory 
-                   for debugging, education, and understanding how the circuit design 
-                   was generated. The script is saved as 'circuitron_skidl_script.py'.
+        keep_skidl:
+            If True, save generated SKiDL code files to the output directory for
+            debugging, education, and understanding how the circuit design was
+            generated. The script is saved as 'circuitron_skidl_script.py'.
         ui: Optional terminal UI instance for progress feedback.
+        sink: Optional progress sink for logging warnings.
+        feedback_provider: Optional callable supplying feedback for non-interactive runs.
         
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline, or None if
@@ -509,12 +542,17 @@ async def run_with_retry(
     attempts = 0
     while True:
         try:
-            kwargs = {
+            kwargs: dict[str, Any] = {
                 "show_reasoning": show_reasoning,
                 "output_dir": output_dir,
                 "ui": ui,
-                "keep_skidl": keep_skidl,
             }
+            if keep_skidl:
+                kwargs["keep_skidl"] = True
+            if sink is not None:
+                kwargs["sink"] = sink
+            if feedback_provider is not None:
+                kwargs["feedback_provider"] = feedback_provider
             return await pipeline(prompt, **kwargs)
         except PipelineError:
             raise
@@ -542,6 +580,8 @@ async def pipeline(
     output_dir: str | None = None,
     keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
+    sink: ProgressSink | None = None,
+    feedback_provider: Callable[[PlanOutput], UserFeedback] | None = None,
 ) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
 
@@ -549,7 +589,12 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, keep generated SKiDL code files after execution.
+        keep_skidl:
+            If True, keep generated SKiDL code files after execution.
+        sink:
+            Optional progress sink for logging warnings.
+        feedback_provider:
+            Callable supplying user feedback for non-interactive runs.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -567,7 +612,6 @@ async def pipeline(
         print()
 
     planner_agent = get_planning_agent()
-    plan_edit_agent = get_plan_edit_agent()
     partfinder_agent = get_partfinder_agent()
     partselection_agent = get_partselection_agent()
     documentation_agent = get_documentation_agent()
@@ -577,7 +621,7 @@ async def pipeline(
     runtime_agent = get_runtime_error_correction_agent()
     erc_agent = get_erc_handling_agent()
 
-    plan_result = await run_planner(prompt, ui=ui, agent=planner_agent)
+    plan_result = await run_planner(prompt, ui=ui, agent=planner_agent, sink=sink)
     plan = plan_result.final_output
     if ui:
         ui.display_plan(plan)
@@ -604,7 +648,11 @@ async def pipeline(
             print("\n=== Reasoning Summary ===\n")
             print(summary)
 
-    feedback = collect_user_feedback(plan, console=ui.console if ui else None)
+    feedback = (
+        feedback_provider(plan)
+        if feedback_provider is not None
+        else collect_user_feedback(plan, console=ui.console if ui else None)
+    )
     if not any(
         [
             feedback.open_question_answers,
@@ -643,6 +691,7 @@ async def pipeline(
             docs,
             ui=ui,
             agent=codegen_agent,
+            sink=sink,
         )
         validation, _ = await run_code_validation(
             code_out,
@@ -790,7 +839,7 @@ async def pipeline(
         prompt,
         plan,
         feedback,
-        agent=plan_edit_agent,
+        agent=get_plan_edit_agent(),
     )
     if ui:
         panel.show_panel(ui.console, "Plan Updated", format_plan_summary(edit_result.updated_plan), ui.theme)
@@ -814,7 +863,14 @@ async def pipeline(
         panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
     else:
         pretty_print_documentation(docs)
-    code_out = await run_code_generation(final_plan, selection, docs, ui=ui, agent=codegen_agent)
+    code_out = await run_code_generation(
+        final_plan,
+        selection,
+        docs,
+        ui=ui,
+        agent=codegen_agent,
+        sink=sink,
+    )
     validation, _ = await run_code_validation(
         code_out,
         selection,

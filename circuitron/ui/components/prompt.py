@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from prompt_toolkit import PromptSession  # type: ignore
-from prompt_toolkit.history import FileHistory  # type: ignore
-from prompt_toolkit.key_binding import KeyBindings  # type: ignore
-from prompt_toolkit.formatted_text import HTML  # type: ignore
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.formatted_text import HTML
 from rich.console import Console
+from typing import Any, cast
 
 from ..themes import Theme
 
@@ -24,7 +25,7 @@ class Prompt:
         bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
         bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
         bindings.add("c-l")(lambda event: event.app.renderer.clear())
-        self.session: PromptSession = PromptSession(
+        self.session: PromptSession[Any] = PromptSession(
             history=FileHistory(str(history_file)), key_bindings=bindings
         )
 
@@ -32,6 +33,6 @@ class Prompt:
         """Return user input for ``message``."""
         prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
         try:
-            return self.session.prompt(prompt_text)
+            return cast(str, self.session.prompt(prompt_text))
         except Exception:
             return input(f"{message}: ")
