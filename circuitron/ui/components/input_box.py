@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from rich.console import Console
+import asyncio
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
@@ -15,35 +16,42 @@ ACCENT = "cyan"
 
 
 class InputBox:
-    """Prompt the user for input inside a styled panel."""
+    """Prompt the user for input inside a styled panel.
+
+    Shows a three-line box with a visible arrow prompt. Uses prompt_toolkit
+    for completions and keybindings in synchronous contexts. If running under
+    an active asyncio loop (e.g., during the pipeline), it falls back to a
+    Rich-rendered box with standard input() to avoid prompt_toolkit warnings.
+
+    Example (simplified):
+    ┌─ What would you like me to design? (press Esc twice to exit)
+    │
+    └─ ❯ [cursor here]
+    """
 
     def __init__(self, console: Console) -> None:
         self.console = console
         self._session: PromptSession | None = None
         # Supported models for completion are sourced from settings.
-        self._available_models: list[str] = list(getattr(settings, "available_models", ["o4-mini", "gpt-5-mini"]))
+        self._available_models: list[str] = list(
+            getattr(settings, "available_models", ["o4-mini", "gpt-5-mini"])
+        )
 
     def ask(self, message: str, completer=None) -> str:
-        """Return user input for ``message`` using prompt_toolkit.
+        """Return user input for ``message`` using prompt_toolkit when safe.
 
-        Renders a simple, three-line boxed prompt so the user types
-        visually "inside" an input box. Falls back to a basic ``input()``
-        when a prompt session cannot be initialized (e.g., headless tests).
-
-        Pressing ``Esc`` exits the application with a goodbye message.
-
-        Example (simplified):
-         What would you like me to design? (press Esc twice to exit)
-        │
-        └─ ❯ [cursor here]
+        Falls back to a boxed input() in async/headless environments.
+        Pressing Esc raises EOFError to let the caller exit.
         """
         message = f"{message} (press Esc twice to exit)"
         accent = ACCENT
-        # Compose a minimal multi-line box using Unicode borders.
+
+        # Compose a minimal multi-line box for prompt_toolkit HTML rendering.
         top = f'<style fg="{accent}">┌─</style> <style fg="{accent}">{message}</style>'
         mid = f'<style fg="{accent}">│</style> '
         bottom = f'<style fg="{accent}">└─ ❯ </style>'
         prompt_text = HTML("\n".join([top, mid, bottom]))
+
         # Lazily construct PromptSession to avoid console detection at import time
         if self._session is None:
             try:
@@ -51,9 +59,15 @@ class InputBox:
             except Exception:
                 self._session = None
 
-        # Prefer prompt_toolkit whenever available (even inside an event loop).
-        # If it fails for any reason other than an intentional EOF exit, fall back to input().
-        if self._session is not None:
+        # Detect if we're already inside an asyncio event loop.
+        try:
+            asyncio.get_running_loop()
+            in_event_loop = True
+        except RuntimeError:
+            in_event_loop = False
+
+        # Use prompt_toolkit only in synchronous contexts.
+        if self._session is not None and not in_event_loop:
             try:
                 # Attach a context-aware completer for slash-commands and models,
                 # unless a custom completer is provided by the caller.
@@ -81,9 +95,10 @@ class InputBox:
 
         # Boxed fallback using standard input in async or headless environments
         try:
-            self.console.print(f"[bold {accent}][/] [bold {accent}]{message}[/]")
-            self.console.print(f"[bold {accent}][/] ")
-            text = input("  ")
+            # Clean, visible box with arrow prompt.
+            self.console.print(f"[bold {accent}]┌─[/] [bold {accent}]{message}[/]")
+            self.console.print(f"[bold {accent}]│[/] ")
+            text = input("└─ ❯ ")
             if text == "\x1b":
                 raise EOFError
             return text
