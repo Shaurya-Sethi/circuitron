@@ -13,6 +13,7 @@ from .components.message_panel import MessagePanel
 from .components.spinner import Spinner
 from .components.status_bar import StatusBar
 from .components import tables, panel
+from rich.markup import escape
 from .. import utils
 from ..config import settings
 from ..models import (
@@ -112,19 +113,22 @@ class TerminalUI:
 
             status = "Success" if success else "Completed with issues"
             status_style = "green" if success else "yellow"
-            header_lines.append(f"[bold {status_style}]{status}[/bold {status_style}]")
+            header_lines.append(f"[bold {status_style}]{status}[/]")
             if stdout:
-                header_lines.append(f"[dim]stdout:[/dim] {stdout[:400]}" + ("…" if len(stdout) > 400 else ""))
+                safe_stdout = escape(stdout[:400])
+                header_lines.append(f"[dim]stdout:[/] {safe_stdout}" + ("…" if len(stdout) > 400 else ""))
             if stderr:
                 # Show only the first line or two to keep it tidy
                 first_lines = " ".join(stderr.splitlines()[:2])
-                header_lines.append(f"[dim]notes:[/dim] {first_lines}")
+                safe_first = escape(first_lines)
+                header_lines.append(f"[dim]notes:[/] {safe_first}")
         else:
             file_list = list(files)
 
         # Show summary header if we have any
         if header_lines:
-            panel.show_panel(self.console, "Output Summary", "\n".join(header_lines))
+            # Use markup mode so tags like [bold green] render as styles
+            panel.show_panel(self.console, "Output Summary", "\n".join(header_lines), render="markup")
 
         # Render files table
         tables.show_generated_files(self.console, file_list)
