@@ -27,7 +27,10 @@ def _terminate_session(signum: int, _frame: FrameType | None) -> None:
         _frame: The current stack frame (unused).
     """
 
-    kicad_session.stop()
+    try:
+        kicad_session.stop()
+    except Exception:
+        pass
     sys.exit(0)
 
 
