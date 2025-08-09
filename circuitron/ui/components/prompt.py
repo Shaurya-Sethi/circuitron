@@ -48,6 +48,6 @@ class Prompt:
             return self._session.prompt(prompt_text)
         except Exception:
             text = input(f"{message}: ")
-            if text == "\x1b":
+            if text == ESCAPE_CHAR:
                 raise EOFError
             return text
