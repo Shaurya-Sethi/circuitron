@@ -605,7 +605,11 @@ async def pipeline(
             print("\n=== Reasoning Summary ===\n")
             print(summary)
 
-    feedback = collect_user_feedback(plan, console=ui.console if ui else None)
+    # Use the UI's feedback collector (boxed input) when a UI is provided.
+    # Falls back to the plain function when running without UI.
+    feedback = ui.collect_feedback(plan) if ui else collect_user_feedback(
+        plan, console=None
+    )
     if not any(
         [
             feedback.open_question_answers,

@@ -1,5 +1,13 @@
 # Circuitron Changelog (collab_progress index)
 
+## UI/UX: Feedback input uses boxed UI
+- Date: 2025-08-09
+- Time (UTC): 20:05Z
+- Branch/PR: main
+- Files Changed (high level): pipeline, tests
+- Details: See collab_progress/ui-ux-issue4-feedback-input-box-09-08-2025.md
+- Verification: Added unit test to assert UI.collect_feedback is used when a UI is provided.
+
 ## UI UX: Remove themes; centralize models
 - Date: 2025-08-09
 - Time (UTC): 19:15Z
