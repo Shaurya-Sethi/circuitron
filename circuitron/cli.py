@@ -62,7 +62,7 @@ def main() -> None:
     from circuitron.pipeline import parse_args
 
     args = parse_args()
-    setup_environment(dev=args.dev) 
+    setup_environment(dev=args.dev, use_dotenv=True) 
     ui = TerminalUI()
     if args.no_footprint_search:
         settings.footprint_search_enabled = False

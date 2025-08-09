@@ -8,7 +8,6 @@ from rich.console import Console
 
 from circuitron.ui.components.completion import SlashCommandCompleter
 from circuitron.ui.components.input_box import InputBox
-from circuitron.ui.themes import Theme
 
 
 def collect(completer: Completer, text: str) -> list[str]:
@@ -17,15 +16,16 @@ def collect(completer: Completer, text: str) -> list[str]:
 
 
 def test_slash_completer_suggests_commands():
-    comp = SlashCommandCompleter(["/help", "/theme", "/model"], ["o4-mini", "gpt-5-mini"]) \
+    # '/theme' command has been removed; ensure remaining commands are suggested
+    comp = SlashCommandCompleter(["/help", "/model"], ["o4-mini", "gpt-5-mini"]) \
         # type: ignore[call-arg]
-    assert set(collect(comp, "/")) >= {"/help", "/theme", "/model"}
+    assert set(collect(comp, "/")) >= {"/help", "/model"}
     # Partial command prefix narrows suggestions
     assert set(collect(comp, "/mo")) == {"/model"}
 
 
 def test_slash_completer_model_context():
-    comp = SlashCommandCompleter(["/help", "/theme", "/model"], ["o4-mini", "gpt-5-mini"]) \
+    comp = SlashCommandCompleter(["/help", "/model"], ["o4-mini", "gpt-5-mini"]) \
         # type: ignore[call-arg]
     assert set(collect(comp, "/model ")) == {"o4-mini", "gpt-5-mini"}
     assert set(collect(comp, "/model g")) == {"gpt-5-mini"}
@@ -37,7 +37,7 @@ def test_input_box_passes_completer(monkeypatch):
     monkeypatch.setattr(
         "circuitron.ui.components.input_box.PromptSession", lambda *a, **k: session
     )
-    ib = InputBox(Console(), Theme(name="t", gradient_colors=[], accent="green"))
+    ib = InputBox(Console())
     session.prompt.return_value = "ok"
     _ = ib.ask("Design?")
 

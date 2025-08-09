@@ -41,7 +41,8 @@ def test_ui_model_command_updates_settings_and_agents(monkeypatch: pytest.Monkey
 
     # First user enters /model, then selects gpt-5-mini, then provides the real prompt
     inputs = iter(["/model", "gpt-5-mini", "design a board"])
-    monkeypatch.setattr(ui.input_box, "ask", lambda _msg: next(inputs))
+    # Accept kwargs so production code can pass completer=...
+    monkeypatch.setattr(ui.input_box, "ask", lambda _msg, **_kw: next(inputs))
 
     result = ui.prompt_user("Enter prompt:")
     assert result == "design a board"

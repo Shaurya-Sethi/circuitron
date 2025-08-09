@@ -275,7 +275,7 @@ async def run_code_validation(
             except (json.JSONDecodeError, TypeError) as e:
                 erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
             if ui:
-                panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2), ui.theme)
+                panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2))
             else:
                 print("\n=== ERC RESULT ===")
                 print(erc_result)
@@ -407,7 +407,7 @@ async def run_runtime_check_and_correction(
 ) -> tuple[CodeGenerationOutput, bool]:
     """Check for runtime errors and correct them if needed."""
 
-    if ui:
+    if ui and hasattr(ui, "start_stage"):
         ui.start_stage("Runtime Check")
     runtime_check_script = prepare_runtime_check_script(code_output.complete_skidl_code)
     script_path = write_temp_skidl_script(runtime_check_script)
@@ -425,13 +425,13 @@ async def run_runtime_check_and_correction(
             }
 
         if runtime_result.get("success", False):
-            if ui:
+            if ui and hasattr(ui, "finish_stage"):
                 ui.finish_stage("Runtime Check")
             return code_output, True
 
         if "No such file or directory" in runtime_result.get("error_details", ""):
             # Docker not available - skip runtime checks in test environments
-            if ui:
+            if ui and hasattr(ui, "finish_stage"):
                 ui.finish_stage("Runtime Check")
             return code_output, True
 
@@ -449,12 +449,12 @@ async def run_runtime_check_and_correction(
                 agent, sanitize_text(input_msg)
             )
         except Exception as exc:  # pragma: no cover - unexpected errors
-            if ui:
+            if ui and hasattr(ui, "display_error"):
                 ui.display_error(f"Runtime correction agent failed: {exc}")
             else:
                 print(f"Runtime correction agent failed: {exc}")
             context.add_runtime_attempt(runtime_result, [])
-            if ui:
+            if ui and hasattr(ui, "finish_stage"):
                 ui.finish_stage("Runtime Check")
             return code_output, True
 
@@ -467,7 +467,7 @@ async def run_runtime_check_and_correction(
 
         code_output.complete_skidl_code = correction.corrected_code
         context.add_runtime_attempt(runtime_result, correction.corrections_applied)
-        if ui:
+        if ui and hasattr(ui, "finish_stage"):
             ui.finish_stage("Runtime Check")
         return code_output, correction.execution_status == "success"
 
@@ -591,7 +591,7 @@ async def pipeline(
             debug_msg.append(f"Calculation #{i} code:\n{code}")
         message = "\n".join(debug_msg)
         if ui:
-            panel.show_panel(ui.console, "Debug", message, ui.theme)
+            panel.show_panel(ui.console, "Debug", message)
         else:
             print("\n=== Debug: Calculation Codes ===")
             for i, code in enumerate(plan.calculation_codes, 1):
@@ -600,7 +600,7 @@ async def pipeline(
     if show_reasoning:
         summary = extract_reasoning_summary(plan_result)
         if ui:
-            panel.show_panel(ui.console, "Reasoning Summary", summary, ui.theme)
+            panel.show_panel(ui.console, "Reasoning Summary", summary)
         else:
             print("\n=== Reasoning Summary ===\n")
             print(summary)
@@ -639,7 +639,7 @@ async def pipeline(
             agent=documentation_agent,
         )
         if ui:
-            panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
+            panel.show_panel(ui.console, "Documentation", format_docs_summary(docs))
         else:
             pretty_print_documentation(docs)
         code_out = await run_code_generation(
@@ -762,7 +762,7 @@ async def pipeline(
                     details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
                     message = f"{decision}\n{details}" if details else decision
                     if ui:
-                        panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
+                        panel.show_panel(ui.console, "ERC Handler Decision", message)
                     else:
                         print("\n=== ERC HANDLER DECISION ===")
                         print(message)
@@ -798,7 +798,7 @@ async def pipeline(
         agent=plan_edit_agent,
     )
     if ui:
-        panel.show_panel(ui.console, "Plan Updated", format_plan_summary(edit_result.updated_plan), ui.theme)
+        panel.show_panel(ui.console, "Plan Updated", format_plan_summary(edit_result.updated_plan))
     else:
         pretty_print_edited_plan(edit_result)
     assert edit_result.updated_plan is not None
@@ -816,7 +816,7 @@ async def pipeline(
         pretty_print_selected_parts(selection)
     docs = await run_documentation(final_plan, selection, ui=ui, agent=documentation_agent)
     if ui:
-        panel.show_panel(ui.console, "Documentation", format_docs_summary(docs), ui.theme)
+        panel.show_panel(ui.console, "Documentation", format_docs_summary(docs))
     else:
         pretty_print_documentation(docs)
     code_out = await run_code_generation(final_plan, selection, docs, ui=ui, agent=codegen_agent)
@@ -937,7 +937,7 @@ async def pipeline(
                 details = "\n".join(f"  - {w}" for w in erc_out.remaining_warnings) if erc_out.remaining_warnings else ""
                 message = f"{decision}\n{details}" if details else decision
                 if ui:
-                    panel.show_panel(ui.console, "ERC Handler Decision", message, ui.theme)
+                    panel.show_panel(ui.console, "ERC Handler Decision", message)
                 else:
                     print("\n=== ERC HANDLER DECISION ===")
                     print(message)

@@ -4,7 +4,6 @@ from rich.console import Console
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 
 from circuitron.ui.components.input_box import InputBox
-from circuitron.ui.themes import Theme
 
 
 def test_input_box_ask_uses_html(monkeypatch):
@@ -12,7 +11,7 @@ def test_input_box_ask_uses_html(monkeypatch):
     monkeypatch.setattr(
         "circuitron.ui.components.input_box.PromptSession", lambda *a, **k: session
     )
-    ib = InputBox(Console(), Theme(name="t", gradient_colors=[], accent="green"))
+    ib = InputBox(Console())
     session.prompt.return_value = "done"
     result = ib.ask("hello")
     assert result == "done"
@@ -26,7 +25,7 @@ def test_input_box_ask_renders_box(monkeypatch):
     monkeypatch.setattr(
         "circuitron.ui.components.input_box.PromptSession", lambda *a, **k: session
     )
-    ib = InputBox(Console(), Theme(name="t", gradient_colors=[], accent="green"))
+    ib = InputBox(Console())
     session.prompt.return_value = "ok"
     _ = ib.ask("Design?")
     # Ensure the composed HTML prompt includes our box borders and message

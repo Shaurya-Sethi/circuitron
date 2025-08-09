@@ -30,7 +30,7 @@ class _DummyUI:
         self.console = Console(force_terminal=False)
         self.collect_called = 0
 
-    # UI surface used in pipeline()
+    # UI surface used in pipeline() - provide minimal no-op implementations
     def display_info(self, _msg: str) -> None:  # pragma: no cover - trivial
         pass
 
@@ -41,6 +41,18 @@ class _DummyUI:
         pass
 
     def display_selected_parts(self, *_a, **_k) -> None:  # pragma: no cover - trivial
+        pass
+
+    def display_validation_summary(self, *_a, **_k) -> None:  # pragma: no cover - trivial
+        pass
+
+    def display_files(self, *_a, **_k) -> None:  # pragma: no cover - trivial
+        pass
+
+    def start_stage(self, *_a, **_k) -> None:  # pragma: no cover - trivial
+        pass
+
+    def finish_stage(self, *_a, **_k) -> None:  # pragma: no cover - trivial
         pass
 
     def collect_feedback(self, plan: PlanOutput) -> UserFeedback:
