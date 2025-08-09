@@ -672,7 +672,7 @@ ERC()
 
 # === OUTPUT GENERATION ===
 generate_netlist()
-generate_svg("schematic.svg")
+generate_svg("schematic_name")
 ```
 
 **2. Component Instantiation Rules:**
