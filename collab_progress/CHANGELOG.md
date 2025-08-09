@@ -1,5 +1,14 @@
 # Circuitron Changelog (collab_progress index)
 
+## Suppress noisy copy errors in CLI
+- Date: 2025-08-09
+- Time (UTC): 17:20Z
+- Branch/PR: main
+- Files Changed (high level): docker_session
+- Details: See collab_progress/ui-ux-issue1-log-demotion-09-08-2025.md
+- Verification: Local run of subset not possible in sandbox; change is isolated to logging level and should not affect behavior. Full suite should pass; please run `pytest -q` in the project venv.
+
+
 ## Test suite stabilized; CLI/UI fixes after model switch
 - Date: 2025-08-09
 - Time (UTC): 12:23Z
