@@ -17,8 +17,23 @@ class InputBox:
         self._session: PromptSession | None = None
 
     def ask(self, message: str) -> str:
-        """Return user input for ``message`` using prompt_toolkit."""
-        prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}</style> ')
+        """Return user input for ``message`` using prompt_toolkit.
+
+        Renders a simple, three-line boxed prompt so the user types
+        visually "inside" an input box. Falls back to a basic input()
+        when a prompt session cannot be initialized (e.g., headless tests).
+
+        Example (simplified):
+        ┌─ What would you like me to design?
+        │
+        └─ ❯ [cursor here]
+        """
+        accent = self.theme.accent
+        # Compose a minimal multi-line box using Unicode borders.
+        top = f'<style fg="{accent}">┌─</style> <style fg="{accent}">{message}</style>'
+        mid = f'<style fg="{accent}">│</style> '
+        bottom = f'<style fg="{accent}">└─ ❯ </style>'
+        prompt_text = HTML("\n".join([top, mid, bottom]))
         # Lazily construct PromptSession to avoid console detection at import time
         if self._session is None:
             try:
