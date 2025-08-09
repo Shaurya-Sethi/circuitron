@@ -11,6 +11,7 @@ from prompt_toolkit.formatted_text import HTML  # type: ignore
 from rich.console import Console
 
 ACCENT = "cyan"
+ESCAPE_CHAR = "\x1b"
 
 
 class Prompt:
@@ -46,6 +47,9 @@ class Prompt:
             if self._session is None:
                 raise RuntimeError("No interactive session available")
             return self._session.prompt(prompt_text)
+        except EOFError:
+            # Bubble up for graceful exit handling by caller
+            raise
         except Exception:
             text = input(f"{message}: ")
             if text == ESCAPE_CHAR:

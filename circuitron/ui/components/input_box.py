@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from rich.console import Console
-import asyncio
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
@@ -52,17 +51,9 @@ class InputBox:
             except Exception:
                 self._session = None
 
-        # When running inside an active asyncio event loop (e.g., during
-        # the async pipeline), avoid prompt_toolkit's synchronous prompt to
-        # prevent 'run_async was never awaited' warnings. Render a simple
-        # boxed prompt with Rich and read input() synchronously.
-        in_async_loop = True
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            in_async_loop = False
-
-        if self._session is not None and not in_async_loop:
+        # Prefer prompt_toolkit whenever available (even inside an event loop).
+        # If it fails for any reason other than an intentional EOF exit, fall back to input().
+        if self._session is not None:
             try:
                 # Attach a context-aware completer for slash-commands and models,
                 # unless a custom completer is provided by the caller.
@@ -81,6 +72,9 @@ class InputBox:
                     complete_style=CompleteStyle.COLUMN,
                     key_bindings=bindings,
                 )
+            except EOFError:
+                # Bubble up so the caller can exit gracefully.
+                raise
             except Exception:
                 # Fall through to boxed input() fallback below
                 pass

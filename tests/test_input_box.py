@@ -46,3 +46,18 @@ def test_input_box_escape(monkeypatch):
             ib.ask("msg")
     asyncio.run(run())
 
+
+def test_input_box_prompttoolkit_esc_bubbles(monkeypatch):
+    # Simulate prompt_toolkit PromptSession being available and raising EOFError on Esc
+    class FakeSession:
+        def prompt(self, *a, **k):
+            raise EOFError
+
+    monkeypatch.setattr(
+        "circuitron.ui.components.input_box.PromptSession",
+        lambda *a, **k: FakeSession(),
+    )
+    ib = InputBox(Console())
+    with pytest.raises(EOFError):
+        ib.ask("msg")
+

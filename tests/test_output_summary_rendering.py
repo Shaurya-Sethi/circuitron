@@ -1,4 +1,3 @@
-import re
 from rich.console import Console
 from circuitron.ui.components import panel
 from circuitron.ui.app import TerminalUI
