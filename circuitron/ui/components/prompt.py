@@ -32,7 +32,7 @@ class Prompt:
 
         Pressing ``Esc`` exits the application.
         """
-        message = f"{message} (press Esc to exit)"
+        message = f"{message} (press Esc twice to exit)"
         prompt_text = HTML(f'<style fg="{ACCENT}">{message}:</style> ')
         # Lazily create the PromptSession to avoid failures on headless Windows tests
         if self._session is None:

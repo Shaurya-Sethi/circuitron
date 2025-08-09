@@ -33,11 +33,11 @@ class InputBox:
         Pressing ``Esc`` exits the application with a goodbye message.
 
         Example (simplified):
-        ┌─ What would you like me to design? (press Esc to exit)
+         What would you like me to design? (press Esc twice to exit)
         │
         └─ ❯ [cursor here]
         """
-        message = f"{message} (press Esc to exit)"
+        message = f"{message} (press Esc twice to exit)"
         accent = ACCENT
         # Compose a minimal multi-line box using Unicode borders.
         top = f'<style fg="{accent}">┌─</style> <style fg="{accent}">{message}</style>'
@@ -81,9 +81,9 @@ class InputBox:
 
         # Boxed fallback using standard input in async or headless environments
         try:
-            self.console.print(f"[bold {accent}]┌─[/] [bold {accent}]{message}[/]")
-            self.console.print(f"[bold {accent}]│[/] ")
-            text = input("└─ ❯ ")
+            self.console.print(f"[bold {accent}][/] [bold {accent}]{message}[/]")
+            self.console.print(f"[bold {accent}][/] ")
+            text = input("  ")
             if text == "\x1b":
                 raise EOFError
             return text
