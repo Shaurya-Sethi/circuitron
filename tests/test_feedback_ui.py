@@ -80,7 +80,8 @@ def test_pipeline_uses_ui_collect_feedback() -> None:
              patch.object(pl, "run_documentation", AsyncMock(return_value=doc_out)), \
              patch.object(pl, "run_code_generation", AsyncMock(return_value=code_out)), \
              patch.object(pl, "run_code_validation", AsyncMock(side_effect=[val_pass_no_erc, val_pass_no_erc, val_pass_no_erc])), \
-             patch.object(pl, "collect_user_feedback", side_effect=AssertionError("collect_user_feedback should not be called when UI is provided")):
+             patch.object(pl, "collect_user_feedback", side_effect=AssertionError("collect_user_feedback should not be called when UI is provided")), \
+             patch.object(pl, "execute_final_script", AsyncMock(return_value="{\"success\": true, \"files\": []}")):
             return await pl.pipeline("test", ui=ui)
 
     result = asyncio.run(_run())

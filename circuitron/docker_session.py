@@ -28,8 +28,19 @@ def ensure_windows_tmp_directory() -> None:
                 logger.debug("Could not create Windows tmp directory %s: %s", tmp_dir, e)
 
 
-def cleanup_stale_containers(prefix: str) -> None:
-    """Remove stopped containers whose names start with ``prefix``."""
+def cleanup_stale_containers(prefix: str, exclude: str | None = None) -> None:
+    """Force-remove containers whose names start with ``prefix``.
+
+    Args:
+        prefix: Container name prefix used to match stale containers.
+        exclude: Optional container name to skip during cleanup.
+
+    Returns:
+        None
+
+    Example:
+        >>> cleanup_stale_containers("circuitron-", "circuitron-123")
+    """
     ps_cmd = [
         "docker",
         "ps",
@@ -37,20 +48,24 @@ def cleanup_stale_containers(prefix: str) -> None:
         "--filter",
         f"name={prefix}",
         "--format",
-        "{{.Names}} {{.Status}}",
+        "{{.ID}} {{.Names}}",
     ]
     try:
         proc = subprocess.run(ps_cmd, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError:  # pragma: no cover - docker failure
         logging.error("Failed to list containers with prefix %s", prefix)
         return
+    ids: list[str] = []
     for line in proc.stdout.splitlines():
         parts = line.split(maxsplit=1)
         if len(parts) != 2:
             continue
-        name, status = parts
-        if not status.lower().startswith("up"):
-            subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        cid, name = parts
+        if exclude and name == exclude:
+            continue
+        ids.append(cid)
+    if ids:
+        subprocess.run(["docker", "rm", "-f", *ids], capture_output=True)
 
 
 @dataclass
@@ -100,7 +115,7 @@ class DockerSession:
     def start(self) -> None:
         """Ensure the container is running."""
         with self._lock:
-            cleanup_stale_containers(self.base_prefix)
+            cleanup_stale_containers(self.base_prefix, self.container_name)
             ps_cmd = [
                 "docker",
                 "ps",
