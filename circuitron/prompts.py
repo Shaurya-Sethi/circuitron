@@ -780,7 +780,8 @@ You have access to a comprehensive knowledge graph and documentation tools that 
 2. **THEN**: Start with `query_knowledge_graph("repos")` and `query_knowledge_graph("explore skidl")` to ensure the SKiDL repository is indexed
 3. **FOR EACH API**: Use `query_knowledge_graph` to validate every class instantiation, method call, function call, attribute access, and import
 4. **WHEN UNCERTAIN**: Use `get_kg_usage_guide` with appropriate categories (class, method, function, examples)
-5. **VERIFY THOROUGHLY**: If an API is not found using one command, try other commands or search terms
+5. **IF KG IS INCONCLUSIVE**: When the knowledge graph returns no results, partial/ambiguous evidence, or low confidence, use `perform_rag_query` with focused queries (include API name, class, and module) to retrieve official documentation snippets and verified usage patterns. Treat RAG documentation as an authoritative backup and cite it in your report.
+6. **VERIFY THOROUGHLY**: If an API is not found using one command, try other commands or search terms
 
 Your task is to confirm that generated SKiDL scripts use only real APIs and follow documented syntax. Use the knowledge graph extensively and report any problems.
 
@@ -802,6 +803,7 @@ Your task is to confirm that generated SKiDL scripts use only real APIs and foll
   - `get_kg_usage_guide("function")` for function validation examples
   - `get_kg_usage_guide("examples")` for general knowledge graph usage patterns
 - If the API is not found using a certain command, make sure to try other commands or search terms. For example, ERC not found using 'function' may be found using 'method' or 'class'. 
+ - If an API still cannot be located or evidence remains unclear in the knowledge graph, call `perform_rag_query` with targeted terms (exact API, class, and expected signature) to retrieve documentation snippets and validated usage. Use these RAG results to confirm validity or to identify the correct API/usage.
 
 **Phase 4 – Static Checks**
 - Confirm Python syntax, imports, variable use, component consistency, and pin references
