@@ -4,10 +4,10 @@ from typing import Iterable
 from rich.console import Console
 
 
-from .themes import Theme, theme_manager
 from .components.banner import Banner
 from .components.prompt import Prompt
 from .components.input_box import InputBox
+from .components.completion import ModelMenuCompleter
 from .components.code_panel import show_code
 from .components.message_panel import MessagePanel
 from .components.spinner import Spinner
@@ -23,32 +23,24 @@ from ..models import (
     PartSearchResult,
 )
 
+ACCENT = "cyan"
+
 
 class TerminalUI:
     """Interactive terminal UI using Rich and prompt_toolkit."""
 
-    def __init__(self, console: Console | None = None, theme: Theme | None = None) -> None:
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
-        self.theme = theme or theme_manager.get_theme()
         self.banner = Banner(self.console)
-        self.spinner = Spinner(self.console, self.theme)
-        self.status_bar = StatusBar(self.console, self.theme)
-        self.prompt = Prompt(self.console, self.theme)
-        self.input_box = InputBox(self.console, self.theme)
+        self.spinner = Spinner(self.console)
+        self.status_bar = StatusBar(self.console)
+        self.prompt = Prompt(self.console)
+        self.input_box = InputBox(self.console)
 
     def start_banner(self) -> None:
         """Render the Circuitron banner with gradient colors."""
-        self.banner.show(self.theme)
-        self.console.print("[bold]Type /help for commands[/bold]\n", style=self.theme.accent)
-
-    def set_theme(self, name: str) -> None:
-        """Switch to a new theme."""
-        theme_manager.set_theme(name)
-        self.theme = theme_manager.get_theme()
-        self.spinner.theme = self.theme
-        self.status_bar.theme = self.theme
-        self.prompt.theme = self.theme
-        self.input_box.theme = self.theme
+        self.banner.show()
+        self.console.print("[bold]Type /help for commands[/bold]\n", style=ACCENT)
 
     def start_stage(self, name: str) -> None:
         self.status_bar.update(stage=name, message="")
@@ -64,37 +56,30 @@ class TerminalUI:
             text = self.input_box.ask(message)
             if text.strip() == "/help":
                 self.console.print(
-                    "Available commands: /theme <name>, /model, /help",
-                    style=self.theme.accent,
+                    "Available commands: /model, /help",
+                    style=ACCENT,
                 )
-                continue
-            if text.startswith("/theme"):
-                parts = text.split()
-                if len(parts) == 2 and parts[1] in theme_manager.available_themes():
-                    self.set_theme(parts[1])
-                    self.console.print(f"Theme switched to {parts[1]}", style=self.theme.accent)
-                else:
-                    self.console.print(
-                        f"Available themes: {', '.join(theme_manager.available_themes())}",
-                        style=self.theme.accent,
-                    )
                 continue
             if text.strip() == "/model":
                 # Ask the user to choose a model and update all agent model fields
+                model_options = list(getattr(settings, "available_models", ["o4-mini", "gpt-5-mini"]))
+                completer = ModelMenuCompleter(model_options)
                 choice = self.input_box.ask(
-                    "Select model [o4-mini/gpt-5-mini]: "
+                    "Select model (type '/' to view options): ",
+                    completer=completer,
                 ).strip()
-                valid = {"o4-mini", "gpt-5-mini"}
-                if choice not in valid:
+                # Allow user to type '/gpt-...' and press enter without selecting
+                choice = choice.lstrip('/')
+                if choice not in set(model_options):
                     self.console.print(
-                        "Invalid model. Choose 'o4-mini' or 'gpt-5-mini'.",
-                        style=self.theme.accent,
+                        f"Invalid model. Choose one of: {', '.join(model_options)}.",
+                        style=ACCENT,
                     )
                     continue
                 settings.set_all_models(choice)
                 self.console.print(
                     f"Active model set to {choice} for all agents.",
-                    style=self.theme.accent,
+                    style=ACCENT,
                 )
                 continue
             return text
@@ -102,7 +87,7 @@ class TerminalUI:
     def display_plan(self, plan: PlanOutput) -> None:
         """Pretty print the generated plan."""
         text = utils.format_plan_summary(plan)
-        panel.show_panel(self.console, "Design Plan", text, self.theme)
+        panel.show_panel(self.console, "Design Plan", text)
 
     def collect_feedback(self, plan: PlanOutput) -> UserFeedback:
         return utils.collect_user_feedback(
@@ -113,40 +98,39 @@ class TerminalUI:
 
     def display_files(self, files: Iterable[str]) -> None:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        panel.show_panel(self.console, "Generated Files", links, self.theme)
+        panel.show_panel(self.console, "Generated Files", links)
 
     def display_found_parts(self, found: Iterable[PartSearchResult]) -> None:
         data = {res.query: res.components for res in found}
-        tables.show_found_parts(self.console, data, self.theme)
+        tables.show_found_parts(self.console, data)
 
     def display_selected_parts(self, parts: Iterable[SelectedPart]) -> None:
-        tables.show_selected_parts(self.console, parts, self.theme)
+        tables.show_selected_parts(self.console, parts)
 
     def display_info(self, message: str) -> None:
-        MessagePanel.info(self.console, message, self.theme)
+        MessagePanel.info(self.console, message)
 
     def display_warning(self, message: str) -> None:
-        MessagePanel.warning(self.console, message, self.theme)
+        MessagePanel.warning(self.console, message)
 
     def display_error(self, message: str) -> None:
-        MessagePanel.error(self.console, message, self.theme)
+        MessagePanel.error(self.console, message)
 
     def display_code(self, code: str, language: str = "python") -> None:
         show_code(
             self.console,
             code,
-            self.theme,
             language,
             title="Generated SKiDL Code",
         )
 
     def display_validation_summary(self, summary: str) -> None:
         """Show code validation results in a panel."""
-        panel.show_panel(self.console, "Validation", summary, self.theme)
+        panel.show_panel(self.console, "Validation", summary)
 
     def display_generated_files_summary(self, files: Iterable[str]) -> None:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        MessagePanel.info(self.console, links, self.theme)
+        MessagePanel.info(self.console, links)
 
     async def run(
         self,

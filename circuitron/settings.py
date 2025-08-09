@@ -26,6 +26,18 @@ class Settings:
     code_correction_model: str = field(default="o4-mini") 
     erc_handling_model: str = field(default="o4-mini")
     runtime_correction_model: str = field(default="o4-mini")
+    # Centralized list of selectable models for UI and runtime switching
+    available_models: list[str] = field(
+        default_factory=lambda: [
+            "o4-mini",
+            "gpt-5-mini",
+            "gpt-4.1",
+            "gpt-5",
+            "o3",
+            "gpt-5-nano",
+            "o3-pro",
+        ]
+    )
     calculation_image: str = field(
         default_factory=lambda: os.getenv("CALC_IMAGE", "python:3.12-slim")
     )

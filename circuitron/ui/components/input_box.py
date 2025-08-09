@@ -4,19 +4,25 @@ from rich.console import Console
 from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
+from prompt_toolkit.shortcuts import CompleteStyle  # type: ignore
 
-from ..themes import Theme
+from .completion import SlashCommandCompleter
+from ...config import settings
+
+
+ACCENT = "cyan"
 
 
 class InputBox:
     """Prompt the user for input inside a styled panel."""
 
-    def __init__(self, console: Console, theme: Theme) -> None:
+    def __init__(self, console: Console) -> None:
         self.console = console
-        self.theme = theme
         self._session: PromptSession | None = None
+        # Supported models for completion are sourced from settings.
+        self._available_models: list[str] = list(getattr(settings, "available_models", ["o4-mini", "gpt-5-mini"]))
 
-    def ask(self, message: str) -> str:
+    def ask(self, message: str, completer=None) -> str:
         """Return user input for ``message`` using prompt_toolkit.
 
         Renders a simple, three-line boxed prompt so the user types
@@ -28,7 +34,7 @@ class InputBox:
         │
         └─ ❯ [cursor here]
         """
-        accent = self.theme.accent
+        accent = ACCENT
         # Compose a minimal multi-line box using Unicode borders.
         top = f'<style fg="{accent}">┌─</style> <style fg="{accent}">{message}</style>'
         mid = f'<style fg="{accent}">│</style> '
@@ -43,6 +49,19 @@ class InputBox:
         try:
             if self._session is None:
                 raise RuntimeError("No interactive session available")
-            return self._session.prompt(prompt_text)
+            # Attach a context-aware completer for slash-commands and models,
+            # unless a custom completer is provided by the caller.
+            if completer is None:
+                completer = SlashCommandCompleter(
+                    commands=["/help", "/model"],
+                    models=self._available_models,
+                )
+            return self._session.prompt(
+                prompt_text,
+                completer=completer,
+                complete_while_typing=True,
+                reserve_space_for_menu=6,
+                complete_style=CompleteStyle.COLUMN,
+            )
         except Exception:
             return input(f"{message}: ")

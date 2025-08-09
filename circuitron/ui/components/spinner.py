@@ -7,21 +7,20 @@ from time import perf_counter
 from rich.console import Console
 from rich.status import Status
 
-from ..themes import Theme
+ACCENT = "cyan"
 
 
 class Spinner:
     """Display a spinner while a stage runs."""
 
-    def __init__(self, console: Console, theme: Theme) -> None:
+    def __init__(self, console: Console) -> None:
         self.console = console
-        self.theme = theme
         self.status: Status | None = None
         self.start_time = 0.0
 
     def start(self, stage: str) -> None:
         self.start_time = perf_counter()
-        self.status = self.console.status(f"[{self.theme.accent}]{stage}...", spinner="dots")
+        self.status = self.console.status(f"[{ACCENT}]{stage}...", spinner="dots")
         self.status.start()
 
     def stop(self, stage: str) -> None:

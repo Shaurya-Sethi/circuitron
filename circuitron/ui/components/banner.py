@@ -6,7 +6,6 @@ from rich.console import Console
 from rich.text import Text
 
 from ... import logo
-from ..themes import Theme
 
 
 class Banner:
@@ -15,8 +14,9 @@ class Banner:
     def __init__(self, console: Console) -> None:
         self.console = console
 
-    def show(self, theme: Theme) -> None:
-        """Display the banner using ``theme`` gradient colors."""
+    def show(self) -> None:
+        """Display the banner using the default gradient colors."""
         text = Text.from_ansi(logo.LOGO_ART)
-        gradient = logo.apply_gradient(text, theme.gradient_colors)
+        # Use a fixed, default gradient (previously the 'electric' theme)
+        gradient = logo.apply_gradient(text, logo.THEMES.get("electric", ["#66CCFF", "#4682B4"]))
         self.console.print(gradient, justify="center")

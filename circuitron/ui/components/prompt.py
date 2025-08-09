@@ -10,15 +10,14 @@ from prompt_toolkit.key_binding import KeyBindings  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 from rich.console import Console
 
-from ..themes import Theme
+ACCENT = "cyan"
 
 
 class Prompt:
     """Collect user input with history and theming."""
 
-    def __init__(self, console: Console, theme: Theme) -> None:
+    def __init__(self, console: Console) -> None:
         self.console = console
-        self.theme = theme
         self._session: PromptSession | None = None
         self._history_file = Path.home() / ".circuitron_history"
         self._bindings = KeyBindings()
@@ -28,7 +27,7 @@ class Prompt:
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``."""
-        prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
+        prompt_text = HTML(f'<style fg="{ACCENT}">{message}:</style> ')
         # Lazily create the PromptSession to avoid failures on headless Windows tests
         if self._session is None:
             try:

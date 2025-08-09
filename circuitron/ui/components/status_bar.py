@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.text import Text
 
-from ..themes import Theme
+ACCENT = "cyan"
 
 
 @dataclass
@@ -20,9 +20,8 @@ class Status:
 class StatusBar:
     """Display current pipeline stage and message."""
 
-    def __init__(self, console: Console, theme: Theme) -> None:
+    def __init__(self, console: Console) -> None:
         self.console = console
-        self.theme = theme
         self.status = Status()
         self.started = False
 
@@ -41,5 +40,5 @@ class StatusBar:
         if message is not None:
             self.status.message = message
         if self.started:
-            text = Text(f"{self.status.stage} - {self.status.message}", style=self.theme.accent)
+            text = Text(f"{self.status.stage} - {self.status.message}", style=ACCENT)
             self.console.print(text)

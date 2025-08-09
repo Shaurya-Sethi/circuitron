@@ -1,5 +1,29 @@
 # Circuitron Changelog (collab_progress index)
 
+## UI UX: Remove themes; centralize models
+- Date: 2025-08-09
+- Time (UTC): 19:15Z
+- Branch/PR: main
+- Files Changed (high level): ui (app, components), settings
+- Details: See collab_progress/ui-ux-remove-themes-and-centralize-models-09-08-2025.md
+- Verification: Ran static checks locally; pytest unavailable in sandbox. UI compiles; no residual theme references. Model menu reads from settings.available_models.
+
+## Model selection via '/' menu
+- Date: 2025-08-09
+- Time (UTC): 19:28Z
+- Branch/PR: main
+- Files Changed (high level): ui/app, ui/components/completion
+- Details: See collab_progress/ui-ux-model-menu-for-slash-09-08-2025.md
+- Verification: Manual static review. Please run `pytest -q` locally.
+
+## Slash-command dropdowns and model menu (UI UX Issue #3)
+- Date: 2025-08-09
+- Time (UTC): 18:35Z
+- Branch/PR: main
+- Files Changed (high level): ui/components (input_box, completion), ui/app, tests
+- Details: See collab_progress/ui-ux-issue3-slash-dropdown-09-08-2025.md
+- Verification: New tests added for completer; ran subset with venv Python: tests/test_slash_completion.py and tests/test_input_box.py passed. Full suite requires local env due to external dependencies.
+
 ## Suppress noisy copy errors in CLI
 - Date: 2025-08-09
 - Time (UTC): 17:20Z
