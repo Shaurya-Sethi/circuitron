@@ -1,6 +1,10 @@
 """Command line interface for Circuitron."""
 
 import asyncio
+import signal
+import sys
+from types import FrameType
+
 from .config import setup_environment, settings
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
@@ -8,6 +12,27 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
+
+
+def _terminate_session(signum: int, _frame: FrameType | None) -> None:
+    """Stop the KiCad session then exit the process.
+
+    This handler ensures the Docker container is shut down promptly when
+    termination signals are received. ``DockerSession`` also registers an
+    ``atexit`` callback to stop the container, so this acts as an early cleanup
+    mechanism while ``atexit`` remains a fallback.
+
+    Args:
+        signum: The received signal number.
+        _frame: The current stack frame (unused).
+    """
+
+    kicad_session.stop()
+    sys.exit(0)
+
+
+for _sig in (signal.SIGINT, signal.SIGTERM):
+    signal.signal(_sig, _terminate_session)
 
 
 async def run_circuitron(
