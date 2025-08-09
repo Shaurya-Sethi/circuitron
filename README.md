@@ -137,6 +137,20 @@ A `requirements.txt` file matching the `pyproject.toml` dependencies is included
 
    After these steps the MCP server will be ready to answer documentation queries and perform hallucination detection for Circuitron runs.
 
+
+## Model Selection: `/model` Command
+
+Circuitron now supports interactive model switching via the `/model` command in the CLI. This allows you to select which OpenAI model is used by all the agents in the Circuitron ecosystem.
+
+- **Default model:** `o4-mini`
+- **Recommended model:** `gpt-5-mini` (released August 7, 2025)
+  - **Why:** According to OpenAI and my initial light testing, `gpt-5-mini` is both cheaper and better at agentic, multi-step workflows than `o4-mini`.
+  - **How to switch:** Type `/model` in the interactive CLI and follow the prompts to select `gpt-5-mini`.
+
+> **Note:** Model selection is session-based by default. Consider switching to `gpt-5-mini` for improved cost efficiency, especially for complex or iterative design tasks.
+
+---
+
 ## Usage
 
 Once the MCP server is running and the Docker images are available, you can generate designs directly from the command line. The CLI verifies that the KiCad container starts successfully before processing a prompt.
