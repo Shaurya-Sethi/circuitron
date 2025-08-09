@@ -20,3 +20,19 @@ def test_input_box_ask_uses_html(monkeypatch):
     assert isinstance(args, HTML)
     assert "hello" in str(args)
 
+
+def test_input_box_ask_renders_box(monkeypatch):
+    session = MagicMock()
+    monkeypatch.setattr(
+        "circuitron.ui.components.input_box.PromptSession", lambda *a, **k: session
+    )
+    ib = InputBox(Console(), Theme(name="t", gradient_colors=[], accent="green"))
+    session.prompt.return_value = "ok"
+    _ = ib.ask("Design?")
+    # Ensure the composed HTML prompt includes our box borders and message
+    html_arg = session.prompt.call_args[0][0]
+    text = str(html_arg)
+    assert "┌" in text
+    assert "└" in text
+    assert "Design?" in text
+
