@@ -1,5 +1,13 @@
 # Circuitron Changelog (collab_progress index)
 
+## Docs: Cleanup command for KiCad containers
+- Date: 2025-08-09
+- Time (UTC): 22:46Z
+- Branch/PR: main
+- Files Changed (high level): README
+- Details: See collab_progress/docs-cleanup-section-09-08-2025.md
+- Verification: pytest -q
+
 ## Signal handlers stop KiCad session on termination
 - Date: 2025-08-09
 - Time (UTC): 22:40Z

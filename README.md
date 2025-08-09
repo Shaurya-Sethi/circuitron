@@ -433,6 +433,16 @@ Update these variables in your environment or in the `.env` file to customise be
 - **KiCad container fails to start** – pull the image again with `docker pull ghcr.io/shaurya-sethi/circuitron-kicad:latest` and verify Docker is running.
 - **Missing environment variables** – the CLI exits with an error if `OPENAI_API_KEY` or `MCP_URL` are not set. Check your `.env` configuration.
 
+## Cleanup
+
+KiCad containers started by Circuitron may keep running in the background. Remove leftover containers to free resources and avoid conflicts by running:
+
+```bash
+docker rm -f $(docker ps -aq -f name=circuitron-kicad-)
+```
+
+Run this after testing or whenever you need to reset the Circuitron KiCad environment.
+
 ## Support and Contributing
 
 Contributions are welcome. Please open issues or pull requests on the repository if you encounter problems or have suggestions. Refer to `AGENTS.md` for coding guidelines and `overview.md` for additional background on the architecture.
