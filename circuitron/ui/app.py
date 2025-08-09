@@ -1,6 +1,6 @@
 """Terminal UI implementation using Rich and prompt_toolkit."""
 
-from typing import Iterable
+from typing import Iterable, Sequence
 from rich.console import Console
 
 
@@ -96,9 +96,38 @@ class TerminalUI:
             console=self.console,
         )
 
-    def display_files(self, files: Iterable[str]) -> None:
-        links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        panel.show_panel(self.console, "Generated Files", links)
+    def display_files(self, files: Iterable[str] | dict[str, object]) -> None:
+        """Show generated files in a compact table with a status summary.
+
+        Accepts either a list of file paths or the full result dict from
+        ``execute_final_script`` which may include success, stdout/stderr and files.
+        """
+        file_list: Sequence[str]
+        header_lines: list[str] = []
+        if isinstance(files, dict):
+            success = bool(files.get("success", False))
+            stdout = str(files.get("stdout", "")).strip()
+            stderr = str(files.get("stderr", "")).strip()
+            file_list = tuple(str(p) for p in files.get("files", []) if isinstance(p, str))
+
+            status = "Success" if success else "Completed with issues"
+            status_style = "green" if success else "yellow"
+            header_lines.append(f"[bold {status_style}]{status}[/bold {status_style}]")
+            if stdout:
+                header_lines.append(f"[dim]stdout:[/dim] {stdout[:400]}" + ("…" if len(stdout) > 400 else ""))
+            if stderr:
+                # Show only the first line or two to keep it tidy
+                first_lines = " ".join(stderr.splitlines()[:2])
+                header_lines.append(f"[dim]notes:[/dim] {first_lines}")
+        else:
+            file_list = list(files)
+
+        # Show summary header if we have any
+        if header_lines:
+            panel.show_panel(self.console, "Output Summary", "\n".join(header_lines))
+
+        # Render files table
+        tables.show_generated_files(self.console, file_list)
 
     def display_found_parts(self, found: Iterable[PartSearchResult]) -> None:
         data = {res.query: res.components for res in found}
@@ -129,8 +158,13 @@ class TerminalUI:
         panel.show_panel(self.console, "Validation", summary)
 
     def display_generated_files_summary(self, files: Iterable[str]) -> None:
-        links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
-        MessagePanel.info(self.console, links)
+        """Quick inline summary: count and first few file links."""
+        files_list = list(files)
+        n = len(files_list)
+        preview = files_list[:3]
+        links = ", ".join(f"[link=file://{p}]{p}[/]" for p in preview)
+        extra = f" and {n-3} more" if n > 3 else ""
+        MessagePanel.info(self.console, f"Saved {n} file(s): {links}{extra}")
 
     def display_erc_result(self, erc_result: dict[str, object]) -> None:
         """Render ERC outcome in plain English rather than raw JSON."""
