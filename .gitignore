@@ -1,5 +1,6 @@
 circuitron_venv/
 .env
+mcp.env
 __pycache__/
 *.log
 *.erc
