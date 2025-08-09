@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import importlib
 import pytest
 
