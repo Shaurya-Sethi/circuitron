@@ -201,7 +201,7 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
 
     args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=True, output_dir=None, no_footprint_search=False, keep_skidl=False)
     with patch("circuitron.pipeline.parse_args", return_value=args), \
-         patch("circuitron.cli.setup_environment", side_effect=lambda dev: setattr(cfg.settings, "dev_mode", dev)), \
+         patch("circuitron.cli.setup_environment", side_effect=lambda dev, **kwargs: setattr(cfg.settings, "dev_mode", dev)), \
          patch("circuitron.debug.Runner.run", AsyncMock(return_value=run_result)), \
          patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=fake_run)), \
          patch("circuitron.tools.kicad_session.start"), \

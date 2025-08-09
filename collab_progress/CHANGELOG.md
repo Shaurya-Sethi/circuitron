@@ -1,5 +1,13 @@
 # Circuitron Changelog (collab_progress index)
 
+## UI/UX: Human-friendly ERC result display (Issue #5)
+- Date: 2025-08-10
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): utils, ui/app, pipeline, tests
+- Details: See collab_progress/ui-ux-issue5-erc-display-10-08-2025.md
+- Verification: pytest -q passed locally in venv; added tests/test_erc_formatting.py.
+
 ## UI/UX: Feedback input uses boxed UI
 - Date: 2025-08-09
 - Time (UTC): 20:05Z

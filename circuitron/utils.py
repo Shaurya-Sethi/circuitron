@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, TYPE_CHECKING
+from typing import Callable, List, TYPE_CHECKING, Mapping
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -959,3 +959,81 @@ def format_runtime_correction_input(
 
     parts.append("Fix the runtime errors so the script executes to the ERC stage.")
     return "\n".join(parts)
+
+
+def _parse_erc_stdout(stdout: str) -> tuple[list[str], list[str], int, int]:
+    """Parse ERC stdout into warning/error messages and counts.
+
+    Args:
+        stdout: Raw stdout text from the ERC tool.
+
+    Returns:
+        (warnings, errors, warning_count, error_count)
+    """
+
+    warnings: list[str] = []
+    errors: list[str] = []
+    for line in stdout.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("WARNING:"):
+            warnings.append(s)
+        elif s.startswith("ERROR:"):
+            errors.append(s)
+
+    warn_match = re.search(r"(\d+) warning[s]? found during ERC", stdout, re.IGNORECASE)
+    err_match = re.search(r"(\d+) error[s]? found during ERC", stdout, re.IGNORECASE)
+    warn_count = int(warn_match.group(1)) if warn_match else len(warnings)
+    err_count = int(err_match.group(1)) if err_match else len(errors)
+    return warnings, errors, warn_count, err_count
+
+
+def format_erc_result(erc_result: Mapping[str, object]) -> str:
+    """Return a human-friendly ERC summary string for the terminal UI.
+
+    The summary includes counts, pass/fail state, and bullet lists of issues.
+    """
+
+    success = bool(erc_result.get("success", False))
+    erc_passed = bool(erc_result.get("erc_passed", False))
+    stdout = str(erc_result.get("stdout", ""))
+    stderr = str(erc_result.get("stderr", ""))
+
+    warnings, errors, warn_count, err_count = _parse_erc_stdout(stdout)
+
+    lines: list[str] = []
+    if not success and stderr and not stdout:
+        lines.append("ERC did not run successfully. See details below.")
+    elif erc_passed and err_count == 0 and warn_count == 0:
+        lines.append("ERC passed: no errors or warnings.")
+    elif erc_passed and err_count == 0 and warn_count > 0:
+        w_word = "warning" if warn_count == 1 else "warnings"
+        lines.append(f"ERC passed with {warn_count} {w_word}.")
+    else:
+        # Not fully passed or issues present
+        parts: list[str] = []
+        if err_count:
+            e_word = "error" if err_count == 1 else "errors"
+            parts.append(f"{err_count} {e_word}")
+        if warn_count:
+            w_word = "warning" if warn_count == 1 else "warnings"
+            parts.append(f"{warn_count} {w_word}")
+        joined = " and ".join(parts) if parts else "no issues detected"
+        lines.append(f"ERC completed with {joined}.")
+
+    if errors:
+        lines.append("")
+        lines.append("Errors:")
+        lines.extend(f"- {m}" for m in errors)
+    if warnings:
+        lines.append("")
+        lines.append("Warnings:")
+        lines.extend(f"- {m}" for m in warnings)
+
+    if stderr and not erc_passed:
+        lines.append("")
+        lines.append("Details:")
+        lines.append(stderr.strip())
+
+    return "\n".join(lines)

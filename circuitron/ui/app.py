@@ -132,6 +132,11 @@ class TerminalUI:
         links = "\n".join(f"[link=file://{p}]{p}[/]" for p in files)
         MessagePanel.info(self.console, links)
 
+    def display_erc_result(self, erc_result: dict[str, object]) -> None:
+        """Render ERC outcome in plain English rather than raw JSON."""
+        summary = utils.format_erc_result(erc_result)
+        panel.show_panel(self.console, "ERC Result", summary)
+
     async def run(
         self,
         prompt: str,

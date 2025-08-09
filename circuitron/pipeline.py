@@ -275,10 +275,15 @@ async def run_code_validation(
             except (json.JSONDecodeError, TypeError) as e:
                 erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
             if ui:
-                panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2))
+                # Display a human-friendly summary instead of raw JSON
+                if hasattr(ui, "display_erc_result"):
+                    ui.display_erc_result(erc_result)  # type: ignore[arg-type]
+                else:
+                    panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2))
             else:
                 print("\n=== ERC RESULT ===")
-                print(erc_result)
+                from .utils import format_erc_result
+                print(format_erc_result(erc_result))
         if ui:
             ui.finish_stage("Validating")
         return validation, erc_result
