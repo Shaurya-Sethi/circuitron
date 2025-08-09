@@ -113,6 +113,11 @@ Entry Template
 
 ---
 
+# Changelog
+
+## 10-08-2025
+- Container leak fix in tests: Added session-scoped cleanup fixture and hardened Docker cleanup to avoid leftover `circuitron-kicad-*` and `circuitron-final-*` containers. See `container-cleanup-tests-10-08-2025.md`. Verified with full `pytest -q` run (100% passed locally).
+
 ## Model switch via /model command
 - Date: 2025-08-09
 - Time (UTC): 10:59Z

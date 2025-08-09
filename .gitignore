@@ -19,6 +19,7 @@ test_run_output/
 memory-bank/
 .clinerules/
 .github/
+.vscode/
 circuitron_output/
 architecture_diagram.mmd
 architecture_diagram.svg
