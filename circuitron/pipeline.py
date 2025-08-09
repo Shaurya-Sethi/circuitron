@@ -742,6 +742,7 @@ async def pipeline(
                     docs,
                     erc_result,
                     correction_context,
+                    ui=ui,
                     agent=erc_agent,
                 )
                 _, erc_result = await run_code_validation(
@@ -787,8 +788,11 @@ async def pipeline(
             )
 
         out_dir = prepare_output_dir(output_dir)
+        if ui:
+            ui.start_stage("Generating Files")
         files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
         if ui:
+            ui.finish_stage("Generating Files")
             ui.display_files(json.loads(files_json))
         else:
             print("\n=== GENERATED FILES ===")
@@ -800,6 +804,7 @@ async def pipeline(
         prompt,
         plan,
         feedback,
+        ui=ui,
         agent=plan_edit_agent,
     )
     if ui:
@@ -962,8 +967,11 @@ async def pipeline(
         )
 
     out_dir = prepare_output_dir(output_dir)
+    if ui:
+        ui.start_stage("Generating Files")
     files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
     if ui:
+        ui.finish_stage("Generating Files")
         ui.display_files(json.loads(files_json))
     else:
         print("\n=== GENERATED FILES ===")
