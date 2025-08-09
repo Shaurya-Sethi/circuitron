@@ -430,6 +430,8 @@ export KISYSMOD=/usr/share/kicad/modules
         
         for src in available_files:
             dest = os.path.join(host_dir, os.path.basename(src))
+            # Normalize to POSIX-style path separators for consistency in tests
+            dest = dest.replace("\\", "/")
             try:
                 self._run_docker_cp_with_retry(f"{self.container_name}:{src}", dest)
                 files.append(dest)

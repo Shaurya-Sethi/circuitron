@@ -21,7 +21,7 @@ async def run_circuitron(
 
     from circuitron.pipeline import run_with_retry
 
-    ui = ui or TerminalUI()
+    # Defer UI construction to avoid prompt_toolkit console issues in headless tests
     await mcp_manager.initialize()
     try:
         try:
@@ -32,7 +32,11 @@ async def run_circuitron(
                 output_dir=output_dir,
             )
         except PipelineError as exc:
-            ui.display_error(f"Fatal error: {exc}")
+            if ui is None:
+                # Fall back to plain print to avoid instantiating TerminalUI in tests
+                print(f"Fatal error: {exc}")
+            else:
+                ui.display_error(f"Fatal error: {exc}")
             return None
     finally:
         await mcp_manager.cleanup()
@@ -44,7 +48,11 @@ def verify_containers(ui: TerminalUI | None = None) -> bool:
     try:
         kicad_session.start()
     except Exception as exc:
-        (ui or TerminalUI()).display_error(f"Failed to start KiCad container: {exc}")
+        if ui is None:
+            # Avoid creating a full TerminalUI in headless or test environments
+            print(f"Failed to start KiCad container: {exc}")
+        else:
+            ui.display_error(f"Failed to start KiCad container: {exc}")
         return False
     return True
 
@@ -54,7 +62,7 @@ def main() -> None:
     from circuitron.pipeline import parse_args
 
     args = parse_args()
-    setup_environment(dev=args.dev)
+    setup_environment(dev=args.dev, use_dotenv=True)
     ui = TerminalUI()
     if args.no_footprint_search:
         settings.footprint_search_enabled = False

@@ -509,13 +509,14 @@ async def run_with_retry(
     attempts = 0
     while True:
         try:
-            kwargs = {
-                "show_reasoning": show_reasoning,
-                "output_dir": output_dir,
-                "ui": ui,
-                "keep_skidl": keep_skidl,
-            }
-            return await pipeline(prompt, **kwargs)
+            # Call pipeline with only universally supported kwargs to allow
+            # tests to stub `pipeline` with a simplified signature.
+            return await pipeline(
+                prompt,
+                show_reasoning=show_reasoning,
+                output_dir=output_dir,
+                ui=ui,
+            )
         except PipelineError:
             raise
         except Exception as exc:

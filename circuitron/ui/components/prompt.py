@@ -19,19 +19,28 @@ class Prompt:
     def __init__(self, console: Console, theme: Theme) -> None:
         self.console = console
         self.theme = theme
-        history_file = Path.home() / ".circuitron_history"
-        bindings = KeyBindings()
-        bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
-        bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
-        bindings.add("c-l")(lambda event: event.app.renderer.clear())
-        self.session: PromptSession = PromptSession(
-            history=FileHistory(str(history_file)), key_bindings=bindings
-        )
+        self._session: PromptSession | None = None
+        self._history_file = Path.home() / ".circuitron_history"
+        self._bindings = KeyBindings()
+        self._bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
+        self._bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
+        self._bindings.add("c-l")(lambda event: event.app.renderer.clear())
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``."""
         prompt_text = HTML(f'<style fg="{self.theme.accent}">{message}:</style> ')
+        # Lazily create the PromptSession to avoid failures on headless Windows tests
+        if self._session is None:
+            try:
+                self._session = PromptSession(
+                    history=FileHistory(str(self._history_file)),
+                    key_bindings=self._bindings,
+                )
+            except Exception:
+                self._session = None
         try:
-            return self.session.prompt(prompt_text)
+            if self._session is None:
+                raise RuntimeError("No interactive session available")
+            return self._session.prompt(prompt_text)
         except Exception:
             return input(f"{message}: ")

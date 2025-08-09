@@ -14,6 +14,7 @@ from .components.spinner import Spinner
 from .components.status_bar import StatusBar
 from .components import tables, panel
 from .. import utils
+from ..config import settings
 from ..models import (
     PlanOutput,
     UserFeedback,
@@ -62,7 +63,10 @@ class TerminalUI:
         while True:
             text = self.input_box.ask(message)
             if text.strip() == "/help":
-                self.console.print("Available commands: /theme <name>, /help", style=self.theme.accent)
+                self.console.print(
+                    "Available commands: /theme <name>, /model, /help",
+                    style=self.theme.accent,
+                )
                 continue
             if text.startswith("/theme"):
                 parts = text.split()
@@ -74,6 +78,24 @@ class TerminalUI:
                         f"Available themes: {', '.join(theme_manager.available_themes())}",
                         style=self.theme.accent,
                     )
+                continue
+            if text.strip() == "/model":
+                # Ask the user to choose a model and update all agent model fields
+                choice = self.input_box.ask(
+                    "Select model [o4-mini/gpt-5-mini]: "
+                ).strip()
+                valid = {"o4-mini", "gpt-5-mini"}
+                if choice not in valid:
+                    self.console.print(
+                        "Invalid model. Choose 'o4-mini' or 'gpt-5-mini'.",
+                        style=self.theme.accent,
+                    )
+                    continue
+                settings.set_all_models(choice)
+                self.console.print(
+                    f"Active model set to {choice} for all agents.",
+                    style=self.theme.accent,
+                )
                 continue
             return text
 
