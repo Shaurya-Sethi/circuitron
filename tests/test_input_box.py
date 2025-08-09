@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import asyncio
+import pytest
 from rich.console import Console
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 
@@ -34,4 +36,13 @@ def test_input_box_ask_renders_box(monkeypatch):
     assert "┌" in text
     assert "└" in text
     assert "Design?" in text
+
+
+def test_input_box_escape(monkeypatch):
+    ib = InputBox(Console())
+    monkeypatch.setattr("builtins.input", lambda _p: "\x1b")
+    async def run() -> None:
+        with pytest.raises(EOFError):
+            ib.ask("msg")
+    asyncio.run(run())
 

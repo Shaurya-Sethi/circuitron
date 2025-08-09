@@ -6,6 +6,7 @@ from prompt_toolkit import PromptSession  # type: ignore
 from prompt_toolkit.history import InMemoryHistory  # type: ignore
 from prompt_toolkit.formatted_text import HTML  # type: ignore
 from prompt_toolkit.shortcuts import CompleteStyle  # type: ignore
+from prompt_toolkit.key_binding import KeyBindings  # type: ignore
 
 from .completion import SlashCommandCompleter
 from ...config import settings
@@ -27,14 +28,17 @@ class InputBox:
         """Return user input for ``message`` using prompt_toolkit.
 
         Renders a simple, three-line boxed prompt so the user types
-        visually "inside" an input box. Falls back to a basic input()
+        visually "inside" an input box. Falls back to a basic ``input()``
         when a prompt session cannot be initialized (e.g., headless tests).
 
+        Pressing ``Esc`` exits the application with a goodbye message.
+
         Example (simplified):
-        ┌─ What would you like me to design?
+        ┌─ What would you like me to design? (press Esc to exit)
         │
         └─ ❯ [cursor here]
         """
+        message = f"{message} (press Esc to exit)"
         accent = ACCENT
         # Compose a minimal multi-line box using Unicode borders.
         top = f'<style fg="{accent}">┌─</style> <style fg="{accent}">{message}</style>'
@@ -67,12 +71,15 @@ class InputBox:
                         commands=["/help", "/model"],
                         models=self._available_models,
                     )
+                bindings = KeyBindings()
+                bindings.add("escape")(lambda event: event.app.exit(exception=EOFError()))
                 return self._session.prompt(
                     prompt_text,
                     completer=completer,
                     complete_while_typing=True,
                     reserve_space_for_menu=6,
                     complete_style=CompleteStyle.COLUMN,
+                    key_bindings=bindings,
                 )
             except Exception:
                 # Fall through to boxed input() fallback below
@@ -82,7 +89,13 @@ class InputBox:
         try:
             self.console.print(f"[bold {accent}]┌─[/] [bold {accent}]{message}[/]")
             self.console.print(f"[bold {accent}]│[/] ")
-            return input("└─ ❯ ")
+            text = input("└─ ❯ ")
+            if text == "\x1b":
+                raise EOFError
+            return text
         except Exception:
             # Final guard: minimal prompt
-            return input(f"{message}: ")
+            text = input(f"{message}: ")
+            if text == "\x1b":
+                raise EOFError
+            return text

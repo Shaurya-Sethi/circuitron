@@ -40,7 +40,10 @@ class TerminalUI:
     def start_banner(self) -> None:
         """Render the Circuitron banner with gradient colors."""
         self.banner.show()
-        self.console.print("[bold]Type /help for commands[/bold]\n", style=ACCENT)
+        self.console.print(
+            "[bold]Type /help for commands or press Esc to exit[/bold]\n",
+            style=ACCENT,
+        )
 
     def start_stage(self, name: str) -> None:
         self.status_bar.update(stage=name, message="")
