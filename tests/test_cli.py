@@ -1,4 +1,5 @@
 import asyncio
+import signal
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -227,3 +228,12 @@ def test_cli_dev_mode_shows_run_items(capsys: pytest.CaptureFixture[str]) -> Non
     captured = capsys.readouterr().out
     cfg.settings.dev_mode = False
     assert "hello" in captured
+
+
+@pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM])
+def test_signal_handlers_stop_session(sig: int) -> None:
+    """Ensure kicad_session.stop is invoked when termination signals are raised."""
+    with patch("circuitron.cli.kicad_session.stop") as stop_mock:
+        with pytest.raises(SystemExit):
+            signal.raise_signal(sig)
+        stop_mock.assert_called_once()

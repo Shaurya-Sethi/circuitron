@@ -1,6 +1,10 @@
 """Command line interface for Circuitron."""
 
 import asyncio
+import signal
+import sys
+from types import FrameType
+
 from .config import setup_environment, settings
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
@@ -8,6 +12,20 @@ from .mcp_manager import mcp_manager
 from .network import check_internet_connection
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
+
+
+def _handle_termination(signum: int, _frame: FrameType | None) -> None:
+    """Stop KiCad session and exit on SIGINT or SIGTERM.
+
+    ``DockerSession`` also registers :func:`kicad_session.stop` with ``atexit``,
+    so this handler is an eager cleanup while ``atexit`` remains a fallback.
+    """
+    kicad_session.stop()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, _handle_termination)
+signal.signal(signal.SIGTERM, _handle_termination)
 
 
 async def run_circuitron(
