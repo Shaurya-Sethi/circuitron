@@ -24,9 +24,14 @@ class Prompt:
         self._bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
         self._bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
         self._bindings.add("c-l")(lambda event: event.app.renderer.clear())
+        self._bindings.add("escape")(lambda event: event.app.exit(exception=EOFError()))
 
     def ask(self, message: str) -> str:
-        """Return user input for ``message``."""
+        """Return user input for ``message``.
+
+        Pressing ``Esc`` exits the application.
+        """
+        message = f"{message} (press Esc to exit)"
         prompt_text = HTML(f'<style fg="{ACCENT}">{message}:</style> ')
         # Lazily create the PromptSession to avoid failures on headless Windows tests
         if self._session is None:
@@ -42,4 +47,7 @@ class Prompt:
                 raise RuntimeError("No interactive session available")
             return self._session.prompt(prompt_text)
         except Exception:
-            return input(f"{message}: ")
+            text = input(f"{message}: ")
+            if text == ESCAPE_CHAR:
+                raise EOFError
+            return text
