@@ -44,9 +44,16 @@ Create a supabase account at https://supabase.com/
 
 ### Step 3: Create Neo4j Database
 
+
 Create a neo4j database on Neo4j Aura cloud service https://neo4j.com/cloud/aura/
 
 (Or you can use a local Neo4j instance, but the cloud service is recommended for ease of use if you are unfamiliar with neo4j and don't already use it locally.)
+
+**If you are using a local Neo4j instance, use this exact URI for the connection:**
+
+```
+bolt://host.docker.internal:7687
+```
 
 - Once you have created a database, go to the database settings and copy the connection URI, username, and password.
 
@@ -69,7 +76,7 @@ LLM_MAX_CONCURRENCY=2
 LLM_REQUEST_DELAY=0.5
 SUPABASE_URL=<your Supabase project URL>
 SUPABASE_SERVICE_KEY=<your Supabase service_role key>
-NEO4J_URI=<your AuraDB Neo4j URI>
+NEO4J_URI=<your Neo4j URI>
 NEO4J_USER=<your Neo4j username>
 NEO4J_PASSWORD=<your Neo4j password>
 ```
