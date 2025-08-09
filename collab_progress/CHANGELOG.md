@@ -1,5 +1,13 @@
 # Circuitron Changelog (collab_progress index)
 
+## Signal handlers stop KiCad session on termination
+- Date: 2025-08-09
+- Time (UTC): 22:40Z
+- Branch/PR: main
+- Files Changed (high level): cli, tests
+- Details: See collab_progress/signal-handler-kicad-stop-09-08-2025.md
+- Verification: pytest -q
+
 ## Graceful exit via Esc and friendly Ctrl+C
 - Date: 2025-08-11
 - Time (UTC): 00:00Z
