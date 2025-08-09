@@ -437,8 +437,11 @@ export KISYSMOD=/usr/share/kicad/modules
                 files.append(dest)
                 logger.debug("Successfully copied: %s -> %s", src, dest)
             except subprocess.CalledProcessError as e:
+                # These copy failures commonly occur for optional or missing artifacts
+                # and do not impact the overall pipeline success. Demote to debug to
+                # avoid noisy ERROR logs in the CLI while retaining traceability.
                 error_msg = f"Failed to copy {src} from container: {e}"
-                logging.error(error_msg)
+                logger.debug(error_msg)
                 copy_failures.append(error_msg)
         
         if copy_failures:
