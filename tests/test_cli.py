@@ -91,18 +91,33 @@ def test_cli_main_stops_session() -> None:
         cli.main()
         stop_mock.assert_called_once()
 
-def test_cli_main_handles_keyboardinterrupt(capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.parametrize("exc_type", [KeyboardInterrupt, EOFError])
+def test_cli_main_handles_exit_during_run(capsys: pytest.CaptureFixture[str], exc_type: type[BaseException]) -> None:
     import circuitron.config as cfg
     cfg.setup_environment()
     args = SimpleNamespace(prompt="p", reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False, keep_skidl=False)
     with patch("circuitron.cli.setup_environment"), \
          patch("circuitron.pipeline.parse_args", return_value=args), \
          patch("circuitron.tools.kicad_session.start"), \
-         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=KeyboardInterrupt)), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock(side_effect=exc_type)), \
          patch("circuitron.tools.kicad_session.stop"):
         cli.main()
     captured = capsys.readouterr().out
-    assert "interrupted" in captured.lower()
+    assert "goodbye" in captured.lower()
+
+
+def test_cli_main_handles_escape_during_prompt(capsys: pytest.CaptureFixture[str]) -> None:
+    args = SimpleNamespace(prompt=None, reasoning=False, retries=0, dev=False, output_dir=None, no_footprint_search=False, keep_skidl=False)
+    with patch("circuitron.cli.setup_environment"), \
+         patch("circuitron.pipeline.parse_args", return_value=args), \
+         patch("circuitron.tools.kicad_session.start"), \
+         patch("circuitron.ui.app.TerminalUI.prompt_user", side_effect=EOFError), \
+         patch("circuitron.ui.app.TerminalUI.run", AsyncMock()) as run_mock, \
+         patch("circuitron.tools.kicad_session.stop"):
+        cli.main()
+        run_mock.assert_not_called()
+    captured = capsys.readouterr().out
+    assert "goodbye" in captured.lower()
 
 
 def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:

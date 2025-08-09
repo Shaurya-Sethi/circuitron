@@ -1,5 +1,13 @@
 # Circuitron Changelog (collab_progress index)
 
+## Graceful exit via Esc and friendly Ctrl+C
+- Date: 2025-08-11
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): cli, ui components, tests
+- Details: See collab_progress/graceful-exit-esc-11-08-2025.md
+- Verification: pytest -q; ruff check .; mypy --strict circuitron (fails: unused type ignores and missing annotations)
+
 ## UI/UX: Human-friendly ERC result display (Issue #5)
 - Date: 2025-08-10
 - Time (UTC): 00:00Z

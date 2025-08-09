@@ -38,6 +38,12 @@ async def run_circuitron(
             else:
                 ui.display_error(f"Fatal error: {exc}")
             return None
+    except (KeyboardInterrupt, EOFError):
+        if ui is None:
+            print("\nGoodbye! Thanks for using Circuitron.")
+        else:
+            ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
+        return None
     finally:
         await mcp_manager.cleanup()
 
@@ -74,7 +80,12 @@ def main() -> None:
         return
 
     ui.start_banner()
-    prompt = args.prompt or ui.prompt_user("What would you like me to design?")
+    try:
+        prompt = args.prompt or ui.prompt_user("What would you like me to design?")
+    except (KeyboardInterrupt, EOFError):
+        ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
+        kicad_session.stop()
+        return
     show_reasoning = args.reasoning
     retries = args.retries
     output_dir = args.output_dir
@@ -84,10 +95,16 @@ def main() -> None:
     try:
         try:
             code_output = asyncio.run(
-                ui.run(prompt, show_reasoning=show_reasoning, retries=retries, output_dir=output_dir, keep_skidl=keep_skidl)
+                ui.run(
+                    prompt,
+                    show_reasoning=show_reasoning,
+                    retries=retries,
+                    output_dir=output_dir,
+                    keep_skidl=keep_skidl,
+                )
             )
-        except KeyboardInterrupt:
-            ui.console.print("\nExecution interrupted by user.", style="red")
+        except (KeyboardInterrupt, EOFError):
+            ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
         except Exception as exc:
             ui.console.print(f"Error during execution: {exc}", style="red")
     finally:
