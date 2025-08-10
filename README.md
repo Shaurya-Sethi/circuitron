@@ -45,11 +45,12 @@ The MCP server provides RAG capabilities and knowledge graph lookups. It require
 
 Before installing Circuitron ensure the following tools and accounts are available:
 
-- **Python 3.10+** (the examples use Python 3.12)
+- **Python 3.10+** – Circuitron is developed with Python 3.12, but it should work with Python 3.10+.
 - **Docker** with permission to run containers
 - **OpenAI API access** – obtain an API key from [OpenAI account settings](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
-- **Supabase account** – used by the MCP server for storing crawled pages
-- **AuraDB (Neo4j) database** – free instances are available from [AuraDB](https://neo4j.com/cloud/platform/aura-graph-database/)
+- **Pydantic Logfire** - Sign up (For free) and obtain an access token from [Pydantic Logfire](https://logfire.pydantic.dev/)
+- **Supabase account** – used by the MCP server for storing crawled pages - Sign up [Here](https://supabase.com/)
+- **Neo4j database** – free instances are available from [AuraDB](https://neo4j.com/cloud/platform/aura-graph-database/) or you can install it locally as well from [here](https://neo4j.com/download/)
 
 > **Note:** Make sure that your OpenAI Account is topped up with some credits. Additionally, ensure that you finish [organization verification](https://help.openai.com/en/articles/10910291-api-organization-verification) to enable the utilization of OpenAI's reasoning models.
 
@@ -140,6 +141,7 @@ Circuitron now supports interactive model switching via the `/model` command in 
 - **Recommended model:** `gpt-5-mini` (released August 7, 2025)
   - **Why:** According to OpenAI and my initial light testing, `gpt-5-mini` is both cheaper and better at agentic, multi-step workflows than `o4-mini`.
   - **How to switch:** Type `/model` in the interactive CLI and follow the prompts to select `gpt-5-mini`.
+- **Other Models**: `o3-pro`, `o3`, `gpt-5`, `gpt-5-nano`, `gpt-4.1`
 
 > **Note:** Model selection is session-based by default. Consider switching to `gpt-5-mini` for improved cost efficiency, especially for complex or iterative design tasks.
 
@@ -440,16 +442,6 @@ Update these variables in your environment or in the `.env` file to customise be
 - **MCP server not reachable** – ensure the container was started with the correct `.env` file and that port 8051 is open.
 - **KiCad container fails to start** – pull the image again with `docker pull ghcr.io/shaurya-sethi/circuitron-kicad:latest` and verify Docker is running.
 - **Missing environment variables** – the CLI exits with an error if `OPENAI_API_KEY` or `MCP_URL` are not set. Check your `.env` configuration.
-
-## Cleanup
-
-KiCad containers started by Circuitron may keep running in the background. Remove leftover containers to free resources and avoid conflicts by running:
-
-```bash
-docker rm -f $(docker ps -aq -f name=circuitron-kicad-)
-```
-
-Run this after testing or whenever you need to reset the Circuitron KiCad environment.
 
 ## Support and Contributing
 
