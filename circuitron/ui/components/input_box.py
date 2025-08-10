@@ -24,7 +24,7 @@ class InputBox:
     Rich-rendered box with standard input() to avoid prompt_toolkit warnings.
 
     Example (simplified):
-    ┌─ What would you like me to design? (press Esc twice to exit)
+    ┌─ What would you like me to design? (press Ctrl+C to exit)
     │
     └─ ❯ [cursor here]
     """
@@ -41,9 +41,9 @@ class InputBox:
         """Return user input for ``message`` using prompt_toolkit when safe.
 
         Falls back to a boxed input() in async/headless environments.
-        Pressing Esc raises EOFError to let the caller exit.
+        Use Ctrl+C to exit at any time (Esc handling is not supported in fallback).
         """
-        message = f"{message} (press Esc twice to exit)"
+        message = f"{message} (press Ctrl+C to exit)"
         accent = ACCENT
 
         # Compose a minimal multi-line box for prompt_toolkit HTML rendering.
@@ -77,7 +77,8 @@ class InputBox:
                         models=self._available_models,
                     )
                 bindings = KeyBindings()
-                bindings.add("escape")(lambda event: event.app.exit(exception=EOFError()))
+                # Note: We intentionally avoid binding Esc to exit to keep
+                # behavior consistent across synchronous and async contexts.
                 return self._session.prompt(
                     prompt_text,
                     completer=completer,
@@ -95,16 +96,15 @@ class InputBox:
 
         # Boxed fallback using standard input in async or headless environments
         try:
-            # Clean, visible box with arrow prompt.
+            # Clean, visible box with arrow prompt. Colorize the pointer too.
             self.console.print(f"[bold {accent}]┌─[/] [bold {accent}]{message}[/]")
             self.console.print(f"[bold {accent}]│[/] ")
-            text = input("└─ ❯ ")
-            if text == "\x1b":
-                raise EOFError
+            # Print the arrow in color, then read input with an empty prompt so
+            # the pointer does not revert to the terminal's default color.
+            self.console.print(f"[bold {accent}]└─ ❯[/] ", end="")
+            text = input("")
             return text
         except Exception:
             # Final guard: minimal prompt
             text = input(f"{message}: ")
-            if text == "\x1b":
-                raise EOFError
             return text

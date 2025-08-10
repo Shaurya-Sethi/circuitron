@@ -20,6 +20,13 @@ def _handle_termination(signum: int, _frame: FrameType | None) -> None:
     ``DockerSession`` also registers :func:`kicad_session.stop` with ``atexit``,
     so this handler is an eager cleanup while ``atexit`` remains a fallback.
     """
+    # Show a friendly goodbye on Ctrl+C or termination
+    try:
+        from circuitron.ui.app import TerminalUI  # local import to avoid circular at module load
+        ui = TerminalUI()
+        ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
+    except Exception:
+        print("\nGoodbye! Thanks for using Circuitron.")
     kicad_session.stop()
     sys.exit(0)
 

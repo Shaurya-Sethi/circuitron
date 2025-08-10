@@ -11,7 +11,6 @@ from prompt_toolkit.formatted_text import HTML  # type: ignore
 from rich.console import Console
 
 ACCENT = "cyan"
-ESCAPE_CHAR = "\x1b"
 
 
 class Prompt:
@@ -25,14 +24,14 @@ class Prompt:
         self._bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())
         self._bindings.add("c-e")(lambda event: event.current_buffer.cursor_end())
         self._bindings.add("c-l")(lambda event: event.app.renderer.clear())
-        self._bindings.add("escape")(lambda event: event.app.exit(exception=EOFError()))
+    # We intentionally avoid Esc-to-exit to keep behavior consistent.
 
     def ask(self, message: str) -> str:
         """Return user input for ``message``.
 
-        Pressing ``Esc`` exits the application.
+        Press Ctrl+C to exit.
         """
-        message = f"{message} (press Esc twice to exit)"
+        message = f"{message} (press Ctrl+C to exit)"
         prompt_text = HTML(f'<style fg="{ACCENT}">{message}:</style> ')
         # Lazily create the PromptSession to avoid failures on headless Windows tests
         if self._session is None:
@@ -51,7 +50,6 @@ class Prompt:
             # Bubble up for graceful exit handling by caller
             raise
         except Exception:
+            # Minimal fallback without Esc handling
             text = input(f"{message}: ")
-            if text == ESCAPE_CHAR:
-                raise EOFError
             return text

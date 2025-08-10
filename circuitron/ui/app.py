@@ -42,7 +42,7 @@ class TerminalUI:
         """Render the Circuitron banner with gradient colors."""
         self.banner.show()
         self.console.print(
-            "[bold]Type /help for commands or press Esc twice (or Ctrl+C) to exit[/bold]\n",
+            "[bold]Type /help for commands. Press Ctrl+C any time to exit.[/bold]\n",
             style=ACCENT,
         )
 
