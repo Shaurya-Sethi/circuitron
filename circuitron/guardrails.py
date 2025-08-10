@@ -25,7 +25,7 @@ class PCBQueryOutput(BaseModel):
 
 
 # Cheap model used to triage queries before running expensive agents
-_QUERY_MODEL = "gpt-4.1-nano"
+_QUERY_MODEL = "gpt-5-nano"
 
 pcb_query_agent = Agent(
     name="PCB Query Check",
