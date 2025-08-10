@@ -221,6 +221,11 @@ class TerminalUI:
         from ..mcp_manager import mcp_manager
 
         await mcp_manager.initialize()
+        # Initialize summary timers and counters
+        import time
+        from ..telemetry import token_usage_aggregator
+        token_usage_aggregator.reset()
+        start_ts = time.perf_counter()
         try:
             self.status_bar.start()
             return await run_with_retry(
@@ -234,3 +239,58 @@ class TerminalUI:
         finally:
             self.status_bar.stop()
             await mcp_manager.cleanup()
+            # Compute and show end-of-run summary
+            try:
+                elapsed = time.perf_counter() - start_ts
+                token_summary = token_usage_aggregator.get_summary()
+                from ..cost_estimator import estimate_cost_usd, estimate_cost_usd_for_model
+
+                total_cost, used_default, per_model = estimate_cost_usd(token_summary)
+                # If per-model pricing failed (or was zero), fall back to the active model
+                if total_cost == 0.0:
+                    from ..config import settings as cfg
+                    # Use code_generation_model as representative of main cost; user can change via /model
+                    model_name = getattr(cfg, "code_generation_model", None) or getattr(cfg, "planning_model", "o4-mini")
+                    total_cost2, used_default2 = estimate_cost_usd_for_model(token_summary, model_name)
+                    # Prefer non-zero fallback
+                    if total_cost2 > 0.0 or used_default:
+                        total_cost, used_default = total_cost2, used_default2
+                self.display_summary_stats(elapsed, token_summary, total_cost, used_default)
+            except Exception:
+                # Never break shutdown flow if summary fails
+                pass
+
+    def display_summary_stats(
+        self,
+        elapsed_seconds: float,
+        token_summary: dict,
+        total_cost_usd: float,
+        used_default_prices: bool,
+    ) -> None:
+        """Render a compact summary panel with time, tokens, and cost."""
+        from .components import panel as panel_comp
+        from rich.markup import escape
+
+        overall = token_summary.get("overall", {})
+        i = int(overall.get("input", 0))
+        o = int(overall.get("output", 0))
+        t = int(overall.get("total", i + o))
+
+        # Format time hh:mm:ss.mmm
+        hours = int(elapsed_seconds // 3600)
+        minutes = int((elapsed_seconds % 3600) // 60)
+        seconds = elapsed_seconds % 60
+        time_str = f"{hours:02d}:{minutes:02d}:{seconds:05.2f}"
+
+        lines = [
+            f"Time taken: {time_str}",
+            f"Tokens: in={i:,} out={o:,} total={t:,}",
+            f"Estimated cost: ${total_cost_usd:.4f}",
+        ]
+        if used_default_prices:
+            lines.append("(Note: Missing local pricing for some/all models; cost may be 0)")
+
+        lines.append("")
+        lines.append("[dim]Circuitron powering down...[/dim]")
+        text = "\n".join(lines)
+        panel_comp.show_panel(self.console, "Run Summary", text, render="markup")

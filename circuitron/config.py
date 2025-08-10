@@ -56,6 +56,14 @@ def setup_environment(dev: bool = False, use_dotenv: bool = False) -> Settings:
         logfire.configure()
         # Instrument OpenAI Agents SDK traces
         logfire.instrument_openai_agents()
+        # Attach our token usage span processor if possible (no user-visible change)
+        try:
+            from .telemetry import attach_span_processor_if_possible
+
+            attach_span_processor_if_possible()
+        except Exception:
+            # Never break setup if telemetry attachment fails
+            pass
     except ModuleNotFoundError as exc:  # pragma: no cover - installation issue
         raise RuntimeError(
             "logfire is now a required dependency. Install with 'pip install circuitron'."

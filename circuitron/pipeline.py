@@ -994,12 +994,40 @@ async def main() -> None:
     try:
         prompt = args.prompt or input("What would you like me to design? ")
         try:
+            import time
+            from .telemetry import token_usage_aggregator
+            from .cost_estimator import estimate_cost_usd, estimate_cost_usd_for_model
+
+            token_usage_aggregator.reset()
+            t0 = time.perf_counter()
             await run_with_retry(
                 prompt,
                 show_reasoning=args.reasoning,
                 retries=args.retries,
                 output_dir=args.output_dir,
             )
+            elapsed = time.perf_counter() - t0
+            summary = token_usage_aggregator.get_summary()
+            total_cost, used_default, _ = estimate_cost_usd(summary)
+            if total_cost == 0.0:
+                from .config import settings as cfg
+                model_name = getattr(cfg, "code_generation_model", None) or getattr(cfg, "planning_model", "o4-mini")
+                total_cost2, used_default2 = estimate_cost_usd_for_model(summary, model_name)
+                if total_cost2 > 0.0 or used_default:
+                    total_cost, used_default = total_cost2, used_default2
+            i = int(summary.get("overall", {}).get("input", 0))
+            o = int(summary.get("overall", {}).get("output", 0))
+            t = int(summary.get("overall", {}).get("total", i + o))
+            h = int(elapsed // 3600)
+            m = int((elapsed % 3600) // 60)
+            s = elapsed % 60
+            print("\n=== RUN SUMMARY ===")
+            print(f"Time taken: {h:02d}:{m:02d}:{s:05.2f}")
+            print(f"Tokens: in={i:,} out={o:,} total={t:,}")
+            print(f"Estimated cost: ${total_cost:.4f}")
+            if used_default:
+                print("(Note: Missing local pricing for some/all models; cost may be 0)")
+            print("\nCircuitron powering down...")
         except PipelineError as exc:
             print(f"Fatal error: {exc}")
     finally:

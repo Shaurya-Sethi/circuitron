@@ -15,6 +15,7 @@ from .ui.app import TerminalUI
 from .network import is_connected
 from .exceptions import PipelineError
 from .config import settings
+from .telemetry import record_from_run_result
 
 
 class PCBQueryOutput(BaseModel):
@@ -71,6 +72,12 @@ async def pcb_query_guardrail(ctx: Any, agent: Any, input_data: Any) -> Guardrai
                 "Internet connection lost. Please check your connection and try again."
             ) from exc
         raise PipelineError("Network connection issue") from exc
+
+    # Aggregate guardrail token usage too (no-op if usage missing)
+    try:
+        record_from_run_result(result)
+    except Exception:
+        pass
 
     output = result.final_output_as(PCBQueryOutput)
     return GuardrailFunctionOutput(

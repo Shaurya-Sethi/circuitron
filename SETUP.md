@@ -181,3 +181,23 @@ Lastly, you might wanna consider checking the option to share your data (the req
 ---
 
 Hope this helps you get started with Circuitron! If you have any questions or run into issues, feel free to reach out in the Discussions section of the GitHub repository.
+
+## Pricing and Cost Estimation
+
+Circuitron ships with built-in default prices in `circuitron/model_prices_builtin.py` so cost estimates work out of the box.
+
+Override options (highest precedence first):
+
+1. Create `circuitron/_model_prices_local.py` with:
+
+   ```python
+   PRICES = {
+     "gpt-5-mini": {"input": 0.25, "output": 2.0, "cached_input": 0.025},
+     # ...
+   }
+   ```
+
+2. Or set `CIRCUITRON_PRICES_FILE=C:/path/to/prices.json` where the JSON is `{ model: { input, output, cached_input } }`.
+
+3. Otherwise, built-in defaults are used. To disable them set `CIRCUITRON_DISABLE_BUILTIN_PRICES=1`.
+

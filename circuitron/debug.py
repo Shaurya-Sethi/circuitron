@@ -14,6 +14,7 @@ from agents.items import MessageOutputItem, ToolCallOutputItem
 from agents.result import RunResult
 
 from .config import settings
+from .telemetry import record_from_run_result
 from .network import is_connected
 from .exceptions import PipelineError
 
@@ -72,6 +73,12 @@ async def run_agent(agent: Any, input_data: Any) -> RunResult:
                 "Internet connection lost. Please check your connection and try again."
             ) from exc
         raise PipelineError("Network connection issue") from exc
+
+    # Aggregate token usage from raw responses as a fallback (no-op if none)
+    try:
+        record_from_run_result(result)
+    except Exception:
+        pass
 
     if settings.dev_mode:
         display_run_items(result)
