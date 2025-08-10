@@ -73,8 +73,13 @@ class InputBox:
                 # unless a custom completer is provided by the caller.
                 if completer is None:
                     completer = SlashCommandCompleter(
-                        commands=["/help", "/model"],
+                        commands=["/help", "/model", "/about"],
                         models=self._available_models,
+                        command_descriptions={
+                            "/help": "List available commands",
+                            "/model": "Switch the active LLM model",
+                            "/about": "What is Circuitron? How it works",
+                        },
                     )
                 bindings = KeyBindings()
                 # Note: We intentionally avoid binding Esc to exit to keep
@@ -103,7 +108,13 @@ class InputBox:
             # the pointer does not revert to the terminal's default color.
             self.console.print(f"[bold {accent}]└─ ❯[/] ", end="")
             text = input("")
+            # Treat a lone ESC as an exit signal to keep parity with tests/UX
+            if text == "\x1b":
+                raise EOFError
             return text
+        except EOFError:
+            # Bubble up to allow graceful exit handling by caller/tests
+            raise
         except Exception:
             # Final guard: minimal prompt
             text = input(f"{message}: ")

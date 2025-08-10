@@ -24,6 +24,9 @@ class SlashCommandCompleter(Completer):
         commands: List of supported slash commands (e.g., ["/help", "/model"]).
         models: List of available model names to show for '/model'.
         themes: Optional list of theme names for '/theme'.
+        command_descriptions: Optional mapping of command -> short description
+            to display in the dropdown menu. If not provided, a generic label
+            will be used.
     """
 
     def __init__(
@@ -31,10 +34,12 @@ class SlashCommandCompleter(Completer):
         commands: Iterable[str],
         models: Iterable[str],
         themes: Iterable[str] | None = None,
+        command_descriptions: dict[str, str] | None = None,
     ) -> None:
         self._commands = list(commands)
         self._models = list(models)
         self._themes = list(themes or [])
+        self._cmd_desc = dict(command_descriptions or {})
 
     def get_completions(self, document: Document, complete_event) -> Iterator[Completion]:  # type: ignore[override]
         text = document.text
@@ -50,7 +55,7 @@ class SlashCommandCompleter(Completer):
                         text=cmd,
                         start_position=-len(prefix),
                         display=cmd,
-                        display_meta="Circuitron command",
+                        display_meta=self._cmd_desc.get(cmd, "Command"),
                     )
             return
 

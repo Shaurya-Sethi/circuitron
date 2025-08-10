@@ -60,9 +60,33 @@ class TerminalUI:
             text = self.input_box.ask(message)
             if text.strip() == "/help":
                 self.console.print(
-                    "Available commands: /model, /help",
+                    "Available commands:\n"
+                    "  /model — switch the active LLM model for all agents\n"
+                    "  /about — what Circuitron is and how it works\n"
+                    "  /help — show this help",
                     style=ACCENT,
                 )
+                continue
+            if text.strip() == "/about":
+                about_md = (
+                    "# Circuitron\n\n"
+                    "Circuitron is an AI-powered PCB design accelerator that turns natural language\n"
+                    "requirements into SKiDL scripts, KiCad schematics, and PCB layouts.\n\n"
+                    "## How it works (high level)\n"
+                    "1. Planning — A planning agent drafts a design plan.\n\n"
+                    "2. Optional user edits — You can review and refine the plan.\n\n"
+                    "3. Part search & selection — Agents find candidate parts and select the best fit.\n\n"
+                    "4. Documentation context (RAG) — A documentation agent gathers relevant references.\n\n"
+                    "5. Code generation — The system generates SKiDL and related scripts.\n\n"
+                    "6. Validation & correction — A validator checks the code; a corrector fixes issues until valid.\n\n"
+                    "7. Runtime check (Docker) — Scripts are executed in an isolated container; a runtime corrector\n"
+                    "   iterates on failures.\n\n"
+                    "8. ERC loop — Electrical Rule Checks run and are handled until clean or accepted.\n\n"
+                    "9. Final output — KiCad files and artifacts are produced in the output folder.\n\n"
+                    "Use /model to change the active model at any time. Press Ctrl+C to exit."
+                )
+                from .components import panel as panel_comp
+                panel_comp.show_panel(self.console, "About Circuitron", about_md)
                 continue
             if text.strip() == "/model":
                 # Ask the user to choose a model and update all agent model fields
