@@ -48,15 +48,15 @@ When using any API, class, method, or tool:
 **If context7 is unavailable or to supplement**, you can refer to the following resource for the Agents SDK:
 
 ### **Other Sources**:
-  **Local OpenAI Agents SDK Knowledge Base**
-    *   **Location**: `openai_agents_knowledge/`
-    *   **Instructions**: `openai_agents_knowledge/AGENTS.md`
-    *   **Why**: Contains the complete source code, 73+ real implementation examples, and test patterns from the official repository. It is the most reliable source for creating correct and idiomatic code for this project.
-    *   **Protocol**: Before writing any agent or tool code, consult the examples in `openai_agents_knowledge/examples/` and the core implementation in `openai_agents_knowledge/src/agents/`.
+  **Local OpenAI Agents SDK Knowledge Base:**
+  *  **Location**: `openai_agents_knowledge/`
+  *  **Instructions**: `openai_agents_knowledge/AGENTS.md`
+  *  **Why**: Contains the complete source code, 73+ real implementation examples, and test patterns from the official repository. It is the most reliable source for creating correct and idiomatic code for this project.
+  *  **Protocol**: Before writing any agent or tool code, consult the examples in `openai_agents_knowledge/examples/` and the core implementation in `openai_agents_knowledge/src/agents/`.
 
   **SKiDL Documentation**
-    *   **URL**: [https://devbisme.github.io/skidl/](https://devbisme.github.io/skidl/)
-    *   **Use For**: Understanding SKiDL functions, classes, and circuit generation patterns.
+  *   **URL**: [https://devbisme.github.io/skidl/](https://devbisme.github.io/skidl/)
+  *   **Use For**: Understanding SKiDL functions, classes, and circuit generation patterns.
 
 ## Development Patterns
 
