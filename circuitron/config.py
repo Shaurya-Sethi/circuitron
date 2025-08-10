@@ -27,12 +27,14 @@ def _check_mcp_health(url: str) -> None:
 
 
 def setup_environment(dev: bool = False, use_dotenv: bool = False) -> Settings:
-    """Initialize environment variables and optionally configure tracing.
+    """Initialize environment variables and configure tracing.
 
     Exits the program if required variables are missing.
 
     Args:
-        dev: Enable logfire tracing when ``True``. Requires ``logfire`` to be installed.
+        dev: Deprecated behavior toggle for verbose output. Tracing is now
+             enabled regardless of this flag; ``dev`` only increases verbosity
+             and enables additional debug panels.
     """
     # Only load .env when explicitly requested; keep tests strict by default
     if use_dotenv:
@@ -47,18 +49,20 @@ def setup_environment(dev: bool = False, use_dotenv: bool = False) -> Settings:
         msg = ", ".join(missing)
         sys.exit(f"Missing required environment variables: {msg}")
     _check_mcp_health(os.getenv("MCP_URL", settings.mcp_url))
-    if dev:
-        try:
-            logfire = importlib.import_module("logfire")
-        except ModuleNotFoundError as exc:
-            raise RuntimeError(
-                "logfire is required for --dev mode. Install with 'pip install circuitron[dev]'"
-            ) from exc
-
+    # Always configure logfire tracing (required dependency)
+    try:
+        logfire = importlib.import_module("logfire")
+        # Default configuration; environment variables can refine it
         logfire.configure()
+        # Instrument OpenAI Agents SDK traces
         logfire.instrument_openai_agents()
+    except ModuleNotFoundError as exc:  # pragma: no cover - installation issue
+        raise RuntimeError(
+            "logfire is now a required dependency. Install with 'pip install circuitron'."
+        ) from exc
 
     new_settings = Settings()
     settings.__dict__.update(vars(new_settings))
+    # dev flag now controls verbosity & extra panels only
     settings.dev_mode = dev
     return settings

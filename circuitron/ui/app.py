@@ -31,7 +31,8 @@ class TerminalUI:
     """Interactive terminal UI using Rich and prompt_toolkit."""
 
     def __init__(self, console: Console | None = None) -> None:
-        self.console = console or Console()
+        # Hide file:line in log entries to keep the UI clean; keep timestamps.
+        self.console = console or Console(log_path=False, log_time=True)
         self.banner = Banner(self.console)
         self.spinner = Spinner(self.console)
         self.status_bar = StatusBar(self.console)

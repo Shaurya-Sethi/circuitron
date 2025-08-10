@@ -1018,7 +1018,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "-r", "--reasoning", action="store_true", help="show reasoning summary"
     )
     parser.add_argument(
-        "--dev", action="store_true", help="enable tracing with logfire"
+        "--dev",
+        action="store_true",
+        help="deprecated: tracing is always on; --dev now shows extra debug/verbose output",
     )
     parser.add_argument(
         "-n",

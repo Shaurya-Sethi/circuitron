@@ -4,3 +4,4 @@ skidl>=2.0.1
 httpx>=0.27.0
 prompt_toolkit>=3.0
 rich>=13.0
+logfire>=3.22.0

@@ -61,13 +61,7 @@ Clone the repository and install the package in editable mode so the CLI and tes
 pip install -e .  # or `pip install .`
 ```
 
-This installs `openai-agents`, `python-dotenv`, and `skidl`. For tracing support during development, install the optional extras:
-
-```bash
-pip install -e .[dev]
-```
-
-A `requirements.txt` file matching the `pyproject.toml` dependencies is included for convenience.
+This installs `openai-agents`, `python-dotenv`, `skidl`, `rich`, and `logfire`. Tracing with Pydantic Logfire is now enabled by default; no extra install flags are required. A `requirements.txt` mirroring `pyproject.toml` is included for convenience.
 
 ## Setup
 
@@ -165,10 +159,12 @@ Other options:
 circuitron "Design a voltage divider"
 ```
 
-During development you can enable tracing and verbose agent output:
+During development you can enable extra debug/verbose output (tracing is always on):
 
 ```bash
 circuitron --dev "Design a voltage divider"
+
+> Note: `--dev` no longer controls tracing. Tracing via Logfire is always enabled. `--dev` only increases verbosity and shows additional debug panels.
 ```
 
 The `--output-dir` option saves all generated files to a specific location. By default results are written to `./circuitron_output`.

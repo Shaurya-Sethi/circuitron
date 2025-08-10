@@ -1,4 +1,11 @@
 # Circuitron Changelog (collab_progress index)
+## UI: Single Live Progress spinner; Logfire always-on
+- Date: 2025-08-10
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): ui components, config, pipeline, pyproject, requirements, README
+- Details: See collab_progress/ui-one-live-progress-and-always-logfire-10-08-2025.md
+- Verification: pytest -q passed locally in venv; spinner renders cleanly with logs above it.
 
 ## Docs: Cleanup command for KiCad containers
 - Date: 2025-08-09

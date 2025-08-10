@@ -1,4 +1,8 @@
-"""Simple persistent status bar."""
+"""Simple persistent status bar.
+
+Emits succinct one-line updates via ``console.log`` so messages appear above
+any active Rich Progress spinner (single Live display).
+"""
 
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ class StatusBar:
         self.console = console
         self.status = Status()
         self.started = False
+        self._last_rendered = None  # type: ignore[assignment]
 
     def start(self) -> None:
         self.started = True
@@ -31,7 +36,7 @@ class StatusBar:
 
     def stop(self) -> None:
         if self.started:
-            self.console.print()
+            # End of session marker; avoid extra newline spam.
             self.started = False
 
     def update(self, stage: str | None = None, message: str | None = None) -> None:
@@ -40,5 +45,14 @@ class StatusBar:
         if message is not None:
             self.status.message = message
         if self.started:
-            text = Text(f"{self.status.stage} - {self.status.message}", style=ACCENT)
-            self.console.print(text)
+            # Render as a regular print to avoid file:line decorations of log().
+            # Progress redirect keeps this above the spinner line.
+            stage_s = self.status.stage
+            msg_s = self.status.message
+            curr = (stage_s, msg_s)
+            if self._last_rendered == curr:
+                return
+            self._last_rendered = curr
+            content = f"{stage_s} - {msg_s}" if msg_s else f"{stage_s}"
+            style = ACCENT if msg_s else "dim"
+            self.console.print(Text(content, style=style))
