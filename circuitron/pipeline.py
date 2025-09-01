@@ -132,7 +132,6 @@ async def run_planner(
     result = await run_agent(agent, sanitize_text(prompt))
     if ui:
         ui.finish_stage("Planning")
-        ui.display_plan(result.final_output)
     return result
 
 
@@ -151,8 +150,6 @@ async def run_plan_editor(
     result = await run_agent(agent, input_msg)
     if ui:
         ui.finish_stage("Editing")
-        if result.final_output.updated_plan:
-            ui.display_plan(result.final_output.updated_plan)
     return cast(PlanEditorOutput, result.final_output)
 
 
