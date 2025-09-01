@@ -51,7 +51,9 @@ def test_search_kicad_libraries_parses_stdout() -> None:
         "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=lambda script, timeout=120: _fake_exec_python_search(script, timeout),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t_fixed1")
+        ctx = ToolContext(
+            context=None, tool_call_id="t_fixed1", tool_name="search_kicad_libraries"
+        )
         args = json.dumps({"query": "R"})
         result: str = asyncio.run(
             cast(
@@ -70,7 +72,9 @@ def test_search_kicad_footprints_parses_stdout() -> None:
         "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=lambda script, timeout=120: _fake_exec_python_footprints(script, timeout),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t_fixed2")
+        ctx = ToolContext(
+            context=None, tool_call_id="t_fixed2", tool_name="search_kicad_footprints"
+        )
         args = json.dumps({"query": "SOIC"})
         result: str = asyncio.run(
             cast(

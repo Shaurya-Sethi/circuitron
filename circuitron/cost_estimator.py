@@ -25,7 +25,8 @@ If `_model_prices_local.py` is missing, estimations return 0 with a flag.
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Any, Dict, Mapping, Tuple
+import importlib
 import os
 import json
 
@@ -34,7 +35,7 @@ _PRICE_SOURCE = "none"
 
 # 1) Try local-only prices (not in git)
 try:
-    from . import _model_prices_local as prices_mod  # type: ignore
+    prices_mod = importlib.import_module("circuitron._model_prices_local")
     PRICES = getattr(prices_mod, "PRICES", {}) or {}
     if PRICES:
         _PRICE_SOURCE = "local_module"
@@ -60,7 +61,7 @@ if not PRICES:
 # 3) Fall back to built-in prices unless explicitly disabled
 if not PRICES and os.getenv("CIRCUITRON_DISABLE_BUILTIN_PRICES") not in ("1", "true", "True"):
     try:
-        from . import model_prices_builtin as builtin_prices  # type: ignore
+        from . import model_prices_builtin as builtin_prices
         PRICES = getattr(builtin_prices, "PRICES", {}) or {}
         if PRICES:
             _PRICE_SOURCE = "builtin"
@@ -68,7 +69,7 @@ if not PRICES and os.getenv("CIRCUITRON_DISABLE_BUILTIN_PRICES") not in ("1", "t
         PRICES = {}
 
 
-def estimate_cost_usd(token_summary: dict) -> Tuple[float, bool, dict]:
+def estimate_cost_usd(token_summary: Mapping[str, Any]) -> Tuple[float, bool, Dict[str, float]]:
     """Estimate USD cost for a token usage summary.
 
     Args:
@@ -110,7 +111,7 @@ def price_source() -> str:
 __all__ = ["estimate_cost_usd", "estimate_cost_usd_for_model", "price_source"]
 
 
-def estimate_cost_usd_for_model(token_summary: dict, model: str) -> Tuple[float, bool]:
+def estimate_cost_usd_for_model(token_summary: Mapping[str, Any], model: str) -> Tuple[float, bool]:
     """Estimate USD cost assuming all tokens are billed to ``model``.
 
     This uses the overall token counts (input, output, cached_input) and applies

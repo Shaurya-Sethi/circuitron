@@ -6,10 +6,10 @@ contextual dropdowns (e.g., available model names) with arrow key navigation.
 
 from __future__ import annotations
 
-from typing import Iterable, Iterator
+from typing import Iterable
 
-from prompt_toolkit.completion import Completer, Completion  # type: ignore
-from prompt_toolkit.document import Document  # type: ignore
+from prompt_toolkit.completion import Completer, Completion, CompleteEvent
+from prompt_toolkit.document import Document
 
 
 class SlashCommandCompleter(Completer):
@@ -41,7 +41,7 @@ class SlashCommandCompleter(Completer):
         self._themes = list(themes or [])
         self._cmd_desc = dict(command_descriptions or {})
 
-    def get_completions(self, document: Document, complete_event) -> Iterator[Completion]:  # type: ignore[override]
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         text = document.text
         # Cursor-aware current word/prefix
         word_before_cursor = document.get_word_before_cursor(WORD=True)
@@ -90,7 +90,7 @@ class SlashCommandCompleter(Completer):
             return
 
         # No suggestions for other contexts
-        return iter(())
+        return
 
 
 class ModelMenuCompleter(Completer):
@@ -106,7 +106,7 @@ class ModelMenuCompleter(Completer):
     def __init__(self, models: Iterable[str]) -> None:
         self._models = list(models)
 
-    def get_completions(self, document: Document, complete_event) -> Iterator[Completion]:  # type: ignore[override]
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         text = document.text
         word_before_cursor = document.get_word_before_cursor(WORD=True)
 
