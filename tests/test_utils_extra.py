@@ -246,7 +246,9 @@ def test_get_kg_usage_guide() -> None:
     import asyncio
     from typing import Any, Coroutine, cast
 
-    ctx = ToolContext(context=None, tool_call_id="kg1")
+    ctx = ToolContext(
+        context=None, tool_call_id="kg1", tool_name="get_kg_usage_guide"
+    )
     args = json.dumps({"task_type": "method"})
     guide = asyncio.run(
         cast(Coroutine[Any, Any, str], get_kg_usage_guide.on_invoke_tool(ctx, args))
@@ -262,7 +264,9 @@ def test_get_kg_usage_guide_new_categories() -> None:
     import asyncio
     from typing import Any, Coroutine, cast
 
-    ctx = ToolContext(context=None, tool_call_id="kg2")
+    ctx = ToolContext(
+        context=None, tool_call_id="kg2", tool_name="get_kg_usage_guide"
+    )
     categories = {
         "workflow": "ESSENTIAL KNOWLEDGE GRAPH WORKFLOW",
         "schema": "KNOWLEDGE GRAPH SCHEMA",

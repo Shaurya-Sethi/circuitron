@@ -595,11 +595,13 @@ async def execute_final_script(
 
     output_dir = prepare_output_dir(output_dir)
     # Determine container mount path for the host output directory. On Windows,
-    # map to /mnt/<drive>/<path>; otherwise fall back to a stable '/workspace'.
+    # map to ``/mnt/<drive>/<path>``. For Unix-style paths, default to the
+    # stable ``/workspace`` mount point rather than echoing the host path.
     try:
-        container_mount = convert_windows_path_for_docker(output_dir)
+        converted = convert_windows_path_for_docker(output_dir)
     except ValueError:
-        container_mount = "/workspace"
+        converted = output_dir
+    container_mount = converted if converted != output_dir else "/workspace"
 
     # Mount the host output directory into the container and run the user
     # script from that working directory so generated files land on the mount.

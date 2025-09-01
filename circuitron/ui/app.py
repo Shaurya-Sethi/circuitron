@@ -269,7 +269,6 @@ class TerminalUI:
     ) -> None:
         """Render a compact summary panel with time, tokens, and cost."""
         from .components import panel as panel_comp
-        from rich.markup import escape
 
         overall = token_summary.get("overall", {})
         i = int(overall.get("input", 0))

@@ -20,7 +20,9 @@ def test_search_kicad_libraries() -> None:
     with patch(
         "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
-        ctx = ToolContext(context=None, tool_call_id="t1")
+        ctx = ToolContext(
+            context=None, tool_call_id="t1", tool_name="search_kicad_libraries"
+        )
         args = json.dumps({"query": "opamp lm324"})
         result: str = asyncio.run(
             cast(
@@ -41,7 +43,9 @@ def test_search_kicad_libraries_timeout() -> None:
         "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t2")
+        ctx = ToolContext(
+            context=None, tool_call_id="t2", tool_name="search_kicad_libraries"
+        )
         args = json.dumps({"query": "123"})
         result: str = asyncio.run(
             cast(
@@ -63,7 +67,9 @@ def test_search_kicad_footprints() -> None:
     with patch(
         "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
-        ctx = ToolContext(context=None, tool_call_id="t3")
+        ctx = ToolContext(
+            context=None, tool_call_id="t3", tool_name="search_kicad_footprints"
+        )
         args = json.dumps({"query": "SOIC-8"})
         result: str = asyncio.run(
             cast(
@@ -84,7 +90,9 @@ def test_search_kicad_footprints_timeout() -> None:
         "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t4")
+        ctx = ToolContext(
+            context=None, tool_call_id="t4", tool_name="search_kicad_footprints"
+        )
         args = json.dumps({"query": "DIP"})
         result: str = asyncio.run(
             cast(
@@ -106,7 +114,9 @@ def test_extract_pin_details() -> None:
     with patch(
         "circuitron.tools.kicad_session.exec_python_with_env", return_value=completed
     ) as run_mock:
-        ctx = ToolContext(context=None, tool_call_id="t5")
+        ctx = ToolContext(
+            context=None, tool_call_id="t5", tool_name="extract_pin_details"
+        )
         args = json.dumps({"library": "linear", "part_name": "lm386"})
         result: str = asyncio.run(
             cast(
@@ -126,7 +136,9 @@ def test_extract_pin_details_timeout() -> None:
         "circuitron.tools.kicad_session.exec_python_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=30),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t6")
+        ctx = ToolContext(
+            context=None, tool_call_id="t6", tool_name="extract_pin_details"
+        )
         args = json.dumps({"library": "lin", "part_name": "bad"})
         result: str = asyncio.run(
             cast(
@@ -158,7 +170,9 @@ def test_run_erc_success() -> None:
     with patch(
         "circuitron.tools.kicad_session.exec_erc_with_env", return_value=completed
     ) as run_mock:
-        ctx = ToolContext(context=None, tool_call_id="t7")
+        ctx = ToolContext(
+            context=None, tool_call_id="t7", tool_name="run_erc"
+        )
         args = json.dumps({"script_path": "/tmp/a.py"})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], run_erc_tool.on_invoke_tool(ctx, args))
@@ -175,7 +189,9 @@ def test_run_erc_timeout() -> None:
         "circuitron.tools.kicad_session.exec_erc_with_env",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=60),
     ):
-        ctx = ToolContext(context=None, tool_call_id="t8")
+        ctx = ToolContext(
+            context=None, tool_call_id="t8", tool_name="run_erc"
+        )
         args = json.dumps({"script_path": "/tmp/a.py"})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], run_erc_tool.on_invoke_tool(ctx, args))
@@ -199,7 +215,9 @@ def test_kicad_session_start_once() -> None:
         patch.object(kicad_session, "_run", return_value=fake_proc) as _run_mock,
         patch.object(kicad_session, "start", side_effect=fake_start) as start_mock,
     ):
-        ctx = ToolContext(context=None, tool_call_id="t9")
+        ctx = ToolContext(
+            context=None, tool_call_id="t9", tool_name="search_kicad_libraries"
+        )
         args = json.dumps({"query": "foo"})
         asyncio.run(
             cast(
@@ -237,7 +255,9 @@ def test_execute_final_script() -> None:
         sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="ok", stderr=""
         )
-        ctx = ToolContext(context=None, tool_call_id="tf")
+        ctx = ToolContext(
+            context=None, tool_call_id="tf", tool_name="execute_final_script"
+        )
         args = json.dumps({"script_content": "code", "output_dir": "/tmp/out"})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
@@ -264,7 +284,9 @@ def test_execute_final_script_windows_path() -> None:
         sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="ok", stderr=""
         )
-        ctx = ToolContext(context=None, tool_call_id="tfw")
+        ctx = ToolContext(
+            context=None, tool_call_id="tfw", tool_name="execute_final_script"
+        )
         args = json.dumps({"script_content": "code", "output_dir": "C:\\out", "keep_skidl": False})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
@@ -297,7 +319,9 @@ def test_execute_final_script_with_keep_skidl() -> None:
         )
         
         script_content = "from skidl import *\nprint('test')"
-        ctx = ToolContext(context=None, tool_call_id="tks")
+        ctx = ToolContext(
+            context=None, tool_call_id="tks", tool_name="execute_final_script"
+        )
         args = json.dumps({
             "script_content": script_content, 
             "output_dir": "/tmp/out", 
@@ -338,7 +362,9 @@ def test_execute_final_script_without_keep_skidl() -> None:
             args=[], returncode=0, stdout="ok", stderr=""
         )
         
-        ctx = ToolContext(context=None, tool_call_id="tnks")
+        ctx = ToolContext(
+            context=None, tool_call_id="tnks", tool_name="execute_final_script"
+        )
         args = json.dumps({
             "script_content": "from skidl import *", 
             "output_dir": "/tmp/out", 

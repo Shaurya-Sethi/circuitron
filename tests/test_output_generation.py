@@ -1,6 +1,5 @@
 import asyncio
 import os
-import subprocess
 from typing import Dict
 
 import json

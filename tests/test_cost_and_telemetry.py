@@ -21,7 +21,7 @@ def test_token_usage_aggregator_basic() -> None:
 
 
 def test_cost_estimator_without_local_prices(monkeypatch) -> None:
-    import importlib, sys
+    import importlib
     # Ensure built-in/env prices are not used
     sys.modules.pop('circuitron._model_prices_local', None)
     monkeypatch.delenv('CIRCUITRON_PRICES_FILE', raising=False)

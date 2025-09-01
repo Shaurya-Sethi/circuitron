@@ -15,7 +15,7 @@ The aggregator is reset at the start of a run and summarized at the end.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Optional
 import threading
 
@@ -116,7 +116,8 @@ except Exception:  # pragma: no cover - graceful degradation if OTEL missing
     SpanProcessor = object  # type: ignore
     TracerProvider = object  # type: ignore
     ReadableSpan = object  # type: ignore
-    get_tracer_provider = lambda: None  # type: ignore
+    def get_tracer_provider() -> object:  # type: ignore[explicit-ellipsis]
+        return None
 
 
 class TokenUsageSpanProcessor(SpanProcessor):
