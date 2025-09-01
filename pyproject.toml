@@ -10,9 +10,9 @@ readme = "README.md"
 authors = [{name = "Shaurya Sethi"}]
 requires-python = ">=3.10"
 dependencies = [
-    "openai-agents==0.1.0",
+    "openai-agents==0.2.10",
     "python-dotenv>=1.1.0",
-    "skidl>=2.0.1",
+    "skidl==2.1.0",
     "httpx>=0.27.0",
     "prompt_toolkit>=3.0",
     "rich>=13.0",
