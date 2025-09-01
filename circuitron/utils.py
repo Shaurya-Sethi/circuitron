@@ -726,10 +726,15 @@ def prepare_runtime_check_script(full_script: str) -> str:
 
 
 def prepare_output_dir(output_dir: str | None = None) -> str:
-    """Ensure ``output_dir`` exists and is empty.
+    """Ensure ``output_dir`` exists without deleting prior results.
 
-    When ``output_dir`` is ``None`` a new directory called 'circuitron_output' 
-    is created in the current working directory.
+    When ``output_dir`` is ``None`` a new directory called
+    ``circuitron_output`` is created in the current working directory.
+
+    This function previously emptied the directory which caused loss of
+    previously generated artifacts. It now preserves all existing files so
+    that multiple runs accumulate outputs unless callers explicitly choose a
+    different folder.
 
     Args:
         output_dir: Optional target directory path.
@@ -740,18 +745,9 @@ def prepare_output_dir(output_dir: str | None = None) -> str:
 
     if output_dir is None:
         output_dir = os.path.join(os.getcwd(), "circuitron_output")
-    
+
     path = output_dir
     os.makedirs(path, exist_ok=True)
-    
-    # Clear any existing files in the directory
-    for name in os.listdir(path):
-        file_path = os.path.join(path, name)
-        try:
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        except OSError:
-            pass
     return os.path.abspath(path)
 
 

@@ -594,15 +594,19 @@ async def execute_final_script(
     """
 
     output_dir = prepare_output_dir(output_dir)
+    # Determine container mount path for the host output directory. On Windows,
+    # map to /mnt/<drive>/<path>; otherwise fall back to a stable '/workspace'.
     try:
-        docker_output_dir = convert_windows_path_for_docker(output_dir)
-    except ValueError as exc:
-        return json.dumps({"success": False, "stderr": str(exc), "files": []})
+        container_mount = convert_windows_path_for_docker(output_dir)
+    except ValueError:
+        container_mount = "/workspace"
 
+    # Mount the host output directory into the container and run the user
+    # script from that working directory so generated files land on the mount.
     session = DockerSession(
         settings.kicad_image,
         f"circuitron-final-{os.getpid()}",
-        volumes={output_dir: docker_output_dir},
+        volumes={output_dir: container_mount},
     )
     # Create a wrapper script that handles library loading more gracefully
     wrapped_script = f"""
@@ -617,6 +621,15 @@ os.environ['KISYSMOD'] = '/usr/share/kicad/modules'
 
 # Set KiCad as the default tool
 set_default_tool(KICAD5)
+
+# Ensure outputs are written to the mounted directory
+try:
+    os.makedirs("{container_mount}", exist_ok=True)
+    os.chdir("{container_mount}")
+except Exception:
+    # If changing directory fails for any reason, continue; file copy logic
+    # will still attempt to gather artifacts, but mounting ensures best effort.
+    pass
 
 # User script starts here
 {script_content}
@@ -640,8 +653,8 @@ set_default_tool(KICAD5)
         copy_errors = []
         
         try:
-            # Copy all files from the container's working directory to the output directory
-            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            # Copy all files from the mounted workspace directory to the host output directory
+            copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
             # Get relative filenames for the response
             files = [os.path.basename(f) for f in copied_files]
         except Exception as e:
@@ -673,7 +686,7 @@ set_default_tool(KICAD5)
         # Even if timeout occurred, try to copy any files that might have been generated
         copied_files = []
         try:
-            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
             files = [os.path.basename(f) for f in copied_files]
         except Exception:
             files = []
@@ -687,7 +700,7 @@ set_default_tool(KICAD5)
         # Even if the process failed, try to copy any files that might have been generated
         copied_files = []
         try:
-            copied_files = session.copy_generated_files("/workspace/*", output_dir)
+            copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
             files = [os.path.basename(f) for f in copied_files]
         except Exception:
             files = []
