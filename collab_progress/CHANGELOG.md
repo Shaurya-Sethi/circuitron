@@ -29,6 +29,14 @@ Entry Template
 - Notes: <optional follow-ups/known issues>
 ```
 
+### UI: Prevent duplicate plan rendering
+- Date: 2025-09-01
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): pipeline, tests
+- Details: See collab_progress/ui-plan-duplicate-display-01-09-2025.md
+- Verification: Added tests/test_plan_display_once.py; please run `pytest -q` in the project venv.
+
 ### UI: Single Live Progress spinner; Logfire always-on
 - Date: 2025-08-10
 - Time (UTC): 00:00Z
@@ -109,7 +117,6 @@ Entry Template
 - Details: See collab_progress/ui-ux-issue1-log-demotion-09-08-2025.md
 - Verification: Local run of subset not possible in sandbox; change is isolated to logging level and should not affect behavior. Full suite should pass; please run `pytest -q` in the project venv.
 
-
 ### Test suite stabilized; CLI/UI fixes after model switch
 - Date: 2025-08-09
 - Time (UTC): 12:23Z
@@ -118,7 +125,6 @@ Entry Template
 - Details: See collab_progress/ci-fixes-model-switch-and-tests-09-08-2025.md
 - Verification: pytest now restricted to tests/ via pyproject; 134 passed locally (`pytest`).
 - Notes: Consider showing active model in the UI and persisting selection.
-
 
 ## Model switch via /model command
 - Date: 2025-08-09
