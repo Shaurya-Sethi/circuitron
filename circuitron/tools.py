@@ -594,6 +594,35 @@ async def execute_final_script(
     """
 
     output_dir = prepare_output_dir(output_dir)
+
+    # Take a snapshot of files that exist before this execution so that
+    # the UI can show only the artifacts created or modified in the
+    # current session. We record both names and a lightweight hash so we
+    # can distinguish truly new/updated files from unrelated leftovers.
+    def _hash_file(path: str) -> str:
+        import hashlib
+
+        h = hashlib.sha256()
+        with open(path, "rb") as f:  # small/medium artifacts — OK to read
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    before_names = set()
+    before_hashes: dict[str, str] = {}
+    try:
+        for name in os.listdir(output_dir):
+            p = os.path.join(output_dir, name)
+            if os.path.isfile(p):
+                before_names.add(name)
+                try:
+                    before_hashes[name] = _hash_file(p)
+                except OSError:
+                    # If a file is unreadable, just record its presence
+                    before_hashes[name] = ""
+    except FileNotFoundError:
+        # Directory may not exist yet; prepare_output_dir should have created it
+        before_names = set()
     # Determine container mount path for the host output directory. On Windows,
     # map to ``/mnt/<drive>/<path>``. For Unix-style paths, default to the
     # stable ``/workspace`` mount point rather than echoing the host path.
@@ -653,15 +682,43 @@ except Exception:
         # This ensures we capture any files that were generated before a failure
         copied_files = []
         copy_errors = []
-        
+
         try:
             # Copy all files from the mounted workspace directory to the host output directory
             copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
-            # Get relative filenames for the response
-            files = [os.path.basename(f) for f in copied_files]
         except Exception as e:
             copy_errors.append(f"File copy error: {str(e)}")
-            files = []
+
+        # After copying, compute the set of files that are genuinely new or
+        # modified compared to our pre-execution snapshot.
+        session_files: list[str] = []
+        try:
+            for name in os.listdir(output_dir):
+                p = os.path.join(output_dir, name)
+                if not os.path.isfile(p):
+                    continue
+                if name not in before_names:
+                    session_files.append(p)
+                    continue
+                # If it existed before, include only if content changed
+                try:
+                    from hashlib import sha256
+
+                    h = sha256()
+                    with open(p, "rb") as f:
+                        for chunk in iter(lambda: f.read(8192), b""):
+                            h.update(chunk)
+                    if before_hashes.get(name, None) != h.hexdigest():
+                        session_files.append(p)
+                except OSError:
+                    # If we cannot read it, fall back to mtime comparison
+                    try:
+                        if os.path.getmtime(p) > 0:
+                            session_files.append(p)
+                    except OSError:
+                        pass
+        except FileNotFoundError:
+            session_files = []
         
         # Enhanced error reporting
         stderr_output = proc.stderr.strip()
@@ -669,11 +726,11 @@ except Exception:
             stderr_output += "\n" + "\n".join(copy_errors) if stderr_output else "\n".join(copy_errors)
         
         # Add informative messages about file generation status
-        if not success and files:
-            stderr_output += f"\nNote: Script failed but {len(files)} file(s) were still generated and copied."
-        elif not success and not files:
+        if not success and session_files:
+            stderr_output += f"\nNote: Script failed but {len(session_files)} file(s) were still generated and copied."
+        elif not success and not session_files:
             stderr_output += "\nNote: Script failed and no files were generated."
-        elif success and not files:
+        elif success and not session_files:
             stderr_output += "\nWarning: Script succeeded but no files were found to copy."
         
         return json.dumps(
@@ -681,42 +738,78 @@ except Exception:
                 "success": success,
                 "stdout": proc.stdout.strip(),
                 "stderr": stderr_output,
-                "files": [os.path.join(output_dir, f) for f in files],
+                # Only include files created/modified in this session
+                "files": session_files,
             }
         )
     except subprocess.TimeoutExpired as exc:
         # Even if timeout occurred, try to copy any files that might have been generated
-        copied_files = []
+        # Best-effort recover and list session files as above
         try:
-            copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
-            files = [os.path.basename(f) for f in copied_files]
+            session.copy_generated_files(f"{container_mount}/*", output_dir)
         except Exception:
-            files = []
-        
+            pass
+        # Compute new/modified files vs before snapshot
+        session_files: list[str] = []
+        try:
+            for name in os.listdir(output_dir):
+                p = os.path.join(output_dir, name)
+                if not os.path.isfile(p):
+                    continue
+                if name not in before_names:
+                    session_files.append(p)
+                    continue
+                try:
+                    if before_hashes.get(name, "__x") != _hash_file(p):
+                        session_files.append(p)
+                except OSError:
+                    pass
+        except FileNotFoundError:
+            session_files = []
+
         timeout_msg = f"Script execution timeout: {str(exc)}"
-        if files:
-            timeout_msg += f"\nNote: Timeout occurred but {len(files)} file(s) were still recovered."
+        if session_files:
+            timeout_msg += f"\nNote: Timeout occurred but {len(session_files)} file(s) were still recovered."
         
-        return json.dumps({"success": False, "stderr": timeout_msg, "files": [os.path.join(output_dir, f) for f in files]})
+        return json.dumps({"success": False, "stderr": timeout_msg, "files": session_files})
     except subprocess.CalledProcessError as exc:
         # Even if the process failed, try to copy any files that might have been generated
-        copied_files = []
         try:
-            copied_files = session.copy_generated_files(f"{container_mount}/*", output_dir)
-            files = [os.path.basename(f) for f in copied_files]
+            session.copy_generated_files(f"{container_mount}/*", output_dir)
         except Exception:
-            files = []
-        
+            pass
+        # Determine session files
+        session_files = []
+        try:
+            for name in os.listdir(output_dir):
+                p = os.path.join(output_dir, name)
+                if not os.path.isfile(p):
+                    continue
+                if name not in before_names:
+                    session_files.append(p)
+                    continue
+                try:
+                    if before_hashes.get(name, "__x") != _hash_file(p):
+                        session_files.append(p)
+                except OSError:
+                    pass
+        except FileNotFoundError:
+            session_files = []
+
         stderr_output = exc.stderr.strip() if exc.stderr else ""
-        if files:
-            stderr_output += f"\nNote: Process failed but {len(files)} file(s) were still recovered." if stderr_output else f"Process failed but {len(files)} file(s) were still recovered."
-        
+        if session_files:
+            stderr_output += (
+                f"\nNote: Process failed but {len(session_files)} file(s) were still recovered."
+                if stderr_output
+                else f"Process failed but {len(session_files)} file(s) were still recovered."
+            )
+
         return json.dumps(
             {
                 "success": False,
                 "stdout": exc.stdout.strip() if exc.stdout else "",
                 "stderr": stderr_output,
-                "files": [os.path.join(output_dir, f) for f in files],
+                "files": session_files,
             }
         )
     finally:

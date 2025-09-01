@@ -29,6 +29,14 @@ Entry Template
 - Notes: <optional follow-ups/known issues>
 ```
 
+### UI: Generated Files scoped to current session
+- Date: 2025-09-01
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): tools, tests
+- Details: See collab_progress/generated-files-current-session-only-01-09-2025.md
+- Verification: Added unit test for filtering; please run `pytest -q` in the project venv.
+
 ### KiCad tool calls serialized; session retry and unique temp paths
 - Date: 2025-09-01
 - Time (UTC): 00:00Z
