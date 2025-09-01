@@ -62,7 +62,9 @@ Clone the repository and install the package in editable mode so the CLI and tes
 pip install -e .  # or `pip install .`
 ```
 
-This installs `openai-agents`, `python-dotenv`, `skidl`, `rich`, and `logfire`. Tracing with Pydantic Logfire is now enabled by default; no extra install flags are required. A `requirements.txt` mirroring `pyproject.toml` is included for convenience.
+This installs `openai-agents` (v0.2.10), `python-dotenv`, `skidl` (v2.1.0), `rich`, and `logfire`. Tracing with Pydantic Logfire is now enabled by default; no extra install flags are required. A `requirements.txt` mirroring `pyproject.toml` is included for convenience.
+
+> **Dependency Updates:** Circuitron has been updated to use `openai-agents` v0.2.10 and `skidl` v2.1.0. For migration information and testing scripts, see `scripts/README.md`.
 
 ## Setup
 
