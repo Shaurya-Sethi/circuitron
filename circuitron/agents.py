@@ -102,7 +102,8 @@ def create_partfinder_agent(footprint_search_enabled: bool = True) -> Agent:
     Returns:
         Configured :class:`~agents.Agent` instance.
     """
-    model_settings = ModelSettings(tool_choice="required")
+    # KiCad tools operate inside a single Docker container; avoid parallel tool calls
+    model_settings = ModelSettings(tool_choice="required", parallel_tool_calls=False)
 
     tools: list[Tool] = [search_kicad_libraries]
     prompt = PARTFINDER_PROMPT
@@ -123,7 +124,8 @@ def create_partfinder_agent(footprint_search_enabled: bool = True) -> Agent:
 
 def create_partselection_agent() -> Agent:
     """Create and configure the Part Selection Agent."""
-    model_settings = ModelSettings(tool_choice="required")
+    # Serializes calls to KiCad-backed tools to prevent container races
+    model_settings = ModelSettings(tool_choice="required", parallel_tool_calls=False)
 
     tools: list[Tool] = [extract_pin_details]
 
@@ -220,8 +222,10 @@ def create_code_correction_agent() -> Agent:
 def create_runtime_error_correction_agent() -> Agent:
     """Create and configure the Runtime Error Correction Agent."""
 
+    # Runtime checker uses the KiCad Docker session; keep tool calls sequential
     model_settings = ModelSettings(
-        tool_choice=_tool_choice_for_mcp(settings.runtime_correction_model)
+        tool_choice=_tool_choice_for_mcp(settings.runtime_correction_model),
+        parallel_tool_calls=False,
     )
 
     tools: list[Tool] = [get_kg_usage_guide, run_runtime_check_tool]
@@ -239,8 +243,10 @@ def create_runtime_error_correction_agent() -> Agent:
 
 def create_erc_handling_agent() -> Agent:
     """Create and configure the ERC Handling Agent."""
+    # ERC tool runs in the KiCad Docker session; avoid parallel tool calls
     model_settings = ModelSettings(
-        tool_choice=_tool_choice_for_mcp(settings.erc_handling_model)
+        tool_choice=_tool_choice_for_mcp(settings.erc_handling_model),
+        parallel_tool_calls=False,
     )
 
     tools: list[Tool] = [run_erc_tool]

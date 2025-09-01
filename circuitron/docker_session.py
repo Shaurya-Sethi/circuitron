@@ -7,6 +7,7 @@ import os
 import tempfile
 import platform
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import threading
@@ -206,14 +207,16 @@ class DockerSession:
         """Execute a Python script inside the running container with KiCad environment variables."""
         self.start()
         
-        # Write script to a temporary file in the container
+        # Write script to a temporary file on the host
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp_file:
             tmp_file.write(script)
             tmp_file_path = tmp_file.name
         
+        # Use a unique container-side path to avoid collisions under concurrency
+        cont_script = f"/tmp/temp_script_{uuid.uuid4().hex}.py"
         try:
             # Copy the script to the container
-            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:/tmp/temp_script.py")
+            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:{cont_script}")
             
             # Set up KiCad environment variables and execute the script
             env_setup = """
@@ -229,9 +232,17 @@ export KISYSMOD=/usr/share/kicad/modules
                 self.container_name,
                 "bash",
                 "-c",
-                f"{env_setup}python3 /tmp/temp_script.py",
+                f"{env_setup}python3 {cont_script}",
             ]
-            return self._run(cmd, timeout=timeout, check=True)
+            try:
+                return self._run(cmd, timeout=timeout, check=True)
+            except subprocess.CalledProcessError as e:
+                # If container died or missing, attempt one restart + retry
+                if e.stderr and "No such container" in e.stderr:
+                    self.started = False
+                    self.start()
+                    return self._run(cmd, timeout=timeout, check=True)
+                raise
         finally:
             # Clean up temporary files
             try:
@@ -246,7 +257,7 @@ export KISYSMOD=/usr/share/kicad/modules
                 self.container_name,
                 "rm",
                 "-f",
-                "/tmp/temp_script.py",
+                cont_script,
             ]
             try:
                 self._run(rm_cmd, check=True)
@@ -319,7 +330,9 @@ export KISYSMOD=/usr/share/kicad/modules
     ) -> subprocess.CompletedProcess[str]:
         """Execute a full SKiDL script inside the container with KiCad environment variables."""
         self.start()
-        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:/tmp/script.py")
+        # Use a unique container-side script path to avoid collisions
+        cont_script = f"/tmp/script_{uuid.uuid4().hex}.py"
+        self._run_docker_cp_with_retry(script_path, f"{self.container_name}:{cont_script}")
 
         # Set up KiCad environment variables for symbol library access
         env_setup = """
@@ -335,10 +348,17 @@ export KISYSMOD=/usr/share/kicad/modules
             self.container_name,
             "bash",
             "-c",
-            f"{env_setup}python3 /tmp/script.py",
+            f"{env_setup}python3 {cont_script}",
         ]
         try:
-            return self._run(cmd, timeout=timeout, check=True)
+            try:
+                return self._run(cmd, timeout=timeout, check=True)
+            except subprocess.CalledProcessError as e:
+                if e.stderr and "No such container" in e.stderr:
+                    self.started = False
+                    self.start()
+                    return self._run(cmd, timeout=timeout, check=True)
+                raise
         finally:
             rm_cmd = [
                 "docker",
@@ -347,7 +367,7 @@ export KISYSMOD=/usr/share/kicad/modules
                 self.container_name,
                 "rm",
                 "-f",
-                "/tmp/script.py",
+                cont_script,
             ]
             try:
                 self._run(rm_cmd, check=True)
@@ -370,8 +390,9 @@ export KISYSMOD=/usr/share/kicad/modules
             tmp_file_path = tmp_file.name
         
         try:
-            # Copy the wrapper script to the container
-            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:/tmp/wrapper.py")
+            # Copy the wrapper script to a unique path to avoid collisions
+            wrapper_cont = f"/tmp/wrapper_{uuid.uuid4().hex}.py"
+            self._run_docker_cp_with_retry(tmp_file_path, f"{self.container_name}:{wrapper_cont}")
             
             # Set up KiCad environment variables and execute the wrapper
             env_setup = """
@@ -387,9 +408,16 @@ export KISYSMOD=/usr/share/kicad/modules
                 self.container_name,
                 "bash",
                 "-c",
-                f"{env_setup}python3 /tmp/wrapper.py",
+                f"{env_setup}python3 {wrapper_cont}",
             ]
-            return self._run(cmd, timeout=timeout, check=True)
+            try:
+                return self._run(cmd, timeout=timeout, check=True)
+            except subprocess.CalledProcessError as e:
+                if e.stderr and "No such container" in e.stderr:
+                    self.started = False
+                    self.start()
+                    return self._run(cmd, timeout=timeout, check=True)
+                raise
         finally:
             # Clean up temporary files
             try:
@@ -405,7 +433,7 @@ export KISYSMOD=/usr/share/kicad/modules
                 "rm",
                 "-f",
                 "/tmp/script.py",
-                "/tmp/wrapper.py",
+                wrapper_cont if 'wrapper_cont' in locals() else "/tmp/wrapper.py",
             ]
             try:
                 self._run(rm_cmd, check=True)
@@ -507,6 +535,21 @@ export KISYSMOD=/usr/share/kicad/modules
                     # Ensure the Windows tmp directory exists and retry
                     ensure_windows_tmp_directory()
                     time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                    continue
+                # Recover if the container went away between attempts
+                if "No such container" in error_msg and attempt < max_retries - 1:
+                    logger.debug(
+                        "Docker cp failed (container missing), restarting and retrying (attempt %d/%d)",
+                        attempt + 1,
+                        max_retries,
+                    )
+                    self.started = False
+                    # Best-effort restart
+                    try:
+                        self.start()
+                    except Exception:
+                        pass
+                    time.sleep(0.2 * (attempt + 1))
                     continue
                 else:
                     # Re-raise the error if it's not the tmp error or we've exhausted retries

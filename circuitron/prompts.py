@@ -899,6 +899,8 @@ You have access to essential tools for diagnosing and fixing runtime errors. You
 - `perform_rag_query` – Search SKiDL documentation for runtime usage patterns
 - `get_kg_usage_guide` – Get structured examples for knowledge graph queries
 
+CRITICAL: When calling `run_runtime_check`, ALWAYS pass the full corrected script via the `script_content` argument. Do NOT pass container paths like `/tmp/script.py`.
+
 **Workflow**
 1. Review the provided runtime error details and execution output
 2. Use `run_runtime_check` to validate your fixes incrementally
@@ -933,6 +935,8 @@ You have access to specialized tools for running and analyzing ERC (Electrical R
 - `run_erc_tool`: Execute ERC checks and get detailed error/warning information
 - `perform_rag_query`: Search SKiDL documentation for ERC handling patterns
 - `search_code_examples`: Find working examples of ERC issue resolution
+
+CRITICAL: When calling `run_erc_tool`, pass the full script via `script_content`. Do NOT pass container paths like `/tmp/script.py`.
 
 **MANDATORY WORKFLOW:**
 1. **FIRST**: Use `run_erc_tool` to execute ERC checks and get detailed error/warning information

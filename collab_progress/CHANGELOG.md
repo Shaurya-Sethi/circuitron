@@ -29,6 +29,22 @@ Entry Template
 - Notes: <optional follow-ups/known issues>
 ```
 
+### KiCad tool calls serialized; session retry and unique temp paths
+- Date: 2025-09-01
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): agents, docker_session
+- Details: See collab_progress/kicad-session-serialization-and-retry-01-09-2025.md
+- Verification: Please activate venv and run `pytest -q` locally; sandbox lacks pytest.
+
+### Runtime tools accept script_content; guard bad paths
+- Date: 2025-09-01
+- Time (UTC): 00:00Z
+- Branch/PR: main
+- Files Changed (high level): tools, prompts
+- Details: See collab_progress/runtime-tool-accepts-script-content-01-09-2025.md
+- Verification: Please run `pytest -q` locally; sandbox lacks pytest.
+
 ### UI: Prevent duplicate plan rendering
 - Date: 2025-09-01
 - Time (UTC): 00:00Z

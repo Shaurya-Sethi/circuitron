@@ -345,8 +345,24 @@ def create_mcp_server() -> MCPServerSse:
     )
 
 
-async def run_runtime_check(script_path: str) -> str:
-    """Execute a SKiDL script and capture runtime errors."""
+async def run_runtime_check(
+    script_path: str | None = None,
+    script_content: str | None = None,
+) -> str:
+    """Execute a SKiDL script and capture runtime errors.
+
+    Args:
+        script_path: Host path to a SKiDL script. Provide this OR script_content.
+        script_content: Raw SKiDL Python code to execute. If provided, a temp file
+            is created automatically and cleaned up.
+
+    Returns:
+        JSON string with keys: success, error_details, stdout, stderr.
+
+    Notes:
+        - Agents MUST pass script_content; do not pass container paths like '/tmp/script.py'.
+        - The pipeline may pass script_path directly (backward compatible).
+    """
 
     wrapper = textwrap.dedent(
         """
@@ -386,10 +402,24 @@ async def run_runtime_check(script_path: str) -> str:
         print(json.dumps(result))
         """
     )
+    # Resolve source: prefer content, else path
+    temp_path: str | None = None
+    host_path: str | None = None
+    if script_content is not None:
+        temp_path = write_temp_skidl_script(script_content)
+        host_path = temp_path
+    elif script_path is not None:
+        # Accept provided host path as-is (tests may pass dummy paths with mocks)
+        host_path = script_path
+    else:
+        return json.dumps(
+            {"success": False, "error_details": "No script provided", "stdout": "", "stderr": ""}
+        )
+
     try:
         proc = await asyncio.to_thread(
             kicad_session.exec_erc_with_env,
-            script_path,
+            host_path,
             wrapper,
             timeout=int(settings.network_timeout),
         )
@@ -411,6 +441,13 @@ async def run_runtime_check(script_path: str) -> str:
             {"success": False, "error_details": str(exc), "stdout": "", "stderr": ""}
         )
 
+    finally:
+        if temp_path:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+
     return proc.stdout.strip()
 
 
@@ -418,7 +455,10 @@ async def run_runtime_check(script_path: str) -> str:
 run_runtime_check_tool = function_tool(run_runtime_check)
 
 
-async def run_erc(script_path: str) -> str:
+async def run_erc(
+    script_path: str | None = None,
+    script_content: str | None = None,
+) -> str:
     """Run a SKiDL script and perform ERC inside Docker.
 
     Args:
@@ -472,10 +512,29 @@ async def run_erc(script_path: str) -> str:
         print(json.dumps({'success': success, 'erc_passed': erc_passed, 'stdout': out.getvalue(), 'stderr': err.getvalue()}))
         """
     )
+    # Resolve source: prefer content, else path
+    temp_path: str | None = None
+    host_path: str | None = None
+    if script_content is not None:
+        temp_path = write_temp_skidl_script(script_content)
+        host_path = temp_path
+    elif script_path is not None:
+        # Accept provided host path as-is (tests may pass dummy paths with mocks)
+        host_path = script_path
+    else:
+        return json.dumps(
+            {
+                "success": False,
+                "erc_passed": False,
+                "stdout": "",
+                "stderr": "No script provided",
+            }
+        )
+
     try:
         proc = await asyncio.to_thread(
             kicad_session.exec_erc_with_env,
-            script_path,
+            host_path,
             wrapper,
             timeout=int(settings.network_timeout),
         )
@@ -496,6 +555,13 @@ async def run_erc(script_path: str) -> str:
         return json.dumps(
             {"success": False, "erc_passed": False, "stdout": "", "stderr": str(exc)}
         )
+
+    finally:
+        if temp_path:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
     return proc.stdout.strip()
 
