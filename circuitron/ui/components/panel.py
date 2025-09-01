@@ -8,7 +8,7 @@ text instead of printing the literal tags.
 
 from __future__ import annotations
 
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.text import Text
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -29,7 +29,7 @@ def show_panel(console: Console, title: str, content: str, *, render: str = "mar
             - "plain": render content as plain text with no special parsing
     """
     if render == "markup":
-        body = Text.from_markup(content)
+        body: RenderableType = Text.from_markup(content)
     elif render == "plain":
         body = Text(content)
     else:  # markdown

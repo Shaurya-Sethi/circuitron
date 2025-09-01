@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from prompt_toolkit import PromptSession  # type: ignore
-from prompt_toolkit.history import FileHistory  # type: ignore
-from prompt_toolkit.key_binding import KeyBindings  # type: ignore
-from prompt_toolkit.formatted_text import HTML  # type: ignore
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.formatted_text import HTML
 from rich.console import Console
 
 ACCENT = "cyan"
@@ -18,7 +18,7 @@ class Prompt:
 
     def __init__(self, console: Console) -> None:
         self.console = console
-        self._session: PromptSession | None = None
+        self._session: PromptSession[str] | None = None
         self._history_file = Path.home() / ".circuitron_history"
         self._bindings = KeyBindings()
         self._bindings.add("c-a")(lambda event: event.current_buffer.cursor_home())

@@ -28,7 +28,7 @@ class StatusBar:
         self.console = console
         self.status = Status()
         self.started = False
-        self._last_rendered = None  # type: ignore[assignment]
+        self._last_rendered: tuple[str, str] | None = None
 
     def start(self) -> None:
         self.started = True

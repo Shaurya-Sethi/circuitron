@@ -268,13 +268,18 @@ async def run_code_validation(
         if run_erc_flag and validation.status == "pass" and script_path:
             erc_json = await run_erc(script_path)
             try:
-                erc_result = json.loads(erc_json)
+                erc_result = cast(dict[str, object], json.loads(erc_json))
             except (json.JSONDecodeError, TypeError) as e:
-                erc_result = {"success": False, "erc_passed": False, "stderr": f"JSON parsing error: {str(e)}", "stdout": erc_json}
+                erc_result = {
+                    "success": False,
+                    "erc_passed": False,
+                    "stderr": f"JSON parsing error: {str(e)}",
+                    "stdout": erc_json,
+                }
             if ui:
                 # Display a human-friendly summary instead of raw JSON
                 if hasattr(ui, "display_erc_result"):
-                    ui.display_erc_result(erc_result)  # type: ignore[arg-type]
+                    ui.display_erc_result(erc_result)
                 else:
                     panel.show_panel(ui.console, "ERC Result", json.dumps(erc_result, indent=2))
             else:
@@ -1008,7 +1013,10 @@ async def main() -> None:
             total_cost, used_default, _ = estimate_cost_usd(summary)
             if total_cost == 0.0:
                 from .config import settings as cfg
-                model_name = getattr(cfg, "code_generation_model", None) or getattr(cfg, "planning_model", "o4-mini")
+                model_name = str(
+                    getattr(cfg, "code_generation_model", None)
+                    or getattr(cfg, "planning_model", "o4-mini")
+                )
                 total_cost2, used_default2 = estimate_cost_usd_for_model(summary, model_name)
                 if total_cost2 > 0.0 or used_default:
                     total_cost, used_default = total_cost2, used_default2

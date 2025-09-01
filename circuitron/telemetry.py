@@ -16,7 +16,7 @@ The aggregator is reset at the start of a run and summarized at the end.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, cast, TYPE_CHECKING
 import threading
 
 
@@ -76,7 +76,7 @@ class TokenUsageAggregator:
             mt.total += t
             mt.cached_input += c
 
-    def get_summary(self) -> dict:
+    def get_summary(self) -> Dict[str, Any]:
         """Return a JSON-serializable summary of token usage."""
         with self._lock:
             by_model = {
@@ -105,28 +105,42 @@ token_usage_aggregator = TokenUsageAggregator()
 
 # --- OpenTelemetry integration -------------------------------------------------
 
-try:  # Optional: only if OTEL SDK is present
-    from opentelemetry.trace import get_tracer_provider  # type: ignore
-    from opentelemetry.sdk.trace import TracerProvider  # type: ignore
-    from opentelemetry.sdk.trace.export import (
-        SpanProcessor,  # type: ignore
-    )
-    from opentelemetry.sdk.trace import ReadableSpan  # type: ignore
-except Exception:  # pragma: no cover - graceful degradation if OTEL missing
-    SpanProcessor = object  # type: ignore
-    TracerProvider = object  # type: ignore
-    ReadableSpan = object  # type: ignore
-    def get_tracer_provider() -> object:  # type: ignore[explicit-ellipsis]
-        return None
+if TYPE_CHECKING:
+    from opentelemetry.trace import get_tracer_provider
+    from opentelemetry.sdk.trace import TracerProvider, ReadableSpan, SpanProcessor
+else:  # pragma: no cover - graceful degradation if OTEL missing
+    try:
+        from opentelemetry.trace import get_tracer_provider
+        from opentelemetry.sdk.trace import TracerProvider, ReadableSpan, SpanProcessor
+    except Exception:
+        from typing import Protocol
+
+        class SpanProcessor(Protocol):
+            def on_start(self, span: Any, parent_context: Any | None = None) -> None: ...
+
+            def on_end(self, span: Any) -> None: ...
+
+            def shutdown(self) -> None: ...
+
+            def force_flush(self, timeout_millis: int = ...) -> bool: ...
+
+        class TracerProvider(Protocol):
+            def add_span_processor(self, span_processor: "SpanProcessor") -> None: ...
+
+        class ReadableSpan(Protocol):
+            pass
+
+        def get_tracer_provider() -> TracerProvider | None:
+            return None
 
 
 class TokenUsageSpanProcessor(SpanProcessor):
     """SpanProcessor that extracts token attributes from GenAI spans."""
 
-    def on_start(self, span: object) -> None:  # pragma: no cover - noop
+    def on_start(self, span: ReadableSpan, parent_context: object | None = None) -> None:  # pragma: no cover - noop
         return None
 
-    def on_end(self, span: object) -> None:  # pragma: no cover - integration tested indirectly
+    def on_end(self, span: ReadableSpan) -> None:  # pragma: no cover - integration tested indirectly
         try:
             attrs = getattr(span, "attributes", None) or {}
             # Token attributes (check both modern and legacy keys)
@@ -161,10 +175,12 @@ class TokenUsageSpanProcessor(SpanProcessor):
 def _safe_int(v: object | None) -> Optional[int]:
     if v is None:
         return None
-    try:
-        return int(v)  # type: ignore[arg-type]
-    except Exception:
-        return None
+    if isinstance(v, (int, float, str)):
+        try:
+            return int(v)
+        except Exception:
+            return None
+    return None
 
 
 def attach_span_processor_if_possible() -> bool:
@@ -174,11 +190,11 @@ def attach_span_processor_if_possible() -> bool:
     """
     try:
         provider = get_tracer_provider()
-        if not isinstance(provider, TracerProvider):  # type: ignore[arg-type]
+        if not isinstance(provider, TracerProvider):
             return False
         # Avoid duplicate processors by checking existing ones if available
         # TracerProvider API doesn't expose processors publicly; adding twice is harmless but we try to be cautious.
-        provider.add_span_processor(TokenUsageSpanProcessor())  # type: ignore[no-untyped-call]
+        provider.add_span_processor(TokenUsageSpanProcessor())
         return True
     except Exception:
         return False
@@ -221,7 +237,7 @@ def record_from_run_result(result: object) -> None:
             # Model name
             model = None
             if isinstance(resp, dict):
-                model = resp.get("model") or resp.get("response_model") or resp.get("model_name")  # type: ignore[assignment]
+                model = cast(str | None, resp.get("model") or resp.get("response_model") or resp.get("model_name"))
             else:
                 model = (
                     getattr(resp, "model", None)

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from rich.console import Console
 import asyncio
-from prompt_toolkit import PromptSession  # type: ignore
-from prompt_toolkit.history import InMemoryHistory  # type: ignore
-from prompt_toolkit.formatted_text import HTML  # type: ignore
-from prompt_toolkit.shortcuts import CompleteStyle  # type: ignore
-from prompt_toolkit.key_binding import KeyBindings  # type: ignore
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.completion import Completer
 
 from .completion import SlashCommandCompleter
 from ...config import settings
@@ -31,13 +32,13 @@ class InputBox:
 
     def __init__(self, console: Console) -> None:
         self.console = console
-        self._session: PromptSession | None = None
+        self._session: PromptSession[str] | None = None
         # Supported models for completion are sourced from settings.
         self._available_models: list[str] = list(
             getattr(settings, "available_models", ["o4-mini", "gpt-5-mini"])
         )
 
-    def ask(self, message: str, completer=None) -> str:
+    def ask(self, message: str, completer: Completer | None = None) -> str:
         """Return user input for ``message`` using prompt_toolkit when safe.
 
         Falls back to a boxed input() in async/headless environments.

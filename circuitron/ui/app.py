@@ -1,6 +1,6 @@
 """Terminal UI implementation using Rich and prompt_toolkit."""
 
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 from rich.console import Console
 
 
@@ -137,7 +137,9 @@ class TerminalUI:
             success = bool(files.get("success", False))
             stdout = str(files.get("stdout", "")).strip()
             stderr = str(files.get("stderr", "")).strip()
-            file_list = tuple(str(p) for p in files.get("files", []) if isinstance(p, str))
+            files_val = files.get("files", [])
+            files_iter = files_val if isinstance(files_val, Iterable) else []
+            file_list = tuple(str(p) for p in files_iter if isinstance(p, str))
 
             status = "Success" if success else "Completed with issues"
             status_style = "green" if success else "yellow"
@@ -250,7 +252,10 @@ class TerminalUI:
                 if total_cost == 0.0:
                     from ..config import settings as cfg
                     # Use code_generation_model as representative of main cost; user can change via /model
-                    model_name = getattr(cfg, "code_generation_model", None) or getattr(cfg, "planning_model", "o4-mini")
+                    model_name = str(
+                        getattr(cfg, "code_generation_model", None)
+                        or getattr(cfg, "planning_model", "o4-mini")
+                    )
                     total_cost2, used_default2 = estimate_cost_usd_for_model(token_summary, model_name)
                     # Prefer non-zero fallback
                     if total_cost2 > 0.0 or used_default:
@@ -263,7 +268,7 @@ class TerminalUI:
     def display_summary_stats(
         self,
         elapsed_seconds: float,
-        token_summary: dict,
+        token_summary: Mapping[str, Any],
         total_cost_usd: float,
         used_default_prices: bool,
     ) -> None:
