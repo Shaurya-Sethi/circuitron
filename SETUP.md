@@ -154,6 +154,25 @@ Next, instruct it to parse the GitHub repository `https://github.com/devbisme/sk
 
 This concludes the dependencies setup for Circuitron. Now you can start using Circuitron as mentioned in the README.md file, but just ensure that the MCP server is running in the background.
 
+### Maintenance: Keep SKiDL Knowledge Base Up to Date
+
+- Why: Major SKiDL releases can include breaking changes, deprecations, or new features that Circuitron can use. Rebuild the SKiDL knowledge bases after such releases.
+- When: After any major SKiDL release, or whenever you notice API/behavior changes.
+- Check version: Visit https://pypi.org/project/skidl/ or the GitHub releases, or run `python -c "import skidl; print(skidl.__version__)"` / `pip show skidl` locally.
+
+Refresh procedure (clean rebuild):
+1. Stop the MCP server if it is running.
+2. Delete previously ingested SKiDL corpus so you start clean, then repopulate:
+   - Supabase: remove/truncate the SKiDL documentation and embedding records that were created during the crawl.
+   - Neo4j: delete nodes/relationships that were created for the SKiDL docs knowledge graph.
+   - If you’re unsure what to remove, you can create a fresh Supabase project and/or a new Neo4j database for a clean slate.
+3. Start the MCP server again.
+4. Re-run the steps in “Populating Knowledge Bases” for SKiDL:
+   - Step 1: Crawl SKiDL Documentation (`smart_crawl_url`).
+   - Step 2: Parse GitHub Repository (`parse_github_repository`).
+
+Important: Always delete the existing SKiDL knowledge base contents before repopulating to avoid mixing old and new documentation.
+
 ## Additional Notes on OpenAI API
 
 ### Organization Verification
