@@ -29,6 +29,13 @@ Entry Template
 - Notes: <optional follow-ups/known issues>
 ```
 
+### Docs: SKiDL KB refresh guidance
+- Date: 2025-09-01
+- Time (UTC): 17:55Z
+- Branch/PR: main
+- Files Changed (high level): docs
+- Details: See collab_progress/docs-skidl-kb-refresh-01-09-2025.md
+- Verification: Docs-only change; no tests affected.
 ### UI: Generated Files scoped to current session
 - Date: 2025-09-01
 - Time (UTC): 00:00Z
@@ -158,3 +165,4 @@ Entry Template
 - Details: See collab_progress/model-switch-interactive-09-08-2025.md
 - Verification: Added unit tests (see tests/test_model_switch.py). Execution deferred in sandbox; run `pytest -q` locally.
 - Notes: Consider showing active model in status bar and persisting choice across sessions.
+
