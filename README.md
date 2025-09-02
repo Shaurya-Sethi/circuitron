@@ -161,6 +161,11 @@ Circuitron now supports interactive model switching via the `/model` command in 
 
 Once the MCP server is running and the Docker images are available, you can generate designs directly from the command line. The CLI verifies that the KiCad container starts successfully before processing a prompt.
 
+> **Important Prerequisites:**
+> - **Neo4j Database:** Always ensure your Neo4j instance is up and running before using Circuitron. If Neo4j is not available, Circuitron will experience silent failures and be unable to validate generated code due to MCP tools being unavailable.
+> - **Supabase Knowledge Base:** On the free tier, Supabase projects get paused after a few days of inactivity. If you're returning to Circuitron after a few days, make sure your Supabase project is not paused and resume it if necessary.
+> - **MCP Server Preflight Checks:** Circuitron automatically detects if the MCP server is not running and will notify you to start it before proceeding.
+
 Interactive mode:
 ```bash
 circuitron
