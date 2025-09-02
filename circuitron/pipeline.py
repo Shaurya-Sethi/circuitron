@@ -19,7 +19,7 @@ from .mcp_manager import mcp_manager
 
 from circuitron.debug import run_agent
 from circuitron.ui.app import TerminalUI
-from .network import check_internet_connection
+from .network import check_internet_connection, verify_mcp_server
 
 
 from circuitron.agents import (
@@ -992,7 +992,18 @@ async def main() -> None:
         settings.footprint_search_enabled = False
     if not check_internet_connection():
         return
-    await mcp_manager.initialize()
+    # Ensure MCP server is available before initializing the shared connection
+    if not verify_mcp_server():
+        return
+    try:
+        await mcp_manager.initialize()
+    except Exception as exc:  # pragma: no cover - defensive guard
+        print(
+            "Failed to initialize MCP server. Start it with:\n"
+            "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest\n"
+            f"Details: {exc}"
+        )
+        return
     try:
         prompt = args.prompt or input("What would you like me to design? ")
         try:

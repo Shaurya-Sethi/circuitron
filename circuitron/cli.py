@@ -9,7 +9,7 @@ from .config import setup_environment, settings
 from .models import CodeGenerationOutput
 from circuitron.tools import kicad_session
 from .mcp_manager import mcp_manager
-from .network import check_internet_connection
+from .network import check_internet_connection, verify_mcp_server
 from .exceptions import PipelineError
 from circuitron.ui.app import TerminalUI
 
@@ -46,8 +46,25 @@ async def run_circuitron(
 
     from circuitron.pipeline import run_with_retry
 
+    # Ensure MCP server is up before attempting to initialize the shared connection
+    if not verify_mcp_server(ui=ui):
+        return None
     # Defer UI construction to avoid prompt_toolkit console issues in headless tests
-    await mcp_manager.initialize()
+    try:
+        await mcp_manager.initialize()
+    except Exception as exc:
+        if ui is None:
+            print(
+                "Failed to initialize MCP server. Start it with:\n"
+                "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest\n"
+                f"Details: {exc}"
+            )
+        else:
+            ui.display_error(
+                "Failed to initialize MCP server. Start it with:\n"
+                "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest"
+            )
+        return None
     try:
         try:
             return await run_with_retry(
@@ -101,14 +118,22 @@ def main() -> None:
         ui.start_banner()
         try:
             # Do not start KiCad containers; this path only uses MCP tools
-            _ = asyncio.run(
-                run_setup(
-                    getattr(args, "docs_url", "https://devbisme.github.io/skidl/"),
-                    getattr(args, "repo_url", "https://github.com/devbisme/skidl"),
-                    ui=ui,
-                    timeout=getattr(args, "timeout", None),
+            if not verify_mcp_server(ui=ui):
+                return
+            try:
+                _ = asyncio.run(
+                    run_setup(
+                        getattr(args, "docs_url", "https://devbisme.github.io/skidl/"),
+                        getattr(args, "repo_url", "https://github.com/devbisme/skidl"),
+                        ui=ui,
+                        timeout=getattr(args, "timeout", None),
+                    )
                 )
-            )
+            except Exception as exc:
+                ui.display_error(
+                    "Setup failed to connect to the MCP server. Start it with:\n"
+                    "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest"
+                )
         except (KeyboardInterrupt, EOFError):
             ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
         return
@@ -117,6 +142,10 @@ def main() -> None:
         settings.footprint_search_enabled = False
 
     if not check_internet_connection():
+        return
+
+    # Verify MCP server before starting pipeline
+    if not verify_mcp_server(ui=ui):
         return
 
     if not verify_containers(ui=ui):
