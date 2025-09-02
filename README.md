@@ -68,15 +68,6 @@ This installs `openai-agents`, `python-dotenv`, `skidl`, `rich`, and `logfire`. 
 
 > **Note:** For more detailed set up instructions, please follow the [Detailed Setup Guide](SETUP.md) to get the dependencies for Circuitron up and running.
 
-Quickstart (recommended): once your MCP server is configured and running, initialize the knowledge bases directly from the CLI:
-
-```bash
-circuitron setup
-```
-
-This runs a one-time, idempotent initialization that crawls SKiDL docs and parses the SKiDL repository using the MCP server tools. You can also run it interactively in the UI with the `/setup` command.
-> **Note:** Ensure that you have followed steps 1-5 in the [Detailed Setup Guide](SETUP.md) first.
-
 1. **Pull required Docker images**
 
    ```bash
@@ -133,6 +124,16 @@ This runs a one-time, idempotent initialization that crawls SKiDL docs and parse
 
 6. **Populate the knowledge base**
 
+Quickstart (recommended): once your MCP server is configured and running, initialize the knowledge bases directly from the CLI:
+
+```bash
+circuitron setup
+```
+
+This runs a one-time, idempotent initialization that crawls SKiDL docs and parses the SKiDL repository using the MCP server tools. You can also run it interactively in the UI with the `/setup` command.
+> **Note:** Ensure that you have followed steps 1-5 in the [Detailed Setup Guide](SETUP.md) first.
+
+Alternatively: 
    With the MCP server running, configure your coding agent (for example GitHub Copilot) to use the server:
 
    - Select **Configure Tools → Add More Tools… → Add MCP Server → HTTP** and enter the URL `http://localhost:8051/sse`.
@@ -200,6 +201,8 @@ Circuitron estimates cost using token totals and model pricing. It works out of 
 Disable built-in defaults (useful for tests) with `CIRCUITRON_DISABLE_BUILTIN_PRICES=1`.
 
 The summary banner uses either a per-model breakdown or, if unavailable, the currently selected model’s rates to compute the overall estimate.
+
+> **Note:** The cost estimates are very pessimistic — due to not accounting for cache hits, and the optional data sharing benefits. The actual costs are usually much lesser — you can view the actual cost on the official openai platform -> billing.
 
 ## Examples
 
