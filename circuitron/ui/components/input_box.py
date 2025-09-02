@@ -74,12 +74,13 @@ class InputBox:
                 # unless a custom completer is provided by the caller.
                 if completer is None:
                     completer = SlashCommandCompleter(
-                        commands=["/help", "/model", "/about"],
+                        commands=["/help", "/model", "/about", "/setup"],
                         models=self._available_models,
                         command_descriptions={
                             "/help": "List available commands",
                             "/model": "Switch the active LLM model",
                             "/about": "What is Circuitron? How it works",
+                            "/setup": "Initialize knowledge bases (run once)",
                         },
                     )
                 bindings = KeyBindings()

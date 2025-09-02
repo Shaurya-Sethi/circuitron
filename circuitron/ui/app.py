@@ -64,6 +64,7 @@ class TerminalUI:
                     "Available commands:\n"
                     "  /model — switch the active LLM model for all agents\n"
                     "  /about — what Circuitron is and how it works\n"
+                    "  /setup — initialize knowledge bases (run once)\n"
                     "  /help — show this help",
                     style=ACCENT,
                 )
@@ -88,6 +89,27 @@ class TerminalUI:
                 )
                 from .components import panel as panel_comp
                 panel_comp.show_panel(self.console, "About Circuitron", about_md)
+                continue
+            if text.strip() == "/setup":
+                # Run one-time setup to populate Supabase + Neo4j via MCP tools
+                from ..setup import run_setup  # local import to avoid cycles
+                from .components import panel as panel_comp
+                panel_comp.show_panel(
+                    self.console,
+                    "Setup",
+                    (
+                        "This initializes the SKiDL documentation corpus and knowledge graph via MCP.\n"
+                        "It is idempotent; re-running will be skipped if already populated."
+                    ),
+                )
+                try:
+                    # Use default URLs; future: prompt for overrides if needed
+                    docs_url = "https://devbisme.github.io/skidl/"
+                    repo_url = "https://github.com/devbisme/skidl"
+                    import asyncio as _aio
+                    _ = _aio.run(run_setup(docs_url, repo_url, ui=self))
+                except (KeyboardInterrupt, EOFError):
+                    self.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
                 continue
             if text.strip() == "/model":
                 # Ask the user to choose a model and update all agent model fields

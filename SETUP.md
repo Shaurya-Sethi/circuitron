@@ -2,6 +2,14 @@
 
 This is a dedicated guide to getting the dependencies for the project set up.
 
+Tip: After you configure and start the MCP server (Supabase + Neo4j credentials in `mcp.env`), you can initialize Circuitron’s knowledge bases directly via the built-in command:
+
+```bash
+circuitron setup
+```
+
+This is idempotent and should be run once per environment. It uses the MCP tools `smart_crawl_url` and `parse_github_repository` to populate Supabase and Neo4j respectively. You can also trigger it from the interactive UI by typing `/setup`.
+
 ## Table of Contents
 
 1. [Docker Setup](#docker-setup)
@@ -106,7 +114,7 @@ INFO: Uvicorn running on http://0.0.0.0:8051⁠ (Press CTRL+C to quit)
 INFO: 172.17.0.1:48912 - "GET /sse HTTP/1.1" 200 OK
 ```
 
-## Setting up AI Assistant for Knowledge Base Population
+## Setting up AI Assistant for Knowledge Base Population (Optional in case `/setup` does not work)
 
 Now let's add this mcp server to your favourite coding agent so it can assist you with setting up the knowledge bases for circuitron.
 

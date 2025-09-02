@@ -1042,9 +1042,52 @@ async def main() -> None:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments.
 
+    Backward-compatible with existing usage where the first positional is a
+    free-form design prompt. If the first token is the literal 'setup', a
+    separate setup parser is used.
+
     Example:
-        >>> args = parse_args(["prompt text", "-r", "--dev"])
+        >>> parse_args(["prompt text", "-r", "--dev"])  # normal pipeline
+        >>> parse_args(["setup", "--docs-url", "https://..."])  # setup mode
     """
+
+    tokens = list(argv or [])
+    if tokens and tokens[0] == "setup":
+        # Setup mode parser (isolated knowledge-base initialization)
+        setup = argparse.ArgumentParser(description="Initialize knowledge bases")
+        setup.add_argument(
+            "--docs-url",
+            type=str,
+            default="https://devbisme.github.io/skidl/",
+            help=(
+                "SKiDL docs base URL to crawl (default: https://devbisme.github.io/skidl/)"
+            ),
+        )
+        setup.add_argument(
+            "--repo-url",
+            type=str,
+            default="https://github.com/devbisme/skidl",
+            help=(
+                "SKiDL repository URL to parse (default: https://github.com/devbisme/skidl)"
+            ),
+        )
+        setup.add_argument(
+            "--timeout",
+            type=float,
+            default=None,
+            help="Optional network timeout override for setup (seconds)",
+        )
+        setup.add_argument(
+            "-y",
+            "--yes",
+            action="store_true",
+            help="Run non-interactively without confirmation",
+        )
+        ns = setup.parse_args(tokens[1:])
+        setattr(ns, "command", "setup")
+        return ns
+
+    # Default (design) parser
     parser = argparse.ArgumentParser(description="Run the Circuitron pipeline")
     parser.add_argument("prompt", nargs="?", help="Design prompt")
     parser.add_argument(
@@ -1053,7 +1096,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--dev",
         action="store_true",
-        help="deprecated: tracing is always on; --dev now shows extra debug/verbose output",
+        help=(
+            "deprecated: tracing is always on; --dev now shows extra debug/verbose output"
+        ),
     )
     parser.add_argument(
         "-n",
@@ -1079,7 +1124,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="keep generated SKiDL code files after execution",
     )
-    return parser.parse_args(argv)
+    ns = parser.parse_args(tokens if argv is not None else None)
+    # Harmonize with CLI expectations
+    setattr(ns, "command", None)
+    return ns
 
 
 

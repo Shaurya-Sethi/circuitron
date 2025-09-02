@@ -93,7 +93,25 @@ def main() -> None:
     from circuitron.pipeline import parse_args
 
     args = parse_args()
-    setup_environment(args.dev, use_dotenv=True)
+    setup_environment(getattr(args, "dev", False), use_dotenv=True)
+    # Setup subcommand (knowledge base initialization) — isolated from pipeline
+    if getattr(args, "command", None) == "setup":
+        from circuitron.setup import run_setup
+        ui = TerminalUI()
+        ui.start_banner()
+        try:
+            # Do not start KiCad containers; this path only uses MCP tools
+            _ = asyncio.run(
+                run_setup(
+                    getattr(args, "docs_url", "https://devbisme.github.io/skidl/"),
+                    getattr(args, "repo_url", "https://github.com/devbisme/skidl"),
+                    ui=ui,
+                    timeout=getattr(args, "timeout", None),
+                )
+            )
+        except (KeyboardInterrupt, EOFError):
+            ui.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
+        return
     ui = TerminalUI()
     if args.no_footprint_search:
         settings.footprint_search_enabled = False

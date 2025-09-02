@@ -29,6 +29,15 @@ Entry Template
 - Notes: <optional follow-ups/known issues>
 ```
 
+### Experimental: Setup command and agent for KB initialization
+- Date: 2025-09-02
+- Time (UTC): 18:00Z
+- Branch/PR: main
+- Files Changed (high level): models, prompts, setup_agent, setup runner, cli, pipeline (args), ui (app, input_box), tests, docs
+- Details: See collab_progress/setup-command-implementation-09-02-2025.md
+- Verification: Added unit tests for models/agent/CLI/UI. Please run `pytest -q` in the project venv.
+- Notes: Marked experimental; interfaces and behavior may change. One-time, idempotent initialization using MCP tools (`smart_crawl_url`, `parse_github_repository`).
+
 ### Docs: SKiDL KB refresh guidance
 - Date: 2025-09-01
 - Time (UTC): 17:55Z
