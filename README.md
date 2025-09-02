@@ -129,7 +129,6 @@ Quickstart (recommended): once your MCP server is configured and running, initia
 ```bash
 circuitron setup
 ```
-A `/setup` command is also present in the cli for the same if you run circuitron interactively as normal.
 
 This runs a one-time, idempotent initialization that crawls SKiDL docs and parses the SKiDL repository using the MCP server tools. You can also run it interactively in the UI with the `/setup` command.
 > **Note:** Ensure that you have followed steps 1-5 in the [Detailed Setup Guide](SETUP.md) first.
