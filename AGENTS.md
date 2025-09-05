@@ -45,41 +45,44 @@ When using any API, class, method, or tool:
 3. Follow usage patterns recommended in the official examples.
 4. If uncertain, re-check the official docs or ask the user for clarification — never guess or hallucinate API usage.
 
-**If context7 is unavailable or to supplement**, you can refer to the following resource for the Agents SDK:
-
-### **Other Sources**:
-  **Local OpenAI Agents SDK Knowledge Base:**
-  *  **Location**: `openai_agents_knowledge/`
-  *  **Instructions**: `openai_agents_knowledge/AGENTS.md`
-  *  **Why**: Contains the complete source code, 73+ real implementation examples, and test patterns from the official repository. It is the most reliable source for creating correct and idiomatic code for this project.
-  *  **Protocol**: Before writing any agent or tool code, consult the examples in `openai_agents_knowledge/examples/` and the core implementation in `openai_agents_knowledge/src/agents/`.
-
-  **SKiDL Documentation**
-  *   **URL**: [https://devbisme.github.io/skidl/](https://devbisme.github.io/skidl/)
-  *   **Use For**: Understanding SKiDL functions, classes, and circuit generation patterns.
+**SKiDL Documentation**
+*   **URL**: [https://devbisme.github.io/skidl/](https://devbisme.github.io/skidl/)
+*   **Use For**: Understanding SKiDL functions, classes, and circuit generation patterns.
 
 ## Development Patterns
 
 ### Agent Creation Pattern
-Agents are created in `circuitron/agents.py` as pure functions. They are configured with a prompt, model, output type, and tools.
+Agents are created in `circuitron/agents.py` as pure functions. They are configured with a prompt, model, output type, tools, and model settings. When an agent needs RAG/validation, attach the shared MCP server. Use guardrails where appropriate.
 
 ```python
 # From circuitron/agents.py
 def create_planning_agent() -> Agent:
     """Create and configure the Planning Agent."""
-    model_settings = ModelSettings(tool_choice="required")
-    return Agent(
-        name="Circuitron-Planner",
-        instructions=PLAN_PROMPT,
-        model=settings.planning_model,
-        output_type=PlanOutput,
-        tools=[execute_calculation],
-        model_settings=model_settings,
-    )
+  model_settings = ModelSettings(tool_choice="required")
+
+  tools: list[Tool] = [execute_calculation]
+
+  return Agent(
+    name="Circuitron-Planner",
+    instructions=PLAN_PROMPT,
+    model=settings.planning_model,
+    output_type=PlanOutput,
+    tools=tools,
+    # Optional: constrain inputs
+    input_guardrails=[pcb_query_guardrail],
+    # Attach MCP for agents that need RAG/validation (omit here if not needed):
+    # mcp_servers=[mcp_manager.get_server()],
+    model_settings=model_settings,
+  )
 ```
 
+Notes
+- For tools that call KiCad inside Docker, disable parallel tool calls to avoid container contention:
+  `ModelSettings(tool_choice="required", parallel_tool_calls=False)`.
+- Use `_tool_choice_for_mcp(model)` to allow `tool_choice="auto"` only for models that support it.
+
 ### Tool Definition Pattern
-All agent tools are defined in `circuitron/tools.py` using the `@function_tool` decorator.
+Agent tools are defined in `circuitron/tools.py`. Prefer the `@function_tool` decorator for new async functions. You can also wrap existing callables with `function_tool(...)` to expose them without a decorator.
 
 ```python
 # From circuitron/tools.py
@@ -89,27 +92,48 @@ async def search_kicad_libraries(query: str, max_results: int = 50) -> str:
     # ... implementation using DockerSession ...
 ```
 
+```python
+# Also supported: expose an existing function as a tool by wrapping it
+async def run_runtime_check(... ) -> str:
+  # ... implementation ...
+
+run_runtime_check_tool = function_tool(run_runtime_check)
+```
+
 ### Docker Integration
 - All external tool execution (KiCad, calculations) occurs in isolated Docker containers.
-- Use the `DockerSession` class from `circuitron/docker_session.py` for persistent containers (like the one for KiCad).
-- For Windows paths, always use the `convert_windows_path_for_docker()` utility from `circuitron/utils.py`.
+- Persistent KiCad session: use `DockerSession` for tools that need SKiDL/KiCad. Calls like `exec_python_with_env`, `exec_erc_with_env`, and `exec_full_script_with_env` set KiCad env vars (KICAD5_SYMBOL_DIR, KICAD5_FOOTPRINT_DIR, KISYSMOD) and call `set_default_tool(KICAD5)`. Each run uses unique temp paths; container health is checked and recovered automatically.
+- Final execution mounts outputs: for producing artifacts, a dedicated `DockerSession` mounts the host output directory into the container. On Windows, compute the mount path with `convert_windows_path_for_docker()`; otherwise default to a stable mount such as `/workspace`. Generated files are copied back with `copy_generated_files`, and only new/modified files are surfaced.
+- Ephemeral calc runs: pure-Python calculations run via a short-lived `docker run` with restricted resources (no network, low memory/pids) using `settings.calculation_image`.
+- Windows specifics: the code ensures `C:\tmp` exists to avoid Docker Desktop issues and retries `docker cp` on transient failures; always use `convert_windows_path_for_docker()` when mapping host paths.
+- Concurrency: for tools backed by the KiCad container, set `ModelSettings(parallel_tool_calls=False)` to avoid container races.
+
+### MCP Integration Pattern
+Attach the shared MCP server for agents that need documentation/RAG or validation tools. Use model-aware `tool_choice` so only compatible models use `auto`.
+
+```python
+# Helper (from circuitron/agents.py)
+def _tool_choice_for_mcp(model: str) -> str:
+  return "auto" if model == "o4-mini" else "required"
+
+def create_documentation_agent() -> Agent:
+  model_settings = ModelSettings(tool_choice=_tool_choice_for_mcp(settings.documentation_model))
+  return Agent(
+    name="Circuitron-DocSeeker",
+    instructions=DOC_AGENT_PROMPT,
+    model=settings.documentation_model,
+    output_type=DocumentationOutput,
+    mcp_servers=[mcp_manager.get_server()],
+    model_settings=model_settings,
+  )
+```
 
 ### Error Handling & Correction
 
 - The pipeline is designed to be resilient. Correction loops are managed in `circuitron/pipeline.py`.
 - The `CorrectionContext` class (`circuitron/correction_context.py`) tracks validation failures and correction attempts to prevent infinite loops. When modifying correction logic, ensure this context is updated correctly.
 
-## Critical Dependencies & Setup
-
-### Required Services
-The following services **must be running** for Circuitron to function:
-1.  **Docker Daemon**
-2.  **Circuitron MCP Server**: Provides RAG and validation. Start it with:
-    ```bash
-    docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest
-    ```
-
-### Virtual Environment Activation (Windows/PowerShell)
+### Virtual Environment Activation (Windows/PowerShell - IF WORKING LOCALLY)
 Always activate the project's virtual environment before running any Python commands, tests, or tools. Use this exact command in Windows PowerShell:
 
 ```powershell
