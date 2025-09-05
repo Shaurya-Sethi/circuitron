@@ -46,6 +46,7 @@ The MCP server provides RAG capabilities and knowledge graph lookups. It require
 Before installing Circuitron ensure the following tools and accounts are available:
 
 - **Python 3.10+** – Circuitron is developed with Python 3.12, but it should work with Python 3.10+.
+- **Node.js and npm** – Required for installing the netlistsvg package.
 - **Docker** with permission to run containers
 - **OpenAI API access** – obtain an API key from [OpenAI account settings](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
 - **Pydantic Logfire** - Sign up (For free) and obtain an access token from [Pydantic Logfire](https://logfire.pydantic.dev/)
@@ -60,6 +61,12 @@ Clone the repository and install the package in editable mode so the CLI and tes
 
 ```bash
 pip install -e .  # or `pip install .`
+```
+
+Install the required Node.js package:
+
+```bash
+npm install https://github.com/nturley/netlistsvg
 ```
 
 This installs `openai-agents`, `python-dotenv`, `skidl`, `rich`, and `logfire`. Tracing with Pydantic Logfire is now enabled by default; no extra install flags are required. A `requirements.txt` mirroring `pyproject.toml` is included for convenience.
