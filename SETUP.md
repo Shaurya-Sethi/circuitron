@@ -22,6 +22,16 @@ docker pull ghcr.io/shaurya-sethi/circuitron-mcp:latest
 docker pull python:3.12-slim
 ```
 
+## Node.js Dependencies
+
+Circuitron requires the `netlistsvg` package for generating SVG diagrams from netlists. Install it using npm:
+
+```bash
+npm install https://github.com/nturley/netlistsvg
+```
+
+**Note:** Ensure you have Node.js and npm installed on your system. If not, download and install from https://nodejs.org/.
+
 ## MCP Server Setup
 
 Next, you'll need to follow the following steps to set up the MCP server:
