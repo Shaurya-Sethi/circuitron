@@ -70,7 +70,7 @@ def test_execute_final_script_mounts_workspace_and_copies(tmp_path, monkeypatch)
 
     # Act
     result_json = asyncio.run(
-        tools_mod.execute_final_script(script, str(out_dir), keep_skidl=False)
+        tools_mod.execute_final_script(script, str(out_dir), "design")
     )
     data = json.loads(result_json)
 
@@ -135,10 +135,10 @@ def test_execute_final_script_filters_preexisting_files(tmp_path, monkeypatch):
 
     # Act
     result_json = asyncio.run(
-        tools_mod.execute_final_script("from skidl import *\nERC()\n", str(out_dir), keep_skidl=False)
+    tools_mod.execute_final_script("from skidl import *\nERC()\n", str(out_dir), "design")
     )
     data = json.loads(result_json)
 
     # Assert: only the new files should be reported back
     returned = set(os.path.basename(p) for p in data.get("files", []))
-    assert returned == {"boost_converter.json", "boost_converter.svg"}
+    assert returned == {"boost_converter.json", "boost_converter.svg", "design.py"}

@@ -178,14 +178,11 @@ circuitron --dev "Design a voltage divider"
 
 The `--output-dir` option saves all generated files to a specific location. By default results are written to `./circuitron_output`.
 
-The `--keep-skidl` option saves the generated SKiDL script code to the output directory as `circuitron_skidl_script.py`. This is useful for debugging, education, and understanding how the circuit design was generated:
 
-```bash
-circuitron --keep-skidl "Design a voltage divider"
-```
+Circuitron automatically saves the final SKiDL script and the revised design plan in the output directory. Filenames are derived from your prompt (e.g., `voltage_divider.py`, `voltage_divider_design_plan.txt`) and numbered when duplicates exist.
 
 > **Note:**
-> It is currently recommended to use the `--no-footprint-search` flag to disable footprint searches. This ensures that SVG images and netlists are reliably generated. Not using this flag may lead to unstable behavior: sometimes the agent finds actual footprints and generates PCB layouts, but other times the pipeline fails due to hallucinated footprint names.
+> Use the `--no-footprint-search` flag to skip PCB layout generation. Schematic files will still be produced via `generate_schematic()` even when footprints are not searched.
 
 ### Cost Estimation and Pricing
 

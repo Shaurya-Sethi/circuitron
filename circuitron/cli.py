@@ -114,7 +114,6 @@ def main() -> None:
     show_reasoning = args.reasoning
     retries = args.retries
     output_dir = args.output_dir
-    keep_skidl = args.keep_skidl
 
     code_output: CodeGenerationOutput | None = None
     try:
@@ -125,7 +124,6 @@ def main() -> None:
                     show_reasoning=show_reasoning,
                     retries=retries,
                     output_dir=output_dir,
-                    keep_skidl=keep_skidl,
                 )
             )
         except (KeyboardInterrupt, EOFError):

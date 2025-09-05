@@ -258,7 +258,7 @@ def test_execute_final_script() -> None:
         ctx = ToolContext(
             context=None, tool_call_id="tf", tool_name="execute_final_script"
         )
-        args = json.dumps({"script_content": "code", "output_dir": "/tmp/out"})
+        args = json.dumps({"script_content": "code", "output_dir": "/tmp/out", "design_name": "design"})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
         )
@@ -287,7 +287,7 @@ def test_execute_final_script_windows_path() -> None:
         ctx = ToolContext(
             context=None, tool_call_id="tfw", tool_name="execute_final_script"
         )
-        args = json.dumps({"script_content": "code", "output_dir": "C:\\out", "keep_skidl": False})
+        args = json.dumps({"script_content": "code", "output_dir": "C:\\out", "design_name": "test"})
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
         )
@@ -301,8 +301,8 @@ def test_execute_final_script_windows_path() -> None:
         sess.exec_full_script_with_env.assert_called_once()
 
 
-def test_execute_final_script_with_keep_skidl() -> None:
-    """Test that execute_final_script calls keep_skidl_script when keep_skidl=True."""
+def test_execute_final_script_saves_skidl() -> None:
+    """Test that execute_final_script always saves the SKiDL script."""
     cfg.setup_environment()
     from circuitron.tools import execute_final_script_tool
 
@@ -315,41 +315,35 @@ def test_execute_final_script_with_keep_skidl() -> None:
     ):
         sess = sess_cls.return_value
         sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="ok", stderr=""
+            args=[], returncode=0, stdout="ok", stderr="",
         )
-        
+
         script_content = "from skidl import *\nprint('test')"
         ctx = ToolContext(
             context=None, tool_call_id="tks", tool_name="execute_final_script"
         )
         args = json.dumps({
-            "script_content": script_content, 
-            "output_dir": "/tmp/out", 
-            "keep_skidl": True
+            "script_content": script_content,
+            "output_dir": "/tmp/out",
+            "design_name": "design",
         })
-        
+
         result: str = asyncio.run(
             cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
         )
-        
+
         data = json.loads(result)
         assert data["success"] is True
-        
-        # Verify keep_skidl_script was called with correct parameters
         keep_skidl_mock.assert_called_once()
-        call_args = keep_skidl_mock.call_args
-        assert call_args[0][0] == "/tmp/out"  # output_dir argument
-        # The wrapped script should contain the original content
-        wrapped_script = call_args[0][1]
-        assert script_content in wrapped_script
-        assert "from skidl import *" in wrapped_script
 
 
-def test_execute_final_script_without_keep_skidl() -> None:
-    """Test that execute_final_script does not call keep_skidl_script when keep_skidl=False."""
+def test_execute_final_script_injects_schematic_when_no_footprint() -> None:
+    """If footprint search is disabled, schematic generation is enforced."""
     cfg.setup_environment()
-    from circuitron.tools import execute_final_script_tool
+    from circuitron.tools import execute_final_script
+    from circuitron.config import settings as cfg_settings
 
+    cfg_settings.footprint_search_enabled = False
     with (
         patch("circuitron.tools.DockerSession") as sess_cls,
         patch("circuitron.tools.prepare_output_dir", return_value="/tmp/out"),
@@ -359,27 +353,16 @@ def test_execute_final_script_without_keep_skidl() -> None:
     ):
         sess = sess_cls.return_value
         sess.exec_full_script_with_env.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="ok", stderr=""
+            args=[], returncode=0, stdout="ok", stderr="",
         )
-        
-        ctx = ToolContext(
-            context=None, tool_call_id="tnks", tool_name="execute_final_script"
-        )
-        args = json.dumps({
-            "script_content": "from skidl import *", 
-            "output_dir": "/tmp/out", 
-            "keep_skidl": False
-        })
-        
-        result: str = asyncio.run(
-            cast(Coroutine[Any, Any, str], execute_final_script_tool.on_invoke_tool(ctx, args))
-        )
-        
-        data = json.loads(result)
-        assert data["success"] is True
-        
-        # Verify keep_skidl_script was NOT called
-        keep_skidl_mock.assert_not_called()
+
+        script = "from skidl import *\n"  # no generate_schematic()
+        asyncio.run(execute_final_script(script, "/tmp/out", "design"))
+        saved_script = keep_skidl_mock.call_args[0][1]
+        assert "generate_schematic()" in saved_script
+        assert "generate_pcb" not in saved_script
+
+    cfg_settings.footprint_search_enabled = True
 
 
 def test_prepare_runtime_check_script() -> None:

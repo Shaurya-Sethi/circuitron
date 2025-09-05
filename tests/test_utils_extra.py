@@ -330,10 +330,10 @@ generate_netlist()
 """
     
     # Test saving the script
-    keep_skidl_script(output_dir, script_content)
+    keep_skidl_script(output_dir, script_content, "my_design")
     
     # Verify the file was created with correct name and content
-    expected_path = tmp_path / "circuitron_skidl_script.py"
+    expected_path = tmp_path / "my_design.py"
     assert expected_path.exists(), "SKiDL script file should be created"
     
     # Verify content is correctly written
@@ -351,7 +351,7 @@ def test_keep_skidl_script_with_none_output_dir() -> None:
     from circuitron.utils import keep_skidl_script
     
     # Should not raise an exception when output_dir is None
-    keep_skidl_script(None, "some script content")
+    keep_skidl_script(None, "some script content", "design")
     # No assertion needed - just verify it doesn't crash
 
 
@@ -367,9 +367,9 @@ r1 = Part('Device', 'R', value='1kΩ')  # Greek Omega
 # Comment with emoji: ⚡ 
 """
     
-    keep_skidl_script(output_dir, script_content)
+    keep_skidl_script(output_dir, script_content, "unicode")
     
-    expected_path = tmp_path / "circuitron_skidl_script.py"
+    expected_path = tmp_path / "unicode.py"
     assert expected_path.exists()
     
     # Verify Unicode content is preserved
@@ -388,9 +388,9 @@ def test_keep_skidl_script_creates_missing_dir(tmp_path: Path) -> None:
     output_dir = tmp_path / "missing"
     script_content = "from skidl import *\n"
 
-    keep_skidl_script(str(output_dir), script_content)
+    keep_skidl_script(str(output_dir), script_content, "missing")
 
-    expected_path = output_dir / "circuitron_skidl_script.py"
+    expected_path = output_dir / "missing.py"
     assert expected_path.exists()
     with open(expected_path, encoding="utf-8") as f:
         assert f.read() == script_content
@@ -402,3 +402,13 @@ def test_convert_windows_path_for_docker() -> None:
     assert convert_windows_path_for_docker("/mnt/c/Users") == "/mnt/c/Users"
     with pytest.raises(ValueError):
         convert_windows_path_for_docker("not/a/windows/path")
+
+
+def test_save_design_plan(tmp_path: Path) -> None:
+    """Design plan is saved with a unique filename."""
+    from circuitron.utils import save_design_plan
+    from circuitron.models import PlanOutput
+
+    plan = PlanOutput()
+    save_design_plan(str(tmp_path), plan, "example")
+    assert (tmp_path / "example_design_plan.txt").exists()
