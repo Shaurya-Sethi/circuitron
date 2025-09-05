@@ -30,11 +30,29 @@ Each agent has specific responsibilities and uses the OpenAI Agents SDK with str
 - **Tools** (`circuitron/tools.py`): Docker-isolated functions for calculations, KiCad library searches, and ERC checks.
 - **UI** (`circuitron/ui/app.py`): A Rich-based terminal interface for progress tracking and interactive plan editing.
 
+## Project Map (high‑value files)
+- `circuitron/pipeline.py` – Orchestration and correction loops.
+- `circuitron/agents.py` – Agent factory functions and `_tool_choice_for_mcp`.
+- `circuitron/tools.py` – Function tools and Docker integration.
+- `circuitron/models.py` – Pydantic schemas.
+- `circuitron/docker_session.py` – Container/session/mount logic.
+- `circuitron/mcp_manager.py` – Shared MCP server connection.
+- `circuitron/prompts.py` – System instructions for each agent.
+- `circuitron/ui/app.py` – Terminal UI.
+- `circuitron/correction_context.py` – Correction attempt tracking.
+- `circuitron/settings.py`, `circuitron/config.py` – Defaults and env bootstrap.
+- `circuitron/cli.py` – CLI entrypoint.
+- `tests/` – Unit/integration tests with mocks.
+- `README.md`, `SETUP.md` – End‑to‑end setup and diagrams.
+- `collab_progress/` – Mandatory progress notes and changelog entries.
+
 ## Documentation & Knowledge Sources
 
-**CRITICAL: ALWAYS reference official documentation for OpenAI Agents SDK (And other libraries/frameworks) before implementing or changing anything related to it.**
+**CRITICAL: ALWAYS reference official documentation for OpenAI Agents SDK (And other libraries/frameworks) before implementing anything new or changing existing behavior.**
 
 ###  **Primary Sources**: 
+
+> **Note:** If working in a cloud environment (not locally), you would not have `context7` access. In that case, rely on the official docs.
 
 1. The available tools with the `context7` MCP server will provide you with documentation for ANY library/framework/language,etc in the world.
 2. If `context7` is not available, your primary source for technical reference should be the official documentation available on the internet (if you have access)
