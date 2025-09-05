@@ -97,24 +97,6 @@ def test_parse_args_no_footprint_flag() -> None:
     assert args.no_footprint_search is True
 
 
-def test_parse_args_keep_skidl_flag() -> None:
-    """Test that --keep-skidl argument is parsed correctly."""
-    from circuitron import pipeline as pl
-    
-    # Test default behavior (keep_skidl should default to False)
-    args_default = pl.parse_args(["prompt"])
-    assert args_default.keep_skidl is False
-    
-    # Test with --keep-skidl flag
-    args_with_flag = pl.parse_args(["prompt", "--keep-skidl"])
-    assert args_with_flag.keep_skidl is True
-    
-    # Test with other arguments combined
-    args_combined = pl.parse_args(["prompt", "--keep-skidl", "--output-dir", "/tmp", "-r"])
-    assert args_combined.keep_skidl is True
-    assert args_combined.output_dir == "/tmp"
-    assert args_combined.reasoning is True
-
 
 def test_run_code_validation_calls_erc() -> None:
     import circuitron.pipeline as pl

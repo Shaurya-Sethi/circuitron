@@ -77,6 +77,8 @@ from circuitron.utils import (
     validate_code_generation_results,
     format_docs_summary,
     format_plan_summary,
+    make_artifact_basename,
+    save_design_plan,
 )
 from circuitron.ui.components import panel
 
@@ -490,7 +492,6 @@ async def run_with_retry(
     show_reasoning: bool = False,
     retries: int = 0,
     output_dir: str | None = None,
-    keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
 ) -> CodeGenerationOutput | None:
     """Run :func:`pipeline` with retry and error handling.
@@ -500,9 +501,6 @@ async def run_with_retry(
         show_reasoning: Print the reasoning summary when ``True``.
         retries: Maximum number of retry attempts on failure.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, save generated SKiDL code files to the output directory 
-                   for debugging, education, and understanding how the circuit design 
-                   was generated. The script is saved as 'circuitron_skidl_script.py'.
         ui: Optional terminal UI instance for progress feedback.
         
     Returns:
@@ -548,7 +546,6 @@ async def pipeline(
     prompt: str,
     show_reasoning: bool = False,
     output_dir: str | None = None,
-    keep_skidl: bool = False,
     ui: "TerminalUI" | None = None,
 ) -> CodeGenerationOutput:
     """Execute planning, plan editing and part search flow.
@@ -557,7 +554,6 @@ async def pipeline(
         prompt: Natural language design request.
         show_reasoning: Print the reasoning summary when ``True``.
         output_dir: Directory to save generated files. If None, uses current directory.
-        keep_skidl: If True, keep generated SKiDL code files after execution.
 
     Returns:
         The :class:`CodeGenerationOutput` generated from the pipeline.
@@ -573,6 +569,9 @@ async def pipeline(
     else:
         print(f"{message}")
         print()
+
+    design_name = make_artifact_basename(prompt)
+    out_dir = prepare_output_dir(output_dir)
 
     planner_agent = get_planning_agent()
     plan_edit_agent = get_plan_edit_agent()
@@ -624,13 +623,15 @@ async def pipeline(
             feedback.additional_requirements,
         ]
     ):
-        part_output = await run_part_finder(plan, ui=ui, agent=partfinder_agent)
+        final_plan = plan
+        save_design_plan(out_dir, final_plan, design_name)
+        part_output = await run_part_finder(final_plan, ui=ui, agent=partfinder_agent)
         if ui:
             ui.display_found_parts(part_output.found_components)
         else:
             pretty_print_found_parts(part_output)
         selection = await run_part_selector(
-            plan,
+            final_plan,
             part_output,
             ui=ui,
             agent=partselection_agent,
@@ -640,7 +641,7 @@ async def pipeline(
         else:
             pretty_print_selected_parts(selection)
         docs = await run_documentation(
-            plan,
+            final_plan,
             selection,
             ui=ui,
             agent=documentation_agent,
@@ -650,7 +651,7 @@ async def pipeline(
         else:
             pretty_print_documentation(docs)
         code_out = await run_code_generation(
-            plan,
+            final_plan,
             selection,
             docs,
             ui=ui,
@@ -674,7 +675,7 @@ async def pipeline(
             code_out = await run_validation_correction(
                 code_out,
                 validation,
-                plan,
+                final_plan,
                 selection,
                 docs,
                 correction_context,
@@ -699,7 +700,7 @@ async def pipeline(
                 raise PipelineError("Runtime error correction loop exceeded maximum iterations")
             code_out, runtime_success = await run_runtime_check_and_correction(
                 code_out,
-                plan,
+                final_plan,
                 selection,
                 docs,
                 correction_context,
@@ -739,7 +740,7 @@ async def pipeline(
                 code_out, erc_out = await run_erc_handling(
                     code_out,
                     validation,
-                    plan,
+                    final_plan,
                     selection,
                     docs,
                     erc_result,
@@ -789,10 +790,9 @@ async def pipeline(
                 "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
             )
 
-        out_dir = prepare_output_dir(output_dir)
         if ui:
             ui.start_stage("Generating Files")
-        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
+        files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, design_name)
         if ui:
             ui.finish_stage("Generating Files")
             ui.display_files(json.loads(files_json))
@@ -815,6 +815,7 @@ async def pipeline(
         pretty_print_edited_plan(edit_result)
     assert edit_result.updated_plan is not None
     final_plan = edit_result.updated_plan
+    save_design_plan(out_dir, final_plan, design_name)
 
     part_output = await run_part_finder(final_plan, ui=ui, agent=partfinder_agent)
     if ui:
@@ -968,10 +969,9 @@ async def pipeline(
             "ERC failed after maximum correction attempts - errors remain (warnings are acceptable)"
         )
 
-    out_dir = prepare_output_dir(output_dir)
     if ui:
         ui.start_stage("Generating Files")
-    files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, keep_skidl)
+    files_json = await execute_final_script(code_out.complete_skidl_code, out_dir, design_name)
     if ui:
         ui.finish_stage("Generating Files")
         ui.display_files(json.loads(files_json))
@@ -1073,11 +1073,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-footprint-search",
         action="store_true",
         help="disable the agent's footprint search functionality",
-    )
-    parser.add_argument(
-        "--keep-skidl",
-        action="store_true",
-        help="keep generated SKiDL code files after execution",
     )
     return parser.parse_args(argv)
 

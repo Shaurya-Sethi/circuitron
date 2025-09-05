@@ -22,6 +22,7 @@ from .utils import (
     prepare_output_dir,
     convert_windows_path_for_docker,
 )
+import re
 
 __all__ = [
     "MCPServerSse",
@@ -573,23 +574,27 @@ run_erc_tool = function_tool(run_erc)
 
 
 async def execute_final_script(
-    script_content: str,
-    output_dir: str,
-    keep_skidl: bool = False,
+    script_content: str, output_dir: str, design_name: str
 ) -> str:
     """Execute a SKiDL script and return generated file paths as JSON.
+
+    The final SKiDL script is always saved to ``output_dir`` using
+    ``design_name`` as the base file name. When footprint search is
+    disabled, any ``generate_pcb()`` calls are stripped and a
+    ``generate_schematic()`` call is appended if missing so that a
+    schematic is still produced.
 
     Args:
         script_content: The SKiDL script to execute.
         output_dir: Directory where generated files should be stored.
-        keep_skidl: If True, save the wrapped SKiDL script to ``output_dir``.
+        design_name: Base name for saved artifacts.
 
     Returns:
         A JSON string describing whether execution succeeded and listing
         any generated files.
 
     Example:
-        >>> asyncio.run(execute_final_script("from skidl import *", "/tmp/out"))
+        >>> asyncio.run(execute_final_script("from skidl import *", "/tmp/out", "design"))
         '{"success": false, ...}'
     """
 
@@ -639,6 +644,12 @@ async def execute_final_script(
         f"circuitron-final-{os.getpid()}",
         volumes={output_dir: container_mount},
     )
+    # Optionally adjust script for schematic-only generation
+    if not settings.footprint_search_enabled:
+        script_content = re.sub(r"\n\s*generate_pcb\(\)\s*", "\n", script_content)
+        if "generate_schematic()" not in script_content:
+            script_content += "\n\ngenerate_schematic()\n"
+
     # Create a wrapper script that handles library loading more gracefully
     wrapped_script = f"""
 import os
@@ -665,9 +676,9 @@ except Exception:
 # User script starts here
 {script_content}
 """
-    
-    if keep_skidl:
-        keep_skidl_script(output_dir, wrapped_script)
+
+    # Always save the wrapped script for user reference
+    keep_skidl_script(output_dir, wrapped_script, design_name)
 
     script_path = write_temp_skidl_script(wrapped_script)
     try:
