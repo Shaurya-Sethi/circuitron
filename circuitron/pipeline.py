@@ -522,6 +522,7 @@ async def run_with_retry(
                 prompt,
                 show_reasoning=show_reasoning,
                 output_dir=output_dir,
+                keep_skidl=keep_skidl,
                 ui=ui,
             )
         except PipelineError:
