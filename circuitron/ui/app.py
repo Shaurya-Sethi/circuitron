@@ -211,7 +211,6 @@ class TerminalUI:
         show_reasoning: bool = False,
         retries: int = 0,
         output_dir: str | None = None,
-        keep_skidl: bool = False,
     ) -> CodeGenerationOutput | None:
         """Execute the Circuitron pipeline with UI feedback.
 
@@ -235,7 +234,6 @@ class TerminalUI:
                 show_reasoning=show_reasoning,
                 retries=retries,
                 output_dir=output_dir,
-                keep_skidl=keep_skidl,
                 ui=self,
             )
         finally:

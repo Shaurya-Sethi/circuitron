@@ -661,26 +661,84 @@ def write_temp_skidl_script(code: str) -> str:
     return path
 
 
-def keep_skidl_script(output_dir: str | None, script_content: str) -> None:
+def _sanitize_filename(name: str) -> str:
+    """Return a filesystem-safe version of ``name``.
+
+    Non-alphanumeric characters are replaced with underscores and the
+    string is truncated to a reasonable length so that it can be used as a
+    file name on most platforms.
+    """
+
+    cleaned = re.sub(r"[^0-9a-zA-Z]+", "_", name).strip("_")
+    return cleaned[:50] or "design"
+
+
+def _unique_file_path(directory: str, base: str, suffix: str) -> str:
+    """Return a unique file path inside ``directory`` with ``base`` name."""
+
+    counter = 0
+    while True:
+        candidate = f"{base}{'' if counter == 0 else f'_{counter}'}{suffix}"
+        full_path = os.path.join(directory, candidate)
+        if not os.path.exists(full_path):
+            return full_path
+        counter += 1
+
+
+def make_artifact_basename(prompt: str) -> str:
+    """Derive a base file name from the user's prompt."""
+
+    return _sanitize_filename(prompt.lower())
+
+
+def keep_skidl_script(
+    output_dir: str | None, script_content: str, design_name: str
+) -> None:
     """Write the SKiDL script to ``output_dir`` creating the directory.
 
     Args:
-        output_dir (str | None): Directory to save the script. Abort if ``None``.
-        script_content (str): The SKiDL code to write.
-
-    Returns:
-        None
+        output_dir: Directory to save the script. Abort if ``None``.
+        script_content: The SKiDL code to write.
+        design_name: Base name for the saved file (without extension).
 
     Example:
-        >>> keep_skidl_script("/tmp/skidl", "from skidl import *\nERC()")
+        >>> keep_skidl_script("/tmp/skidl", "from skidl import *\nERC()", "divider")
     """
+
     if output_dir is None:
-        return  # No output directory specified, skip saving
+        return
 
     os.makedirs(output_dir, exist_ok=True)
-    script_path = os.path.join(output_dir, "circuitron_skidl_script.py")
+    base = _sanitize_filename(design_name)
+    script_path = _unique_file_path(output_dir, base, ".py")
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_content)
+
+
+def save_design_plan(
+    output_dir: str | None, plan: PlanOutput, design_name: str
+) -> None:
+    """Persist the final design plan to ``output_dir``.
+
+    The plan is written as a human-readable text file named
+    ``"<design_name>_design_plan.txt"``. Existing files are not overwritten;
+    a numeric suffix is appended if necessary.
+
+    Args:
+        output_dir: Target directory for the file. If ``None``, the plan is
+            not saved.
+        plan: The final :class:`PlanOutput` from the plan editor.
+        design_name: Base name derived from the user's prompt.
+    """
+
+    if output_dir is None:
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+    base = _sanitize_filename(f"{design_name}_design_plan")
+    file_path = _unique_file_path(output_dir, base, ".txt")
+    with open(file_path, "w", encoding="utf-8") as fh:
+        fh.write(format_plan_summary(plan))
 
 
 def prepare_erc_only_script(full_script: str) -> str:
