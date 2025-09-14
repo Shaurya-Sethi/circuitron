@@ -550,6 +550,8 @@ ERC()
 # === OUTPUT GENERATION ===
 generate_netlist()
 generate_svg("schematic_name")
+generate_schematic()
+generate_pcb()
 ```
 
 **2. Component Instantiation Rules:**
@@ -673,6 +675,7 @@ ERC()
 # === OUTPUT GENERATION ===
 generate_netlist()
 generate_svg("schematic_name")
+generate_schematic()
 ```
 
 **2. Component Instantiation Rules:**
