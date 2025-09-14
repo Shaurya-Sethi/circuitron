@@ -131,6 +131,16 @@ This installs `openai-agents`, `python-dotenv`, `skidl`, `rich`, and `logfire`. 
 
 6. **Populate the knowledge base**
 
+Quickstart (recommended): once your MCP server is configured and running, initialize the knowledge bases directly from the CLI:
+
+```bash
+circuitron setup
+```
+
+This runs a one-time, idempotent initialization that crawls SKiDL docs and parses the SKiDL repository using the MCP server tools. You can also run it interactively in the UI with the `/setup` command.
+> **Note:** Ensure that you have followed steps 1-5 in the [Detailed Setup Guide](SETUP.md) first.
+
+Alternatively: 
    With the MCP server running, configure your coding agent (for example GitHub Copilot) to use the server:
 
    - Select **Configure Tools → Add More Tools… → Add MCP Server → HTTP** and enter the URL `http://localhost:8051/sse`.
@@ -157,6 +167,11 @@ Circuitron now supports interactive model switching via the `/model` command in 
 ## Usage
 
 Once the MCP server is running and the Docker images are available, you can generate designs directly from the command line. The CLI verifies that the KiCad container starts successfully before processing a prompt.
+
+> **Important Prerequisites:**
+> - **Neo4j Database:** Always ensure your Neo4j instance is up and running before using Circuitron. If Neo4j is not available, Circuitron will experience silent failures and be unable to validate generated code due to MCP tools being unavailable.
+> - **Supabase Knowledge Base:** On the free tier, Supabase projects get paused after a few days of inactivity. If you're returning to Circuitron after a few days, make sure your Supabase project is not paused and resume it if necessary.
+> - **MCP Server Preflight Checks:** Circuitron automatically detects if the MCP server is not running and will notify you to start it before proceeding.
 
 Interactive mode:
 ```bash
@@ -198,6 +213,8 @@ Circuitron estimates cost using token totals and model pricing. It works out of 
 Disable built-in defaults (useful for tests) with `CIRCUITRON_DISABLE_BUILTIN_PRICES=1`.
 
 The summary banner uses either a per-model breakdown or, if unavailable, the currently selected model’s rates to compute the overall estimate.
+
+> **Note:** The cost estimates are very pessimistic — due to not accounting for cache hits, and the optional data sharing benefits. The actual costs are usually much lesser — you can view the actual cost on the official openai platform -> billing.
 
 ## Examples
 

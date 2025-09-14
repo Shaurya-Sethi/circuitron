@@ -382,3 +382,29 @@ class RuntimeErrorCorrectionOutput(BaseModel):
         description="Captured stdout/stderr from script execution attempt",
     )
 
+
+# ===== Setup Agent Models =====
+class SetupOutput(BaseModel):
+    """Output from the Setup Agent that initializes knowledge bases.
+
+    Captures the result of running MCP tools to populate Supabase
+    (documentation corpus) and Neo4j (knowledge graph).
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    docs_url: str = Field(description="Documentation root URL that was crawled")
+    repo_url: str = Field(description="Git repository URL that was parsed for the graph")
+    supabase_status: Literal["created", "updated", "skipped", "error"] = Field(
+        description="Outcome for Supabase doc corpus population"
+    )
+    neo4j_status: Literal["created", "updated", "skipped", "error"] = Field(
+        description="Outcome for Neo4j knowledge graph population"
+    )
+    operations: List[str] = Field(
+        default_factory=list, description="Chronological log of actions performed"
+    )
+    warnings: List[str] = Field(default_factory=list)
+    errors: List[str] = Field(default_factory=list)
+    elapsed_seconds: float = Field(default=0.0, description="Total time spent")
+

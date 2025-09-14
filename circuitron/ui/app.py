@@ -23,6 +23,7 @@ from ..models import (
     SelectedPart,
     PartSearchResult,
 )
+from ..network import verify_mcp_server
 
 ACCENT = "cyan"
 
@@ -64,6 +65,7 @@ class TerminalUI:
                     "Available commands:\n"
                     "  /model — switch the active LLM model for all agents\n"
                     "  /about — what Circuitron is and how it works\n"
+                    "  /setup — initialize knowledge bases (run once)\n"
                     "  /help — show this help",
                     style=ACCENT,
                 )
@@ -88,6 +90,35 @@ class TerminalUI:
                 )
                 from .components import panel as panel_comp
                 panel_comp.show_panel(self.console, "About Circuitron", about_md)
+                continue
+            if text.strip() == "/setup":
+                # Run one-time setup to populate Supabase + Neo4j via MCP tools
+                from ..setup import run_setup  # local import to avoid cycles
+                from .components import panel as panel_comp
+                panel_comp.show_panel(
+                    self.console,
+                    "Setup",
+                    (
+                        "This initializes the SKiDL documentation corpus and knowledge graph via MCP.\n"
+                        "It is idempotent; re-running will be skipped if already populated."
+                    ),
+                )
+                try:
+                    # Use default URLs; future: prompt for overrides if needed
+                    docs_url = "https://devbisme.github.io/skidl/"
+                    repo_url = "https://github.com/devbisme/skidl"
+                    import asyncio as _aio
+                    if not verify_mcp_server(ui=self):
+                        continue
+                    try:
+                        _ = _aio.run(run_setup(docs_url, repo_url, ui=self))
+                    except Exception:
+                        self.display_error(
+                            "Setup failed to connect to the MCP server. Start it with:\n"
+                            "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest"
+                        )
+                except (KeyboardInterrupt, EOFError):
+                    self.console.print("\nGoodbye! Thanks for using Circuitron.", style="yellow")
                 continue
             if text.strip() == "/model":
                 # Ask the user to choose a model and update all agent model fields
@@ -222,7 +253,17 @@ class TerminalUI:
         from ..pipeline import run_with_retry
         from ..mcp_manager import mcp_manager
 
-        await mcp_manager.initialize()
+        # Verify MCP server before initializing connection
+        if not verify_mcp_server(ui=self):
+            return None
+        try:
+            await mcp_manager.initialize()
+        except Exception:
+            self.display_error(
+                "Failed to initialize MCP server. Start it with:\n"
+                "  docker run --env-file mcp.env -p 8051:8051 ghcr.io/shaurya-sethi/circuitron-mcp:latest"
+            )
+            return None
         # Initialize summary timers and counters
         import time
         from ..telemetry import token_usage_aggregator
