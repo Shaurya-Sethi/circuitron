@@ -1,6 +1,8 @@
 # Circuitron
 
-Circuitron is an agent-driven PCB design accelerator that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with advanced reasoning and retrieval-augmented capabilities.
+> **Note:** Circuitron is archived. The project is still usable, but the architecture and dependency model reflect an earlier generation of tooling. See [Project status](#project-status) for details.
+
+Circuitron is an agent-driven PCB design prototyper that converts natural language requirements into SKiDL scripts, KiCad schematics, and PCB layout files. It integrates a multi-agent pipeline with advanced reasoning and retrieval-augmented capabilities.
 
 ---
 
@@ -466,6 +468,30 @@ Update these variables in your environment or in the `.env` file to customise be
 - **MCP server not reachable** – ensure the container was started with the correct `.env` file and that port 8051 is open.
 - **KiCad container fails to start** – pull the image again with `docker pull ghcr.io/shaurya-sethi/circuitron-kicad:latest` and verify Docker is running.
 - **Missing environment variables** – the CLI exits with an error if `OPENAI_API_KEY` or `MCP_URL` are not set. Check your `.env` configuration.
+
+## Project status
+
+Circuitron remains usable, but I don't intend to update this project anymore. Back when I built this in early 2025, multi-agent architectures, model context protcol, RAG, and most importantly agent-driven circuit design were all relatively new or unexplored.
+
+As of 2026, with how good tools like claude-code and codex-cli have gotten - building and maintaining something like circuitron is completely redundant. You as users will get MUCH better results by using those agent harnesses for writing skidl code, running shell commands for kicad component search, sub-agent driven research (from the web, or you could just clone the skidl repository and ask the agent to reference it before writing code), and testing + fixing. You will also have access to the latest LLMs.
+
+This project remains close to my heart, and as much as I'd love to revamp it - I know I'd just be be reinventing the wheel in a worse way. This problem domain was always essentially just: LLM good at reasoning + LLM good at coding -> How to make it write code for a niche library like skidl? This has now been completely solved.
+
+Heavy dependencies like supabase for storing skidl docs, neo4j for hallucination detection, and Docker for kicadv5 are no longer needed. skidl now supports newer versions of kicad uptil 9 I believe at the time of writing this.
+
+If you don't know what I mean, please try this setup for yourself:
+1. Install any coding agent of your choice - claude-code, codex-cli, pi-coding-agent, opencode, etc.
+2. Register the [Serena MCP server](https://github.com/oraios/serena) in their MCP config (`mcp.json`).
+3. Create a new project directory with just the following at repo root:
+ - AGENTS.md (your instructions for your agent - view source code in `reference/` before writing scripts using serena mcp tools, write scripts to `designs/`, etc.)
+ - a `reference/` folder where you will clone the SKiDL repo's source code from GitHub and index this with [Serena MCP](https://github.com/oraios/serena).
+ - a designs/ folder where your new skidl designs will live
+4. Initialise your project with git
+5. Have an existing Kicad installation on your pc.
+6. Launch your installed agent from this repo and ask it to design something.
+
+I hope this helps you with your circuit designs, and thank you for your support.
+
 
 ## Support and Contributing
 
